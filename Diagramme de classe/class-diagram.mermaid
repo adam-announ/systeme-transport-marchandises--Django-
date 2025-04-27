@@ -1,0 +1,140 @@
+classDiagram
+    class Utilisateur {
+        -int id
+        -String nom
+        -String prenom
+        -String email
+        -String motDePasse
+        -String role
+        +seConnecter()
+        +seDeconnecter()
+    }
+    
+    class Client {
+        -String adresse
+        -String telephone
+        +creerCommande()
+        +suivreCommande()
+        +genererRapport()
+    }
+    
+    class Transporteur {
+        -String matricule
+        -String typeVehicule
+        -float capaciteCharge
+        -boolean disponibilite
+        +voirMission()
+        +mettreAJourStatutLivraison()
+        +notifierIncident()
+    }
+    
+    class Admin {
+        +configurerParametresSysteme()
+        +consulterJournalActivite()
+        +gererRoles()
+        +gererUtilisateurs()
+    }
+    
+    class Planificateur {
+        +affecterCommandeTransporteur()
+        +optimiserItineraire()
+    }
+    
+    class Commande {
+        -int id
+        -Date dateCreation
+        -String statut
+        -float poids
+        -String typeMarachandise
+        -Adresse adresseEnlevement
+        -Adresse adresseLivraison
+        +calculerCout()
+        +genererBonLivraison()
+    }
+    
+    class BonLivraison {
+        -int id
+        -Date dateCreation
+        -Commande commande
+        -Transporteur transporteur
+        -String statut
+        +generer()
+        +valider()
+    }
+    
+    class Itineraire {
+        -int id
+        -Adresse pointDepart
+        -Adresse pointArrivee
+        -List~Point~ pointsIntermediaires
+        -float distance
+        -int tempsEstime
+        +calculerDistance()
+        +optimiser()
+    }
+    
+    class Notification {
+        -int id
+        -Date dateCreation
+        -String type
+        -String contenu
+        -String destinataire
+        +envoyer()
+    }
+    
+    class DonneesTrafic {
+        -Date timestamp
+        -String localisation
+        -String intensite
+        -String typeIncident
+        +fournirInfosTrafic()
+    }
+    
+    class DonneesMeteo {
+        -Date timestamp
+        -String localisation
+        -float temperature
+        -String conditionsMeteo
+        -float precipitation
+        +fournirPrevisions()
+    }
+    
+    class Journal {
+        -int id
+        -Date dateAction
+        -String action
+        -String utilisateur
+        -String details
+        +enregistrer()
+        +consulter()
+    }
+    
+    class Adresse {
+        -String rue
+        -String ville
+        -String codePostal
+        -String pays
+        -float latitude
+        -float longitude
+        +valider()
+    }
+    
+    Utilisateur <|-- Client
+    Utilisateur <|-- Transporteur
+    Utilisateur <|-- Admin
+    Utilisateur <|-- Planificateur
+    
+    Client "1" -- "0..*" Commande : passe
+    Planificateur "1" -- "0..*" Commande : gère
+    Commande "1" -- "0..1" BonLivraison : génère
+    Commande "1" -- "0..1" Itineraire : utilise
+    Commande "0..*" -- "0..1" Transporteur : assignée à
+    
+    Transporteur "1" -- "0..*" Notification : reçoit
+    Client "1" -- "0..*" Notification : reçoit
+    
+    Itineraire "1" -- "0..*" DonneesTrafic : consulte
+    Itineraire "1" -- "0..*" DonneesMeteo : consulte
+    
+    Utilisateur "1" -- "0..*" Journal : génère
+    Admin "1" -- "0..*" Journal : administre
