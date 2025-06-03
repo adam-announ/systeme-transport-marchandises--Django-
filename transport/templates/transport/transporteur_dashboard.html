@@ -1,0 +1,495 @@
+{% extends 'transport/base.html' %}
+
+{% block title %}Tableau de bord - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="fas fa-truck"></i> Tableau de bord transporteur</h2>
+        <p class="text-muted">Bienvenue {{ transporteur.utilisateur.prenom }} {{ transporteur.utilisateur.nom }}</p>
+    </div>
+    <div class="col-auto">
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="disponibiliteSwitch" 
+                   {% if transporteur.disponibilite %}checked{% endif %} 
+                   onchange="toggleDisponibilite()">
+            <label class="form-check-label" for="disponibiliteSwitch">
+                <span class="badge {% if transporteur.disponibilite %}bg-success{% else %}bg-danger{% endif %}" id="statusBadge">
+                    {% if transporteur.disponibilite %}Disponible{% else %}Indisponible{% endif %}
+                </span>
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- Informations du véhicule -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center">
+            <div class="stat-number">{{ transporteur.matricule }}</div>
+            <div>Matricule</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center" style="background: linear-gradient(135deg, #fd79a8, #fdcb6e);">
+            <div class="stat-number">{{ transporteur.type_vehicule }}</div>
+            <div>Type véhicule</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center" style="background: linear-gradient(135deg, #00b894, #00cec9);">
+            <div class="stat-number">{{ transporteur.capacite_charge }} kg</div>
+            <div>Capacité charge</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card text-center" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe);">
+            <div class="stat-number">{{ nb_missions_actives }}</div>
+            <div>Missions actives</div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-map-marked-alt fa-3x text-primary mb-3"></i>
+                <h5>Voir itinéraire</h5>
+                <p class="text-muted">Consulter l'itinéraire optimisé</p>
+                <button class="btn btn-primary" onclick="showCurrentRoute()">Voir</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                <h5>Signaler incident</h5>
+                <p class="text-muted">Signaler un problème ou incident</p>
+                <button class="btn btn-warning" onclick="reportIncident()">Signaler</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="fas fa-bell fa-3x text-info mb-3"></i>
+                <h5>Notifications</h5>
+                <p class="text-muted">Voir les nouvelles notifications</p>
+                <a href="{% url 'transport:notifications' %}" class="btn btn-info">Consulter</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Missions assignées -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-list"></i> Mes missions</h5>
+    </div>
+    <div class="card-body">
+        {% if commandes %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>N° Commande</th>
+                        <th>Date assignation</th>
+                        <th>Marchandise</th>
+                        <th>Départ</th>
+                        <th>Destination</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commande in commandes %}
+                    <tr>
+                        <td><strong>#{{ commande.id }}</strong></td>
+                        <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {{ commande.type_marchandise }}<br>
+                            <small class="text-muted">{{ commande.poids }} kg</small>
+                        </td>
+                        <td>
+                            {{ commande.adresse_enlevement.ville }}<br>
+                            <small class="text-muted">{{ commande.adresse_enlevement.rue }}</small>
+                        </td>
+                        <td>
+                            {{ commande.adresse_livraison.ville }}<br>
+                            <small class="text-muted">{{ commande.adresse_livraison.rue }}</small>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm status-select" 
+                                    data-commande-id="{{ commande.id }}" 
+                                    onchange="updateStatus(this)">
+                                <option value="assignee" {% if commande.statut == 'assignee' %}selected{% endif %}>Assignée</option>
+                                <option value="en_cours" {% if commande.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+                                <option value="livree" {% if commande.statut == 'livree' %}selected{% endif %}>Livrée</option>
+                            </select>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary" onclick="viewMission({{ commande.id }})" title="Voir détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-success" onclick="showRoute({{ commande.id }})" title="Itinéraire">
+                                    <i class="fas fa-route"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="reportProblem({{ commande.id }})" title="Signaler problème">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Aucune mission assignée</h5>
+            <p class="text-muted">Vous n'avez actuellement aucune mission assignée.</p>
+            <button class="btn btn-primary" onclick="toggleDisponibilite()">
+                <i class="fas fa-toggle-on"></i> Me rendre disponible
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal détails mission -->
+<div class="modal fade" id="missionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle"></i> Détails de la mission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="missionContent">
+                <!-- Le contenu sera chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal signaler incident -->
+<div class="modal fade" id="incidentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Signaler un incident</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="incidentForm">
+                    <div class="mb-3">
+                        <label for="incidentType" class="form-label">Type d'incident</label>
+                        <select class="form-select" id="incidentType" required>
+                            <option value="">Sélectionner le type</option>
+                            <option value="panne">Panne véhicule</option>
+                            <option value="accident">Accident</option>
+                            <option value="retard">Retard</option>
+                            <option value="marchandise">Problème marchandise</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="incidentDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="incidentDescription" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="incidentLocation" class="form-label">Localisation</label>
+                        <input type="text" class="form-control" id="incidentLocation" placeholder="Lieu de l'incident">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="submitIncident()">Signaler</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal itinéraire -->
+<div class="modal fade" id="routeModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-map"></i> Itinéraire de la mission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="routeMap" style="height: 500px;"></div>
+                <div class="mt-3">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations de l'itinéraire</h6>
+                            <p><strong>Distance:</strong> <span id="modalRouteDistance">--</span></p>
+                            <p><strong>Durée estimée:</strong> <span id="modalRouteDuration">--</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Instructions</h6>
+                            <div id="routeInstructions"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let routeMap, routeDirectionsRenderer;
+
+function toggleDisponibilite() {
+    const isAvailable = document.getElementById('disponibiliteSwitch').checked;
+    const badge = document.getElementById('statusBadge');
+    
+    makeAjaxRequest('/api/toggle-disponibilite/', {
+        disponible: isAvailable
+    }, function(response) {
+        if (isAvailable) {
+            badge.className = 'badge bg-success';
+            badge.textContent = 'Disponible';
+        } else {
+            badge.className = 'badge bg-danger';
+            badge.textContent = 'Indisponible';
+        }
+        showToast('Statut mis à jour', 'success');
+    }, function(error) {
+        showToast('Erreur: ' + error, 'danger');
+        // Remettre l'ancien état
+        document.getElementById('disponibiliteSwitch').checked = !isAvailable;
+    });
+}
+
+function updateStatus(selectElement) {
+    const commandeId = selectElement.dataset.commandeId;
+    const newStatus = selectElement.value;
+    
+    if (confirm('Confirmer le changement de statut ?')) {
+        makeAjaxRequest('/api/mettre-a-jour-statut/', {
+            commande_id: commandeId,
+            statut: newStatus
+        }, function(response) {
+            showToast('Statut mis à jour avec succès', 'success');
+            
+            // Envoyer notification automatique au client
+            sendStatusNotification(commandeId, newStatus);
+        }, function(error) {
+            showToast('Erreur lors de la mise à jour: ' + error, 'danger');
+        });
+    }
+}
+
+function sendStatusNotification(commandeId, status) {
+    let message = '';
+    switch(status) {
+        case 'en_cours':
+            message = 'Votre marchandise est en cours de transport';
+            break;
+        case 'livree':
+            message = 'Votre marchandise a été livrée avec succès';
+            break;
+    }
+    
+    makeAjaxRequest('/api/send-notification/', {
+        commande_id: commandeId,
+        message: message,
+        type: 'status_update'
+    }, function(response) {
+        console.log('Notification envoyée');
+    });
+}
+
+function viewMission(commandeId) {
+    // Simuler les détails de la mission
+    const missionDetails = `
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Informations de la commande</h6>
+                <p><strong>N° Commande:</strong> #${commandeId}</p>
+                <p><strong>Date de création:</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
+                <p><strong>Type marchandise:</strong> Électronique</p>
+                <p><strong>Poids:</strong> 25 kg</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Contact client</h6>
+                <p><strong>Nom:</strong> Jean Dupont</p>
+                <p><strong>Téléphone:</strong> +212 6 12 34 56 78</p>
+                <p><strong>Email:</strong> client@example.com</p>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Adresse d'enlèvement</h6>
+                <p>123 Rue des Entreprises<br>Casablanca, 20000<br>Maroc</p>
+                <button class="btn btn-sm btn-outline-primary" onclick="openNavigation('pickup')">
+                    <i class="fas fa-navigation"></i> Navigation
+                </button>
+            </div>
+            <div class="col-md-6">
+                <h6>Adresse de livraison</h6>
+                <p>456 Avenue de la Liberté<br>Rabat, 10000<br>Maroc</p>
+                <button class="btn btn-sm btn-outline-success" onclick="openNavigation('delivery')">
+                    <i class="fas fa-navigation"></i> Navigation
+                </button>
+            </div>
+        </div>
+        <hr>
+        <h6>Instructions spéciales</h6>
+        <p class="text-muted">Livraison entre 9h et 17h uniquement. Contacter le client 30 minutes avant l'arrivée.</p>
+    `;
+    
+    document.getElementById('missionContent').innerHTML = missionDetails;
+    const modal = new bootstrap.Modal(document.getElementById('missionModal'));
+    modal.show();
+}
+
+function showRoute(commandeId) {
+    const modal = new bootstrap.Modal(document.getElementById('routeModal'));
+    modal.show();
+    
+    // Initialiser la carte après l'ouverture du modal
+    setTimeout(() => {
+        initRouteMap();
+    }, 300);
+}
+
+function initRouteMap() {
+    if (!routeMap) {
+        routeMap = new google.maps.Map(document.getElementById('routeMap'), {
+            zoom: 8,
+            center: { lat: 33.9716, lng: -6.8498 }
+        });
+        
+        routeDirectionsRenderer = new google.maps.DirectionsRenderer({
+            draggable: false,
+            panel: null
+        });
+        routeDirectionsRenderer.setMap(routeMap);
+        
+        // Simuler un itinéraire
+        const directionsService = new google.maps.DirectionsService();
+        directionsService.route({
+            origin: 'Casablanca, Maroc',
+            destination: 'Rabat, Maroc',
+            travelMode: google.maps.TravelMode.DRIVING
+        }, function(response, status) {
+            if (status === 'OK') {
+                routeDirectionsRenderer.setDirections(response);
+                
+                const route = response.routes[0];
+                const leg = route.legs[0];
+                
+                document.getElementById('modalRouteDistance').textContent = leg.distance.text;
+                document.getElementById('modalRouteDuration').textContent = leg.duration.text;
+                
+                // Afficher les instructions
+                let instructions = '<ol>';
+                leg.steps.forEach(step => {
+                    instructions += `<li class="mb-1">${step.instructions}</li>`;
+                });
+                instructions += '</ol>';
+                document.getElementById('routeInstructions').innerHTML = instructions;
+            }
+        });
+    }
+}
+
+function openNavigation(type) {
+    let destination = '';
+    if (type === 'pickup') {
+        destination = '123 Rue des Entreprises, Casablanca, Maroc';
+    } else {
+        destination = '456 Avenue de la Liberté, Rabat, Maroc';
+    }
+    
+    // Ouvrir Google Maps ou Waze
+    if (confirm('Ouvrir dans Google Maps ?')) {
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+        window.open(url, '_blank');
+    }
+}
+
+function reportIncident() {
+    const modal = new bootstrap.Modal(document.getElementById('incidentModal'));
+    modal.show();
+}
+
+function reportProblem(commandeId) {
+    document.getElementById('incidentForm').reset();
+    document.getElementById('incidentModal').dataset.commandeId = commandeId;
+    reportIncident();
+}
+
+function submitIncident() {
+    const form = document.getElementById('incidentForm');
+    const type = document.getElementById('incidentType').value;
+    const description = document.getElementById('incidentDescription').value;
+    const location = document.getElementById('incidentLocation').value;
+    
+    if (!type || !description) {
+        showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+        return;
+    }
+    
+    const commandeId = document.getElementById('incidentModal').dataset.commandeId || null;
+    
+    makeAjaxRequest('/api/report-incident/', {
+        type: type,
+        description: description,
+        location: location,
+        commande_id: commandeId
+    }, function(response) {
+        showToast('Incident signalé avec succès', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('incidentModal')).hide();
+        form.reset();
+    }, function(error) {
+        showToast('Erreur lors du signalement: ' + error, 'danger');
+    });
+}
+
+function showCurrentRoute() {
+    // Afficher l'itinéraire de la mission en cours
+    const activeMissions = document.querySelectorAll('.status-select');
+    let currentMission = null;
+    
+    activeMissions.forEach(select => {
+        if (select.value === 'en_cours') {
+            currentMission = select.dataset.commandeId;
+        }
+    });
+    
+    if (currentMission) {
+        showRoute(currentMission);
+    } else {
+        showToast('Aucune mission en cours', 'info');
+    }
+}
+
+// Actualisation automatique des données toutes les 30 secondes
+setInterval(() => {
+    // Vérifier s'il y a de nouvelles missions
+    fetch('/api/check-new-missions/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.new_missions && data.new_missions > 0) {
+                showToast(`${data.new_missions} nouvelle(s) mission(s) assignée(s)`, 'info');
+                setTimeout(() => location.reload(), 2000);
+            }
+        })
+        .catch(error => console.log('Erreur vérification missions:', error));
+}, 30000);
+</script>
+{% endblock %}
