@@ -498,3 +498,67 @@ class Parametres(models.Model):
             import json
             return json.loads(self.valeur)
         return self.valeur
+    
+    # Ajouter ces modèles à la fin de backend/transport/models.py
+
+class DonneesTrafic(models.Model):
+    INTENSITES = [
+        ('faible', 'Faible'),
+        ('moyenne', 'Moyenne'),
+        ('elevee', 'Élevée'),
+        ('tres_elevee', 'Très élevée'),
+    ]
+    
+    TYPES_INCIDENT = [
+        ('aucun', 'Aucun'),
+        ('embouteillage', 'Embouteillage'),
+        ('accident', 'Accident'),
+        ('travaux', 'Travaux'),
+        ('manifestation', 'Manifestation'),
+        ('intemperies', 'Intempéries'),
+    ]
+    
+    localisation = models.CharField(max_length=200)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    intensite = models.CharField(max_length=20, choices=INTENSITES)
+    type_incident = models.CharField(max_length=20, choices=TYPES_INCIDENT, default='aucun')
+    description = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Données de trafic"
+        verbose_name_plural = "Données de trafic"
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.localisation} - {self.get_intensite_display()}"
+
+class DonneesMeteo(models.Model):
+    CONDITIONS = [
+        ('ensoleille', 'Ensoleillé'),
+        ('nuageux', 'Nuageux'),
+        ('pluvieux', 'Pluvieux'),
+        ('orageux', 'Orageux'),
+        ('neigeux', 'Neigeux'),
+        ('brumeux', 'Brumeux'),
+        ('venteux', 'Venteux'),
+    ]
+    
+    localisation = models.CharField(max_length=200)
+    latitude = models.FloatField()
+    longitude = models.FloatField()
+    temperature = models.FloatField(help_text="Température en °C")
+    conditions_meteo = models.CharField(max_length=20, choices=CONDITIONS)
+    humidite = models.IntegerField(help_text="Humidité en %")
+    vitesse_vent = models.FloatField(help_text="Vitesse du vent en km/h")
+    visibilite = models.FloatField(help_text="Visibilité en km", default=10)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Données météo"
+        verbose_name_plural = "Données météo"
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.localisation} - {self.temperature}°C - {self.get_conditions_meteo_display()}"

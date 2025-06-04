@@ -8,7 +8,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 import googlemaps
 from .models import *
-from .serializers import *
+from ..transport.serializers import *
 from .utils import calculer_prix, optimiser_itineraire, envoyer_notification
 
 class CommandeViewSet(viewsets.ModelViewSet):

@@ -1,0 +1,14 @@
+INFO 2025-06-05 00:24:09,794 autoreload 20476 3656 Watching for file changes with StatReloader
+INFO 2025-06-05 00:27:00,391 autoreload 20476 3656 C:\Users\HP\Desktop\transport_system\backend\transport_system\settings.py changed, reloading.
+INFO 2025-06-05 00:27:03,844 autoreload 12112 2416 Watching for file changes with StatReloader
+INFO 2025-06-05 00:28:54,824 autoreload 12112 2416 C:\Users\HP\Desktop\transport_system\backend\transport\views.py changed, reloading.
+INFO 2025-06-05 00:29:00,161 autoreload 11268 20264 Watching for file changes with StatReloader
+INFO 2025-06-05 00:29:04,697 autoreload 11268 20264 C:\Users\HP\Desktop\transport_system\backend\transport\views.py changed, reloading.
+INFO 2025-06-05 00:29:08,005 autoreload 20628 4604 Watching for file changes with StatReloader
+INFO 2025-06-05 00:29:42,482 autoreload 20628 4604 C:\Users\HP\Desktop\transport_system\backend\transport\views.py changed, reloading.
+INFO 2025-06-05 00:29:46,004 autoreload 9096 5580 Watching for file changes with StatReloader
+INFO 2025-06-05 00:29:53,008 autoreload 9096 5580 C:\Users\HP\Desktop\transport_system\backend\transport\views.py changed, reloading.
+INFO 2025-06-05 00:29:56,681 autoreload 9480 17680 Watching for file changes with StatReloader
+INFO 2025-06-05 00:30:32,627 autoreload 9480 17680 C:\Users\HP\Desktop\transport_system\backend\transport\views.py changed, reloading.
+INFO 2025-06-05 00:30:35,997 autoreload 5552 15940 Watching for file changes with StatReloader
+INFO 2025-06-05 00:31:36,248 autoreload 17720 14600 Watching for file changes with StatReloader

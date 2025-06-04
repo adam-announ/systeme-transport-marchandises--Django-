@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from decouple import config
 
@@ -21,7 +22,7 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.gis',  # Pour les fonctionnalités géospatiales
+   # 'django.contrib.gis',  # Pour les fonctionnalités géospatiales
 ]
 
 THIRD_PARTY_APPS = [
@@ -32,8 +33,16 @@ THIRD_PARTY_APPS = [
     'django_celery_results',
     'channels',  # Pour WebSocket
     'drf_spectacular',  # Pour la documentation API
+    'django_filters'
 ]
 
+
+if DEBUG:
+    STATICFILES_DIRS = [
+        BASE_DIR / 'static',
+    ]
+
+    
 LOCAL_APPS = [
     'transport',
 ]

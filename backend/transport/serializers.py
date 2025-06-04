@@ -1,3 +1,6 @@
+# Ce fichier doit être dans backend/transport/serializers.py (pas dans transport_system)
+# Copier tout le contenu de backend/transport_system/serializers.py vers backend/transport/serializers.py
+
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from .models import *

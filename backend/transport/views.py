@@ -354,18 +354,42 @@ def optimiser_itineraires(request):
             data = json.loads(request.body)
             algorithme = data.get('algorithme', 'tsp')
             critere = data.get('critere', 'distance')
-            
+
             # Récupérer les commandes en attente
             commandes_en_attente = Commande.objects.filter(statut='en_attente')
-            
+
             resultats_optimisation = []
             distance_economisee = 0
             temps_economise = 0
-            
+
             for commande in commandes_en_attente:
                 # Simuler l'optimisation d'itinéraire
                 itineraire, created = Itineraire.objects.get_or_create(
                     commande=commande,
                     defaults={
                         'point_depart': commande.adresse_enlevement,
-                        'point_arrivee': commande.adresse_liv
+                        'point_arrivee': commande.adresse_livraison,
+                        'distance': 0,      # ou calculée dynamiquement
+                        'temps_estime': 0,   # ou calculé dynamiquement
+                    }
+                )
+                # (Vous pouvez ensuite mettre à jour itineraire.distance/temps_estime
+                #  puis itineraire.save() si besoin.)
+
+                # Ajouter au résultat d'optimisation (exemple fictif)
+                resultats_optimisation.append({
+                    'commande_id': commande.id,
+                    'itineraire_id': itineraire.id,
+                    'distance': itineraire.distance,
+                    'temps_estime': itineraire.temps_estime,
+                })
+
+            # Retourner la réponse JSON
+            return JsonResponse({
+                'success': True,
+                'resultats': resultats_optimisation,
+            })
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
