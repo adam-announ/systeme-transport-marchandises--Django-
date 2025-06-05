@@ -22,27 +22,21 @@ DJANGO_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-   # 'django.contrib.gis',  # Pour les fonctionnalités géospatiales
 ]
 
 THIRD_PARTY_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'drf_spectacular',
+    'django_filters',
+    # Celery apps (optionnels pour développement)
     'django_celery_beat',
     'django_celery_results',
-    'channels',  # Pour WebSocket
-    'drf_spectacular',  # Pour la documentation API
-    'django_filters'
+    # Channels pour WebSocket (optionnel)
+    'channels',
 ]
 
-
-if DEBUG:
-    STATICFILES_DIRS = [
-        BASE_DIR / 'static',
-    ]
-
-    
 LOCAL_APPS = [
     'transport',
 ]
@@ -52,14 +46,15 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # Pour servir les fichiers statiques
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'transport.middleware.RequestLoggingMiddleware',  # Middleware personnalisé pour le logging
+    # Middleware personnalisé (optionnel)
+    # 'transport.middleware.RequestLoggingMiddleware',
 ]
 
 ROOT_URLCONF = 'transport_system.urls'
@@ -81,29 +76,32 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'transport_system.wsgi.application'
+
+# Configuration ASGI pour Channels (optionnel)
 ASGI_APPLICATION = 'transport_system.asgi.application'
 
-# Database
+# Database - Configuration flexible
+# PostgreSQL avec PostGIS pour production
 DATABASES = {
     'default': {
-        'ENGINE': config('DB_ENGINE', default='django.contrib.gis.db.backends.postgis'),
-        'NAME': config('DB_NAME', default='transport_db'),
-        'USER': config('DB_USER', default='postgres'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
+        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
+        'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
     }
 }
 
-# Fallback to SQLite for development
-if not config('DB_NAME', default=''):
+# Configuration PostgreSQL si les variables sont définies
+if config('DB_NAME', default='') and config('DB_ENGINE', default='').startswith('django.contrib.gis'):
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'ENGINE': config('DB_ENGINE', default='django.contrib.gis.db.backends.postgis'),
+            'NAME': config('DB_NAME', default='transport_db'),
+            'USER': config('DB_USER', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='5432'),
+            'OPTIONS': {
+                'charset': 'utf8',
+            },
         }
     }
 
@@ -135,11 +133,14 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',
-]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Dossiers statiques pour développement
+if DEBUG:
+    STATICFILES_DIRS = [
+        BASE_DIR / 'static',
+    ]
 
 # Media files
 MEDIA_URL = '/media/'
@@ -191,42 +192,71 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CORS_ALLOW_CREDENTIALS = True
-
 CORS_ALLOW_ALL_ORIGINS = DEBUG  # Seulement en développement
 
-# Channels (WebSocket) configuration
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [config('REDIS_URL', default='redis://localhost:6379/0')],
+# Cache configuration - Flexible selon l'environnement
+REDIS_URL = config('REDIS_URL', default='')
+
+if REDIS_URL and 'redis://' in REDIS_URL:
+    # Configuration Redis si disponible
+    CACHES = {
+        'default': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
+        }
+    }
+    
+    # Channels configuration avec Redis
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                "hosts": [REDIS_URL],
+            },
         },
-    },
-}
-
-# Celery configuration
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = TIME_ZONE
-
-# Configuration des tâches périodiques
-CELERY_BEAT_SCHEDULE = {
-    'update-traffic-data': {
-        'task': 'transport.tasks.update_traffic_data',
-        'schedule': 300.0,  # Toutes les 5 minutes
-    },
-    'update-weather-data': {
-        'task': 'transport.tasks.update_weather_data',
-        'schedule': 900.0,  # Toutes les 15 minutes
-    },
-    'cleanup-old-notifications': {
-        'task': 'transport.tasks.cleanup_old_notifications',
-        'schedule': 86400.0,  # Tous les jours
-    },
-}
+    }
+    
+    # Celery configuration avec Redis
+    CELERY_BROKER_URL = REDIS_URL
+    CELERY_RESULT_BACKEND = REDIS_URL
+    CELERY_ACCEPT_CONTENT = ['json']
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_TIMEZONE = TIME_ZONE
+    
+    # Configuration des tâches périodiques
+    CELERY_BEAT_SCHEDULE = {
+        'update-traffic-data': {
+            'task': 'transport.tasks.update_traffic_data',
+            'schedule': 300.0,  # Toutes les 5 minutes
+        },
+        'update-weather-data': {
+            'task': 'transport.tasks.update_weather_data',
+            'schedule': 900.0,  # Toutes les 15 minutes
+        },
+        'cleanup-old-notifications': {
+            'task': 'transport.tasks.cleanup_old_notifications',
+            'schedule': 86400.0,  # Tous les jours
+        },
+    }
+else:
+    # Configuration de cache en mémoire pour développement
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'unique-snowflake',
+        }
+    }
+    
+    # Channels configuration en mémoire
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
 
 # Email configuration
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
@@ -282,12 +312,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'logs' / 'django.log',
-            'formatter': 'verbose',
-        },
         'console': {
             'level': 'DEBUG',
             'class': 'logging.StreamHandler',
@@ -300,31 +324,22 @@ LOGGING = {
     },
     'loggers': {
         'django': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
         'transport': {
-            'handlers': ['file', 'console'],
+            'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': False,
         },
     },
 }
 
-# Créer le dossier de logs s'il n'existe pas
+# Créer les dossiers nécessaires
 os.makedirs(BASE_DIR / 'logs', exist_ok=True)
-
-# Cache configuration
-CACHES = {
-    'default': {
-        'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': config('REDIS_URL', default='redis://localhost:6379/1'),
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
+os.makedirs(BASE_DIR / 'media', exist_ok=True)
+os.makedirs(BASE_DIR / 'static', exist_ok=True)
 
 # Configuration des fichiers uploadés
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
@@ -375,20 +390,25 @@ PUSH_NOTIFICATIONS_SETTINGS = {
 
 # Configuration de monitoring et métriques
 if not DEBUG:
-    # Sentry pour le monitoring d'erreurs
-    import sentry_sdk
-    from sentry_sdk.integrations.django import DjangoIntegration
-    from sentry_sdk.integrations.celery import CeleryIntegration
-    
-    sentry_sdk.init(
-        dsn=config('SENTRY_DSN', default=''),
-        integrations=[
-            DjangoIntegration(),
-            CeleryIntegration(),
-        ],
-        traces_sample_rate=0.1,
-        send_default_pii=True
-    )
+    # Sentry pour le monitoring d'erreurs (optionnel)
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        
+        sentry_dsn = config('SENTRY_DSN', default='')
+        if sentry_dsn:
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                integrations=[
+                    DjangoIntegration(),
+                    CeleryIntegration(),
+                ],
+                traces_sample_rate=0.1,
+                send_default_pii=True
+            )
+    except ImportError:
+        pass
 
 # Configuration des API externes
 EXTERNAL_APIS = {
@@ -417,5 +437,13 @@ if 'test' in sys.argv:
         'django.contrib.auth.hashers.MD5PasswordHasher',
     ]
     
+    # Désactiver Celery pour les tests
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
+    
+    # Cache en mémoire pour les tests
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
