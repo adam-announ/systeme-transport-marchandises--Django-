@@ -117,7 +117,13 @@ class RegisterView(APIView):
             
             # Créer le profil spécifique selon le rôle
             if utilisateur.role == 'client':
-                Client.objects.create(utilisateur=utilisateur)
+                Client.objects.create(
+                    utilisateur=utilisateur,
+                    nom=utilisateur.nom,
+                    prenom=utilisateur.prenom,
+                    email=utilisateur.email,
+                    telephone=utilisateur.telephone
+                )
             elif utilisateur.role == 'transporteur':
                 # Pour un transporteur, il faudra compléter les infos plus tard
                 pass
@@ -319,6 +325,57 @@ class ClientDashboardView(APIView):
             commandes_recentes = commandes.order_by('-date_creation')[:5]
             
             # Notifications non lues
+            notifications = Notification.objects.filter(
+                destinataire=request.user,
+                lue=False
+            )[:5]
+            
+            return Response({
+                'utilisateur': UtilisateurSerializer(utilisateur).data,
+                'statistiques': stats,
+                'commandes_recentes': CommandeListSerializer(commandes_recentes, many=True).data,
+                'notifications_non_lues': NotificationSerializer(notifications, many=True).data
+            })
+            
+        except (Utilisateur.DoesNotExist, Client.DoesNotExist):
+            return Response(
+                {'error': 'Client profile not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+class TransporteurDashboardView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            utilisateur = Utilisateur.objects.get(user=request.user)
+            transporteur = Transporteur.objects.get(utilisateur=utilisateur)
+            
+            # Statistiques
+            commandes = Commande.objects.filter(transporteur=transporteur)
+            today = timezone.now().date()
+            month_start = today.replace(day=1)
+            
+            stats = {
+                'missions_totales': commandes.count(),
+                'missions_actives': commandes.filter(
+                    statut__in=['assignee', 'en_transit', 'en_cours_livraison']
+                ).count(),
+                'missions_terminees': commandes.filter(statut='livree').count(),
+                'missions_aujourdhui': commandes.filter(
+                    date_creation__date=today
+                ).count(),
+                'missions_ce_mois': commandes.filter(
+                    date_creation__gte=month_start
+                ).count(),
+                'disponibilite': transporteur.disponibilite,
+                'rating': transporteur.rating
+            }
+            
+            # Missions récentes
+            missions_recentes = commandes.order_by('-date_creation')[:5]
+            
+            # Notifications
             notifications = Notification.objects.filter(
                 destinataire=request.user,
                 lue=False
@@ -626,55 +683,4 @@ class MetricsView(APIView):
             'active_users': User.objects.filter(is_active=True).count(),
             'total_commandes': Commande.objects.count(),
             'active_transporteurs': Transporteur.objects.filter(disponibilite=True).count()
-        })Serializer(utilisateur).data,
-                'statistiques': stats,
-                'commandes_recentes': CommandeListSerializer(commandes_recentes, many=True).data,
-                'notifications_non_lues': NotificationSerializer(notifications, many=True).data
-            })
-            
-        except (Utilisateur.DoesNotExist, Client.DoesNotExist):
-            return Response(
-                {'error': 'Client profile not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-class TransporteurDashboardView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        try:
-            utilisateur = Utilisateur.objects.get(user=request.user)
-            transporteur = Transporteur.objects.get(utilisateur=utilisateur)
-            
-            # Statistiques
-            commandes = Commande.objects.filter(transporteur=transporteur)
-            today = timezone.now().date()
-            month_start = today.replace(day=1)
-            
-            stats = {
-                'missions_totales': commandes.count(),
-                'missions_actives': commandes.filter(
-                    statut__in=['assignee', 'en_transit', 'en_cours_livraison']
-                ).count(),
-                'missions_terminees': commandes.filter(statut='livree').count(),
-                'missions_aujourdhui': commandes.filter(
-                    date_creation__date=today
-                ).count(),
-                'missions_ce_mois': commandes.filter(
-                    date_creation__gte=month_start
-                ).count(),
-                'disponibilite': transporteur.disponibilite,
-                'rating': transporteur.rating
-            }
-            
-            # Missions récentes
-            missions_recentes = commandes.order_by('-date_creation')[:5]
-            
-            # Notifications
-            notifications = Notification.objects.filter(
-                destinataire=request.user,
-                lue=False
-            )[:5]
-            
-            return Response({
-                'utilisateur': Utilisateur
+        })
