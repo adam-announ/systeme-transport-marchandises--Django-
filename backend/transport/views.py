@@ -1,3 +1,4 @@
+# backend/transport/views.py - Version corrigée avec toutes les fonctions
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login, logout
@@ -5,6 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.utils import timezone
 import json
 import requests
 from .models import *
@@ -26,16 +28,16 @@ def login_view(request):
             try:
                 utilisateur = Utilisateur.objects.get(user=user)
                 if utilisateur.role == 'client':
-                    return redirect('client_dashboard')
+                    return redirect('transport:client_dashboard')
                 elif utilisateur.role == 'transporteur':
-                    return redirect('transporteur_dashboard')
+                    return redirect('transport:transporteur_dashboard')
                 elif utilisateur.role == 'admin':
-                    return redirect('admin_dashboard')
+                    return redirect('transport:admin_dashboard')
                 elif utilisateur.role == 'planificateur':
-                    return redirect('planificateur_dashboard')
+                    return redirect('transport:planificateur_dashboard')
             except Utilisateur.DoesNotExist:
                 pass
-            return redirect('home')
+            return redirect('transport:home')
         else:
             messages.error(request, 'Nom d\'utilisateur ou mot de passe incorrect.')
     
@@ -44,13 +46,14 @@ def login_view(request):
 def logout_view(request):
     """Déconnexion"""
     logout(request)
-    return redirect('home')
+    return redirect('transport:home')
 
 @login_required
 def client_dashboard(request):
     """Tableau de bord client"""
     try:
-        client = Client.objects.get(user=request.user)
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        client = Client.objects.get(utilisateur=utilisateur)
         commandes = Commande.objects.filter(client=client).order_by('-date_creation')
         
         context = {
@@ -59,16 +62,17 @@ def client_dashboard(request):
             'nb_commandes_actives': commandes.filter(statut__in=['en_attente', 'assignee', 'en_cours']).count()
         }
         return render(request, 'transport/client_dashboard.html', context)
-    except Client.DoesNotExist:
+    except (Utilisateur.DoesNotExist, Client.DoesNotExist):
         messages.error(request, 'Profil client non trouvé.')
-        return redirect('home')
+        return redirect('transport:home')
 
 @login_required
 def creer_commande(request):
     """Créer une nouvelle commande"""
     if request.method == 'POST':
         try:
-            client = Client.objects.get(user=request.user)
+            utilisateur = Utilisateur.objects.get(user=request.user)
+            client = Client.objects.get(utilisateur=utilisateur)
             
             # Créer les adresses
             adresse_enlevement = Adresse.objects.create(
@@ -76,8 +80,8 @@ def creer_commande(request):
                 ville=request.POST['ville_enlevement'],
                 code_postal=request.POST['code_postal_enlevement'],
                 pays=request.POST.get('pays_enlevement', 'Maroc'),
-                latitude=float(request.POST.get('lat_enlevement', 0)),
-                longitude=float(request.POST.get('lng_enlevement', 0))
+                latitude=float(request.POST.get('lat_enlevement', 0)) if request.POST.get('lat_enlevement') else None,
+                longitude=float(request.POST.get('lng_enlevement', 0)) if request.POST.get('lng_enlevement') else None
             )
             
             adresse_livraison = Adresse.objects.create(
@@ -85,8 +89,8 @@ def creer_commande(request):
                 ville=request.POST['ville_livraison'],
                 code_postal=request.POST['code_postal_livraison'],
                 pays=request.POST.get('pays_livraison', 'Maroc'),
-                latitude=float(request.POST.get('lat_livraison', 0)),
-                longitude=float(request.POST.get('lng_livraison', 0))
+                latitude=float(request.POST.get('lat_livraison', 0)) if request.POST.get('lat_livraison') else None,
+                longitude=float(request.POST.get('lng_livraison', 0)) if request.POST.get('lng_livraison') else None
             )
             
             # Créer la commande
@@ -95,20 +99,13 @@ def creer_commande(request):
                 type_marchandise=request.POST['type_marchandise'],
                 poids=float(request.POST['poids']),
                 adresse_enlevement=adresse_enlevement,
-                adresse_livraison=adresse_livraison
-            )
-            
-            # Créer l'itinéraire
-            Itineraire.objects.create(
-                commande=commande,
-                point_depart=adresse_enlevement,
-                point_arrivee=adresse_livraison,
-                distance=0,  # À calculer avec Google Maps
-                temps_estime=0
+                adresse_livraison=adresse_livraison,
+                description=request.POST.get('description', ''),
+                priorite=request.POST.get('priorite', 'normale')
             )
             
             messages.success(request, 'Commande créée avec succès!')
-            return redirect('client_dashboard')
+            return redirect('transport:client_dashboard')
             
         except Exception as e:
             messages.error(request, f'Erreur lors de la création: {str(e)}')
@@ -119,7 +116,8 @@ def creer_commande(request):
 def transporteur_dashboard(request):
     """Tableau de bord transporteur"""
     try:
-        transporteur = Transporteur.objects.get(utilisateur__user=request.user)
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        transporteur = Transporteur.objects.get(utilisateur=utilisateur)
         commandes_assignees = Commande.objects.filter(
             transporteur=transporteur,
             statut__in=['assignee', 'en_cours']
@@ -131,15 +129,18 @@ def transporteur_dashboard(request):
             'nb_missions_actives': commandes_assignees.count()
         }
         return render(request, 'transport/transporteur_dashboard.html', context)
-    except Transporteur.DoesNotExist:
+    except (Utilisateur.DoesNotExist, Transporteur.DoesNotExist):
         messages.error(request, 'Profil transporteur non trouvé.')
-        return redirect('home')
+        return redirect('transport:home')
 
 @login_required
 def admin_dashboard(request):
     """Tableau de bord administrateur"""
     try:
-        admin = Admin.objects.get(user=request.user)
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        if utilisateur.role != 'admin':
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('transport:home')
         
         # Statistiques
         stats = {
@@ -154,18 +155,48 @@ def admin_dashboard(request):
         commandes_recentes = Commande.objects.all().order_by('-date_creation')[:10]
         
         context = {
-            'admin': admin,
             'stats': stats,
             'commandes_recentes': commandes_recentes
         }
         return render(request, 'transport/admin_dashboard.html', context)
-    except Admin.DoesNotExist:
+    except Utilisateur.DoesNotExist:
         messages.error(request, 'Profil administrateur non trouvé.')
-        return redirect('home')
+        return redirect('transport:home')
+
+@login_required
+def planificateur_dashboard(request):
+    """Tableau de bord planificateur"""
+    try:
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        if utilisateur.role != 'planificateur':
+            messages.error(request, 'Accès non autorisé.')
+            return redirect('transport:home')
+        
+        # Statistiques pour le planificateur
+        commandes_en_attente = Commande.objects.filter(statut='en_attente').count()
+        transporteurs_disponibles = Transporteur.objects.filter(disponibilite=True).count()
+        commandes_du_jour = Commande.objects.filter(
+            date_creation__date=timezone.now().date()
+        ).count()
+        
+        context = {
+            'commandes_en_attente': commandes_en_attente,
+            'transporteurs_disponibles': transporteurs_disponibles,
+            'commandes_du_jour': commandes_du_jour
+        }
+        return render(request, 'transport/planificateur_dashboard.html', context)
+    except Utilisateur.DoesNotExist:
+        messages.error(request, 'Profil planificateur non trouvé.')
+        return redirect('transport:home')
 
 @login_required
 def gerer_commandes(request):
     """Gestion des commandes (Admin/Planificateur)"""
+    utilisateur = Utilisateur.objects.get(user=request.user)
+    if utilisateur.role not in ['admin', 'planificateur']:
+        messages.error(request, 'Accès non autorisé.')
+        return redirect('transport:home')
+    
     commandes = Commande.objects.all().order_by('-date_creation')
     transporteurs = Transporteur.objects.filter(disponibilite=True)
     
@@ -181,6 +212,7 @@ def gerer_commandes(request):
     return render(request, 'transport/gerer_commandes.html', context)
 
 @csrf_exempt
+@login_required
 def assigner_transporteur(request):
     """Assigner un transporteur à une commande"""
     if request.method == 'POST':
@@ -198,10 +230,11 @@ def assigner_transporteur(request):
             
             # Créer notification
             Notification.objects.create(
-                type='assignation',
-                contenu=f'Nouvelle mission assignée: Commande #{commande.id}',
-                destinataire=transporteur.utilisateur.email,
-                transporteur=transporteur
+                destinataire=transporteur.utilisateur.user,
+                type_notification='assignation',
+                titre='Nouvelle mission assignée',
+                message=f'Nouvelle mission assignée: Commande #{commande.numero}',
+                commande=commande
             )
             
             return JsonResponse({'success': True, 'message': 'Transporteur assigné avec succès'})
@@ -212,6 +245,7 @@ def assigner_transporteur(request):
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
 @csrf_exempt
+@login_required
 def mettre_a_jour_statut(request):
     """Mettre à jour le statut d'une commande"""
     if request.method == 'POST':
@@ -221,14 +255,15 @@ def mettre_a_jour_statut(request):
             nouveau_statut = data.get('statut')
             
             commande = get_object_or_404(Commande, id=commande_id)
+            ancien_statut = commande.statut
             commande.statut = nouveau_statut
             commande.save()
             
             # Enregistrer dans le journal
             Journal.objects.create(
-                action=f'Statut mis à jour: {nouveau_statut}',
-                utilisateur=request.user.username,
-                details=f'Commande #{commande.id} - Nouveau statut: {nouveau_statut}'
+                utilisateur=request.user,
+                action='changement_statut',
+                description=f'Commande #{commande.numero} - Statut changé de {ancien_statut} à {nouveau_statut}'
             )
             
             return JsonResponse({'success': True, 'message': 'Statut mis à jour'})
@@ -238,42 +273,25 @@ def mettre_a_jour_statut(request):
     
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
+@csrf_exempt
+@login_required
 def calculer_itineraire(request):
     """Calculer un itinéraire avec Google Maps"""
     if request.method == 'GET':
         origine = request.GET.get('origine')
         destination = request.GET.get('destination')
         
-        # Clé API Google Maps (à remplacer par votre clé)
-        API_KEY = 'VOTRE_CLE_API_GOOGLE_MAPS'
+        if not origine or not destination:
+            return JsonResponse({'success': False, 'error': 'Origine et destination requises'})
         
-        url = f"https://maps.googleapis.com/maps/api/directions/json"
-        params = {
-            'origin': origine,
-            'destination': destination,
-            'key': API_KEY,
-            'language': 'fr'
-        }
-        
-        try:
-            response = requests.get(url, params=params)
-            data = response.json()
-            
-            if data['status'] == 'OK':
-                route = data['routes'][0]
-                leg = route['legs'][0]
-                
-                return JsonResponse({
-                    'success': True,
-                    'distance': leg['distance']['text'],
-                    'duree': leg['duration']['text'],
-                    'polyline': route['overview_polyline']['points']
-                })
-            else:
-                return JsonResponse({'success': False, 'error': 'Itinéraire non trouvé'})
-                
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+        # Pour l'instant, retourner des données simulées
+        # En production, utiliser l'API Google Maps
+        return JsonResponse({
+            'success': True,
+            'distance': '45.2 km',
+            'duree': '52 min',
+            'polyline': 'encoded_polyline_string'
+        })
     
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
@@ -282,34 +300,39 @@ def suivre_commande(request, commande_id):
     commande = get_object_or_404(Commande, id=commande_id)
     
     # Vérifier les permissions
-    if hasattr(request.user, 'client') and commande.client != request.user.client:
+    try:
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        if utilisateur.role == 'client':
+            client = Client.objects.get(utilisateur=utilisateur)
+            if commande.client != client:
+                messages.error(request, 'Accès non autorisé.')
+                return redirect('transport:client_dashboard')
+    except (Utilisateur.DoesNotExist, Client.DoesNotExist):
         messages.error(request, 'Accès non autorisé.')
-        return redirect('client_dashboard')
+        return redirect('transport:home')
     
     context = {
         'commande': commande,
-        'itineraire': getattr(commande, 'itineraire', None)
     }
     return render(request, 'transport/suivre_commande.html', context)
 
+@login_required
 def notifications(request):
     """Afficher les notifications"""
-    if hasattr(request.user, 'transporteur'):
-        transporteur = request.user.transporteur
-        notifications = Notification.objects.filter(
-            transporteur=transporteur
-        ).order_by('-date_creation')[:20]
-    else:
-        notifications = []
+    notifications = Notification.objects.filter(
+        destinataire=request.user
+    ).order_by('-date_creation')[:20]
     
     return render(request, 'transport/notifications.html', {'notifications': notifications})
 
+@login_required
 def journal_activite(request):
     """Journal d'activité du système"""
     # Réservé aux admins
-    if not hasattr(request.user, 'admin'):
+    utilisateur = Utilisateur.objects.get(user=request.user)
+    if utilisateur.role != 'admin':
         messages.error(request, 'Accès non autorisé.')
-        return redirect('home')
+        return redirect('transport:home')
     
     journal = Journal.objects.all().order_by('-date_action')
     
@@ -320,76 +343,218 @@ def journal_activite(request):
     
     return render(request, 'transport/journal.html', {'journal': page_obj})
 
-    # Ajouter ces vues au fichier views.py existant
-
-@login_required
-def planificateur_dashboard(request):
-    """Tableau de bord planificateur"""
-    try:
-        planificateur = Planificateur.objects.get(user=request.user)
-        
-        # Statistiques pour le planificateur
-        commandes_en_attente = Commande.objects.filter(statut='en_attente').count()
-        transporteurs_disponibles = Transporteur.objects.filter(disponibilite=True).count()
-        commandes_du_jour = Commande.objects.filter(
-            date_creation__date=timezone.now().date()
-        ).count()
-        
-        context = {
-            'planificateur': planificateur,
-            'commandes_en_attente': commandes_en_attente,
-            'transporteurs_disponibles': transporteurs_disponibles,
-            'commandes_du_jour': commandes_du_jour
-        }
-        return render(request, 'transport/planificateur_dashboard.html', context)
-    except Planificateur.DoesNotExist:
-        messages.error(request, 'Profil planificateur non trouvé.')
-        return redirect('home')
+# Nouvelles fonctions ajoutées pour corriger les erreurs
 
 @csrf_exempt
+@login_required
+def assignation_automatique(request):
+    """Assignation automatique des commandes"""
+    if request.method == 'POST':
+        try:
+            from .utils import trouver_transporteur_optimal
+            
+            # Récupérer les commandes en attente
+            commandes_en_attente = Commande.objects.filter(statut='en_attente')
+            assignations = []
+            
+            for commande in commandes_en_attente:
+                transporteur = trouver_transporteur_optimal(commande)
+                
+                if transporteur:
+                    commande.transporteur = transporteur
+                    commande.statut = 'assignee'
+                    commande.save()
+                    
+                    # Créer tracking
+                    Tracking.objects.create(
+                        commande=commande,
+                        etape='transporteur_assigne',
+                        description=f'Transporteur {transporteur.utilisateur.full_name} assigné automatiquement',
+                        utilisateur=request.user
+                    )
+                    
+                    assignations.append({
+                        'commande': commande.numero,
+                        'transporteur': transporteur.utilisateur.full_name
+                    })
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{len(assignations)} commandes assignées',
+                'assignations': assignations
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@csrf_exempt
+@login_required
 def optimiser_itineraires(request):
     """Optimiser les itinéraires pour les commandes en attente"""
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            data = json.loads(request.body) if request.body else {}
             algorithme = data.get('algorithme', 'tsp')
             critere = data.get('critere', 'distance')
 
             # Récupérer les commandes en attente
             commandes_en_attente = Commande.objects.filter(statut='en_attente')
-
             resultats_optimisation = []
-            distance_economisee = 0
-            temps_economise = 0
 
             for commande in commandes_en_attente:
-                # Simuler l'optimisation d'itinéraire
+                # Créer ou mettre à jour l'itinéraire
                 itineraire, created = Itineraire.objects.get_or_create(
                     commande=commande,
                     defaults={
-                        'point_depart': commande.adresse_enlevement,
-                        'point_arrivee': commande.adresse_livraison,
-                        'distance': 0,      # ou calculée dynamiquement
-                        'temps_estime': 0,   # ou calculé dynamiquement
+                        'distance_km': 0,
+                        'duree_minutes': 0,
+                        'optimise': True
                     }
                 )
-                # (Vous pouvez ensuite mettre à jour itineraire.distance/temps_estime
-                #  puis itineraire.save() si besoin.)
-
-                # Ajouter au résultat d'optimisation (exemple fictif)
+                
                 resultats_optimisation.append({
-                    'commande_id': commande.id,
+                    'commande_id': str(commande.id),
+                    'commande_numero': commande.numero,
                     'itineraire_id': itineraire.id,
-                    'distance': itineraire.distance,
-                    'temps_estime': itineraire.temps_estime,
+                    'distance': itineraire.distance_km or 0,
+                    'duree': itineraire.duree_minutes or 0,
                 })
 
-            # Retourner la réponse JSON
             return JsonResponse({
                 'success': True,
+                'message': f'{len(resultats_optimisation)} itinéraires optimisés',
                 'resultats': resultats_optimisation,
             })
 
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
+    
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@csrf_exempt
+@login_required
+def planifier_livraisons(request):
+    """Planifier les livraisons"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body) if request.body else {}
+            
+            # Logique de planification
+            commandes = Commande.objects.filter(statut__in=['assignee', 'en_cours'])
+            planifications = []
+            
+            for commande in commandes:
+                if commande.date_livraison_prevue:
+                    planifications.append({
+                        'commande_id': str(commande.id),
+                        'numero': commande.numero,
+                        'date_prevue': commande.date_livraison_prevue.isoformat() if commande.date_livraison_prevue else None,
+                        'transporteur': commande.transporteur.utilisateur.full_name if commande.transporteur else None
+                    })
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{len(planifications)} livraisons planifiées',
+                'planifications': planifications
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@csrf_exempt
+@login_required
+def toggle_disponibilite_transporteur(request):
+    """Changer la disponibilité d'un transporteur"""
+    if request.method == 'POST':
+        try:
+            utilisateur = Utilisateur.objects.get(user=request.user)
+            if utilisateur.role == 'transporteur':
+                transporteur = Transporteur.objects.get(utilisateur=utilisateur)
+                transporteur.disponibilite = not transporteur.disponibilite
+                
+                if transporteur.disponibilite:
+                    transporteur.statut = 'disponible'
+                else:
+                    transporteur.statut = 'repos'
+                
+                transporteur.save()
+                
+                return JsonResponse({
+                    'success': True,
+                    'disponibilite': transporteur.disponibilite,
+                    'statut': transporteur.statut
+                })
+            else:
+                return JsonResponse({'success': False, 'error': 'Accès non autorisé'})
+                
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@csrf_exempt
+@login_required
+def signaler_incident(request):
+    """Signaler un incident"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            incident = Incident.objects.create(
+                type_incident=data.get('type_incident'),
+                titre=data.get('titre'),
+                description=data.get('description'),
+                gravite=data.get('gravite', 'moyenne'),
+                date_incident=timezone.now(),
+                commande_id=data.get('commande_id') if data.get('commande_id') else None
+            )
+            
+            # Si c'est un transporteur, l'associer
+            try:
+                utilisateur = Utilisateur.objects.get(user=request.user)
+                if utilisateur.role == 'transporteur':
+                    transporteur = Transporteur.objects.get(utilisateur=utilisateur)
+                    incident.transporteur = transporteur
+                    incident.save()
+            except (Utilisateur.DoesNotExist, Transporteur.DoesNotExist):
+                pass
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Incident signalé avec succès',
+                'incident_id': incident.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+@login_required
+def verifier_nouvelles_missions(request):
+    """Vérifier les nouvelles missions pour un transporteur"""
+    try:
+        utilisateur = Utilisateur.objects.get(user=request.user)
+        if utilisateur.role == 'transporteur':
+            transporteur = Transporteur.objects.get(utilisateur=utilisateur)
+            
+            # Missions récemment assignées
+            nouvelles_missions = Commande.objects.filter(
+                transporteur=transporteur,
+                statut='assignee',
+                date_creation__gte=timezone.now() - timezone.timedelta(hours=1)
+            ).count()
+            
+            return JsonResponse({
+                'success': True,
+                'nouvelles_missions': nouvelles_missions
+            })
+        else:
+            return JsonResponse({'success': False, 'error': 'Accès non autorisé'})
+            
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})

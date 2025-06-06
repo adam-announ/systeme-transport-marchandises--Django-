@@ -1,3 +1,4 @@
+# backend/transport/urls.py - Version corrigée
 from django.urls import path
 from . import views
 
@@ -17,7 +18,7 @@ urlpatterns = [
     
     # Gestion des commandes
     path('commande/creer/', views.creer_commande, name='creer_commande'),
-    path('commande/suivre/<int:commande_id>/', views.suivre_commande, name='suivre_commande'),
+    path('commande/suivre/<uuid:commande_id>/', views.suivre_commande, name='suivre_commande'),
     path('commandes/gerer/', views.gerer_commandes, name='gerer_commandes'),
     
     # API endpoints - Gestion des commandes

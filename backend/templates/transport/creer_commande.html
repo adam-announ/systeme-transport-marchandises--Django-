@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Créer une commande - TransportPro{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Créer une nouvelle commande</h1>
+    
+    <form method="post" class="bg-white rounded-lg shadow-md p-6">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">Type de marchandise *</label>
+                <select name="type_marchandise" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    <option value="">Sélectionner...</option>
+                    <option value="electronique">Électronique</option>
+                    <option value="textile">Textile</option>
+                    <option value="alimentaire">Alimentaire</option>
+                    <option value="mobilier">Mobilier</option>
+                    <option value="autre">Autre</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">Poids (kg) *</label>
+                <input type="number" name="poids" step="0.1" min="0.1" 
+                       class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Description</label>
+            <textarea name="description" rows="3" 
+                      class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500"></textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Adresse d'enlèvement</h3>
+                <div class="space-y-3">
+                    <input type="text" name="rue_enlevement" placeholder="Rue" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    <input type="text" name="ville_enlevement" placeholder="Ville" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    <input type="text" name="code_postal_enlevement" placeholder="Code postal" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+            </div>
+            
+            <div>
+                <h3 class="text-lg font-semibold mb-3">Adresse de livraison</h3>
+                <div class="space-y-3">
+                    <input type="text" name="rue_livraison" placeholder="Rue" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    <input type="text" name="ville_livraison" placeholder="Ville" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                    <input type="text" name="code_postal_livraison" placeholder="Code postal" 
+                           class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500" required>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-bold mb-2">Priorité</label>
+            <select name="priorite" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:border-blue-500">
+                <option value="normale">Normale</option>
+                <option value="haute">Haute</option>
+                <option value="urgente">Urgente</option>
+            </select>
+        </div>
+        
+        <div class="flex space-x-4">
+            <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+                Créer la commande
+            </button>
+            <a href="{% url 'transport:client_dashboard' %}" 
+               class="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600">
+                Annuler
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

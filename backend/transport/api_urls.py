@@ -1,4 +1,4 @@
-# transport/api_urls.py
+# backend/transport/api_urls.py - Version simplifiée
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken.views import obtain_auth_token
@@ -39,50 +39,11 @@ urlpatterns = [
     path('commandes/<uuid:pk>/bon-livraison/', api_views.BonLivraisonView.as_view(), name='bon_livraison'),
     
     # Gestion des transporteurs
-    path('transporteurs/<int:pk>/toggle-disponibilite/', api_views.ToggleDisponibiliteView.as_view(), name='toggle_disponibilite'),
-    path('transporteurs/<int:pk>/position/', api_views.UpdatePositionView.as_view(), name='update_position'),
     path('transporteurs/disponibles/', api_views.TransporteursDisponiblesView.as_view(), name='transporteurs_disponibles'),
     
     # Planification et optimisation
     path('assignation-automatique/', api_views.assignation_automatique, name='assignation_automatique'),
-    path('optimiser-itineraires/', api_views.OptimiserItinerairesView.as_view(), name='optimiser_itineraires'),
     path('calculer-itineraire/', api_views.calculer_itineraire_api, name='calculer_itineraire'),
-    
-    # Géolocalisation et cartes
-    path('geocoding/', api_views.GeocodingView.as_view(), name='geocoding'),
-    path('reverse-geocoding/', api_views.ReverseGeocodingView.as_view(), name='reverse_geocoding'),
-    path('traffic-info/', api_views.TrafficInfoView.as_view(), name='traffic_info'),
-    path('weather-info/', api_views.WeatherInfoView.as_view(), name='weather_info'),
-    
-    # Rapports et exports
-    path('export/commandes/', api_views.ExportCommandesView.as_view(), name='export_commandes'),
-    path('export/transporteurs/', api_views.ExportTransporteursView.as_view(), name='export_transporteurs'),
-    path('reports/performance/', api_views.PerformanceReportView.as_view(), name='performance_report'),
-    path('reports/financial/', api_views.FinancialReportView.as_view(), name='financial_report'),
-    
-    # Upload de fichiers
-    path('upload/image/', api_views.ImageUploadView.as_view(), name='upload_image'),
-    path('upload/document/', api_views.DocumentUploadView.as_view(), name='upload_document'),
-    
-    # Statistiques et métriques
-    path('stats/overview/', api_views.OverviewStatsView.as_view(), name='overview_stats'),
-    path('stats/commandes/', api_views.CommandeStatsView.as_view(), name='commande_stats'),
-    path('stats/transporteurs/', api_views.TransporteurStatsView.as_view(), name='transporteur_stats'),
-    path('stats/performance/', api_views.PerformanceStatsView.as_view(), name='performance_stats'),
-    
-    # Recherche avancée
-    path('search/commandes/', api_views.SearchCommandesView.as_view(), name='search_commandes'),
-    path('search/transporteurs/', api_views.SearchTransporteursView.as_view(), name='search_transporteurs'),
-    path('search/clients/', api_views.SearchClientsView.as_view(), name='search_clients'),
-    
-    # Webhooks
-    path('webhooks/tracking-update/', api_views.TrackingWebhookView.as_view(), name='tracking_webhook'),
-    path('webhooks/payment-confirmation/', api_views.PaymentWebhookView.as_view(), name='payment_webhook'),
-    
-    # Configuration et paramètres
-    path('config/', api_views.ConfigurationView.as_view(), name='configuration'),
-    path('parametres/', api_views.ParametresView.as_view(), name='parametres'),
-    path('parametres/<str:nom>/', api_views.ParametreDetailView.as_view(), name='parametre_detail'),
     
     # Monitoring et santé
     path('health/', api_views.HealthCheckView.as_view(), name='health_check'),
