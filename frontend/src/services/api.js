@@ -565,4 +565,128 @@ export const transporteurService = {
   },
 };
 
-// Service
+export default api;
+
+// Service d'authentification (à la fin du fichier)
+export const authService = {
+  login: async (credentials) => {
+    const response = await api.post('/auth/login/', credentials);
+    return response.data;
+  },
+
+  register: async (userData) => {
+    const response = await api.post('/auth/register/', userData);
+    return response.data;
+  },
+
+  logout: async () => {
+    await api.post('/auth/logout/');
+  },
+
+  getCurrentUser: async () => {
+    const response = await api.get('/auth/user/');
+    return response.data;
+  },
+
+  refreshToken: async () => {
+    const response = await api.post('/auth/refresh/');
+    return response.data;
+  },
+};
+
+// Service des commandes (à la fin du fichier)
+export const commandeService = {
+  getAll: async (params = {}) => {
+    const response = await api.get('/commandes/', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/commandes/${id}/`);
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/commandes/', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.patch(`/commandes/${id}/`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    await api.delete(`/commandes/${id}/`);
+  },
+
+  assignTransporteur: async (commandeId, transporteurId) => {
+    const response = await api.post(`/commandes/${commandeId}/assigner-transporteur/`, {
+      transporteur_id: transporteurId,
+    });
+    return response.data;
+  },
+
+  changeStatus: async (commandeId, status, data = {}) => {
+    const response = await api.post(`/commandes/${commandeId}/changer-statut/`, {
+      statut: status,
+      ...data,
+    });
+    return response.data;
+  },
+
+  getTracking: async (commandeId) => {
+    const response = await api.get(`/commandes/${commandeId}/tracking/`);
+    return response.data;
+  },
+
+  getStatistics: async () => {
+    const response = await api.get('/commandes/statistiques/');
+    return response.data;
+  },
+};
+
+// Service des transporteurs (à la fin du fichier)
+export const transporteurService = {
+  getAll: async (params = {}) => {
+    const response = await api.get('/transporteurs/', { params });
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await api.get(`/transporteurs/${id}/`);
+    return response.data;
+  },
+
+  getAvailable: async () => {
+    const response = await api.get('/transporteurs/disponibles/');
+    return response.data;
+  },
+
+  toggleDisponibilite: async (id) => {
+    const response = await api.post(`/transporteurs/${id}/toggle_disponibilite/`);
+    return response.data;
+  },
+
+  updatePosition: async (id, latitude, longitude) => {
+    const response = await api.post(`/transporteurs/${id}/update_position/`, {
+      latitude,
+      longitude,
+    });
+    return response.data;
+  },
+
+  create: async (data) => {
+    const response = await api.post('/transporteurs/', data);
+    return response.data;
+  },
+
+  update: async (id, data) => {
+    const response = await api.patch(`/transporteurs/${id}/`, data);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    await api.delete(`/transporteurs/${id}/`);
+  },
+};
