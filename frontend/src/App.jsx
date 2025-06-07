@@ -85,44 +85,151 @@ function App() {
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />
                   
-                  {/* Routes protégées */}
+                  {/* Routes protégées avec Layout */}
                   <Route 
                     path="/*" 
                     element={
                       <ProtectedRoute>
-                        <Layout />
+                        <Layout>
+                          <Routes>
+                            {/* Client routes */}
+                            <Route 
+                              path="client" 
+                              element={
+                                <ProtectedRoute allowedRoles={['client']}>
+                                  <ClientDashboard />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="client/commandes/new" 
+                              element={
+                                <ProtectedRoute allowedRoles={['client']}>
+                                  <CreateCommande />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="client/commandes" 
+                              element={
+                                <ProtectedRoute allowedRoles={['client']}>
+                                  <CommandeList />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="client/commandes/:id/track" 
+                              element={
+                                <ProtectedRoute allowedRoles={['client']}>
+                                  <TrackCommande />
+                                </ProtectedRoute>
+                              } 
+                            />
+
+                            {/* Transporteur routes */}
+                            <Route 
+                              path="transporteur" 
+                              element={
+                                <ProtectedRoute allowedRoles={['transporteur']}>
+                                  <TransporteurDashboard />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="transporteur/missions" 
+                              element={
+                                <ProtectedRoute allowedRoles={['transporteur']}>
+                                  <MissionList />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="transporteur/navigation/:commandeId" 
+                              element={
+                                <ProtectedRoute allowedRoles={['transporteur']}>
+                                  <Navigation />
+                                </ProtectedRoute>
+                              } 
+                            />
+
+                            {/* Admin routes */}
+                            <Route 
+                              path="admin" 
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <AdminDashboard />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="admin/commandes" 
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <CommandeManagement />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="admin/transporteurs" 
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <TransporteurManagement />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="admin/clients" 
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <ClientManagement />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="admin/settings" 
+                              element={
+                                <ProtectedRoute allowedRoles={['admin']}>
+                                  <Settings />
+                                </ProtectedRoute>
+                              } 
+                            />
+
+                            {/* Planificateur routes */}
+                            <Route 
+                              path="planificateur" 
+                              element={
+                                <ProtectedRoute allowedRoles={['planificateur']}>
+                                  <PlanificateurDashboard />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="planificateur/optimization" 
+                              element={
+                                <ProtectedRoute allowedRoles={['planificateur']}>
+                                  <OptimizationPanel />
+                                </ProtectedRoute>
+                              } 
+                            />
+                            <Route 
+                              path="planificateur/assignment" 
+                              element={
+                                <ProtectedRoute allowedRoles={['planificateur']}>
+                                  <AssignmentPanel />
+                                </ProtectedRoute>
+                              } 
+                            />
+
+                            {/* Redirect root to appropriate dashboard */}
+                            <Route path="/" element={<DashboardRedirect />} />
+                            
+                            {/* 404 route */}
+                            <Route path="*" element={<Navigate to="/" replace />} />
+                          </Routes>
+                        </Layout>
                       </ProtectedRoute>
                     }
-                  >
-                    {/* Client routes */}
-                    <Route path="client" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
-                    <Route path="client/commandes/new" element={<ProtectedRoute allowedRoles={['client']}><CreateCommande /></ProtectedRoute>} />
-                    <Route path="client/commandes" element={<ProtectedRoute allowedRoles={['client']}><CommandeList /></ProtectedRoute>} />
-                    <Route path="client/commandes/:id/track" element={<ProtectedRoute allowedRoles={['client']}><TrackCommande /></ProtectedRoute>} />
-
-                    {/* Transporteur routes */}
-                    <Route path="transporteur" element={<ProtectedRoute allowedRoles={['transporteur']}><TransporteurDashboard /></ProtectedRoute>} />
-                    <Route path="transporteur/missions" element={<ProtectedRoute allowedRoles={['transporteur']}><MissionList /></ProtectedRoute>} />
-                    <Route path="transporteur/navigation/:commandeId" element={<ProtectedRoute allowedRoles={['transporteur']}><Navigation /></ProtectedRoute>} />
-
-                    {/* Admin routes */}
-                    <Route path="admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
-                    <Route path="admin/commandes" element={<ProtectedRoute allowedRoles={['admin']}><CommandeManagement /></ProtectedRoute>} />
-                    <Route path="admin/transporteurs" element={<ProtectedRoute allowedRoles={['admin']}><TransporteurManagement /></ProtectedRoute>} />
-                    <Route path="admin/clients" element={<ProtectedRoute allowedRoles={['admin']}><ClientManagement /></ProtectedRoute>} />
-                    <Route path="admin/settings" element={<ProtectedRoute allowedRoles={['admin']}><Settings /></ProtectedRoute>} />
-
-                    {/* Planificateur routes */}
-                    <Route path="planificateur" element={<ProtectedRoute allowedRoles={['planificateur']}><PlanificateurDashboard /></ProtectedRoute>} />
-                    <Route path="planificateur/optimization" element={<ProtectedRoute allowedRoles={['planificateur']}><OptimizationPanel /></ProtectedRoute>} />
-                    <Route path="planificateur/assignment" element={<ProtectedRoute allowedRoles={['planificateur']}><AssignmentPanel /></ProtectedRoute>} />
-
-                    {/* Redirect root to appropriate dashboard */}
-                    <Route path="/" element={<DashboardRedirect />} />
-                  </Route>
-
-                  {/* 404 */}
-                  <Route path="*" element={<Navigate to="/login" replace />} />
+                  />
                 </Routes>
               </div>
               

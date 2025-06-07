@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Wrapper } from '@googlemaps/react-wrapper';
 
-const MapComponent = ({ pickup, delivery, onRouteCalculated, height = '400px' }) => {
+const MapComponent = ({ pickup, delivery, currentPosition, onRouteCalculated, height = '400px' }) => {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [directionsService, setDirectionsService] = useState(null);
   const [directionsRenderer, setDirectionsRenderer] = useState(null);
 
   useEffect(() => {
-    if (mapRef.current && !map) {
+    if (mapRef.current && !map && window.google) {
       const newMap = new window.google.maps.Map(mapRef.current, {
         center: { lat: 33.5731, lng: -7.5898 }, // Casablanca par défaut
         zoom: 8,

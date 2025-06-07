@@ -18,14 +18,14 @@ import {
   FunnelIcon,
   CheckIcon,
   XMarkIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  BanknotesIcon // Remplace CurrencyEuroIcon
 } from '@heroicons/react/24/outline';
 
 import { dashboardService, commandeService, transporteurService, exportService } from '../../services/api';
 import StatCard from '../../components/common/StatCard';
 import Loading from '../../components/common/Loading';
 import Modal from '../../components/common/Modal';
-import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DashboardChart from '../../components/charts/DashboardChart';
 
 const AdminDashboard = () => {
@@ -166,7 +166,7 @@ const AdminDashboard = () => {
       </motion.div>
 
       {/* Alertes */}
-      {incidents_recents.length > 0 && (
+      {incidents_recents?.length > 0 && (
         <motion.div 
           className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-4"
           variants={itemVariants}
@@ -197,7 +197,7 @@ const AdminDashboard = () => {
       >
         <StatCard
           title="Total Commandes"
-          value={statistiques.total_commandes}
+          value={statistiques?.total_commandes || 0}
           icon={ChartBarIcon}
           color="blue"
           trend="+12% ce mois"
@@ -205,14 +205,14 @@ const AdminDashboard = () => {
         />
         <StatCard
           title="En cours"
-          value={statistiques.commandes_en_cours}
+          value={statistiques?.commandes_en_cours || 0}
           icon={ArrowPathIcon}
           color="yellow"
-          trend={`${statistiques.commandes_en_cours} actives`}
+          trend={`${statistiques?.commandes_en_cours || 0} actives`}
         />
         <StatCard
           title="Transporteurs"
-          value={`${statistiques.transporteurs_disponibles}/${statistiques.total_transporteurs}`}
+          value={`${statistiques?.transporteurs_disponibles || 0}/${statistiques?.total_transporteurs || 0}`}
           icon={TruckIcon}
           color="green"
           trend="Disponibles/Total"
@@ -220,8 +220,8 @@ const AdminDashboard = () => {
         />
         <StatCard
           title="Chiffre d'affaires"
-          value={`${statistiques.chiffre_affaires_mensuel?.toLocaleString('fr-FR')} €`}
-          icon={CurrencyEuroIcon}
+          value={`${statistiques?.chiffre_affaires_mensuel?.toLocaleString('fr-FR') || '0'} €`}
+          icon={BanknotesIcon}
           color="purple"
           trend="+15% ce mois"
         />
@@ -243,7 +243,7 @@ const AdminDashboard = () => {
             Gérer Commandes
           </h3>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            {statistiques.commandes_en_attente} en attente
+            {statistiques?.commandes_en_attente || 0} en attente
           </p>
         </Link>
 
@@ -258,7 +258,7 @@ const AdminDashboard = () => {
             Transporteurs
           </h3>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            {statistiques.transporteurs_disponibles} disponibles
+            {statistiques?.transporteurs_disponibles || 0} disponibles
           </p>
         </Link>
 
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
             Clients
           </h3>
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            {statistiques.total_clients} clients
+            {statistiques?.total_clients || 0} clients
           </p>
         </Link>
 
@@ -338,7 +338,7 @@ const AdminDashboard = () => {
             </div>
 
             <div className="space-y-4">
-              {commandes_recentes.slice(0, 5).map((commande) => (
+              {commandes_recentes?.slice(0, 5).map((commande) => (
                 <div
                   key={commande.id}
                   className="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
@@ -364,203 +364,11 @@ const AdminDashboard = () => {
                     <EyeIcon className="w-4 h-4" />
                   </button>
                 </div>
-              ))}
+              )) || []}
             </div>
           </div>
         </motion.div>
       </div>
-
-      {/* Commandes en attente */}
-      <motion.div variants={itemVariants}>
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Commandes nécessitant une action
-              </h3>
-              
-              <div className="mt-4 sm:mt-0 flex space-x-3">
-                <div className="relative">
-                  <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Rechercher..."
-                    value={commandeFilters.search}
-                    onChange={(e) => setCommandeFilters(prev => ({ ...prev, search: e.target.value }))}
-                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700"
-                  />
-                </div>
-                
-                <select
-                  value={commandeFilters.statut}
-                  onChange={(e) => setCommandeFilters(prev => ({ ...prev, statut: e.target.value }))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700"
-                >
-                  <option value="">Tous les statuts</option>
-                  <option value="en_attente">En attente</option>
-                  <option value="assignee">Assignée</option>
-                  <option value="en_cours">En cours</option>
-                  <option value="livree">Livrée</option>
-                  <option value="annulee">Annulée</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Commande
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Itinéraire
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Transporteur
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                {isLoadingCommandes ? (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center">
-                      <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : commandesData?.results?.length > 0 ? (
-                  commandesData.results.map((commande) => (
-                    <tr key={commande.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            #{commande.numero}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(commande.date_creation).toLocaleDateString('fr-FR')}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {commande.client_nom}
-                          </div>
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {commande.type_marchandise} - {commande.poids} kg
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          <div>{commande.adresse_enlevement?.ville}</div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">↓</div>
-                          <div>{commande.adresse_livraison?.ville}</div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {commande.transporteur_nom ? (
-                          <div className="text-sm">
-                            <div className="font-medium text-gray-900 dark:text-white">
-                              {commande.transporteur_nom}
-                            </div>
-                            <div className="text-green-600 text-xs">Assigné</div>
-                          </div>
-                        ) : (
-                          <select
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                handleAssignTransporteur(commande.id, e.target.value);
-                              }
-                            }}
-                            className="text-sm border border-gray-300 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700"
-                            defaultValue=""
-                          >
-                            <option value="">Assigner transporteur</option>
-                            {transporteursData?.filter(t => t.disponibilite).map(transporteur => (
-                              <option key={transporteur.id} value={transporteur.id}>
-                                {transporteur.utilisateur.full_name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusStyle(commande.statut)}`}>
-                          {commande.statut_display}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => setSelectedCommande(commande)}
-                            className="text-blue-600 hover:text-blue-900"
-                            title="Voir détails"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                          </button>
-                          
-                          {commande.statut === 'en_attente' && (
-                            <button
-                              onClick={() => handleStatusChange(commande.id, 'assignee')}
-                              className="text-green-600 hover:text-green-900"
-                              title="Marquer comme assignée"
-                            >
-                              <CheckIcon className="h-4 w-4" />
-                            </button>
-                          )}
-                          
-                          <button
-                            onClick={() => handleStatusChange(commande.id, 'annulee')}
-                            className="text-red-600 hover:text-red-900"
-                            title="Annuler"
-                          >
-                            <XMarkIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500 dark:text-gray-400">
-                      Aucune commande trouvée
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {commandesData?.count > 10 && (
-            <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Affichage de {commandesData.results.length} sur {commandesData.count} commandes
-                </div>
-                <Link
-                  to="/admin/commandes"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Voir toutes les commandes →
-                </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </motion.div>
 
       {/* Modal détails commande */}
       {selectedCommande && (
@@ -605,40 +413,6 @@ const AdminDashboard = () => {
                 </p>
               </div>
             </div>
-
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                Itinéraire
-              </h4>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm">
-                    <div className="font-medium">Enlèvement</div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      {selectedCommande.adresse_enlevement?.rue}, {selectedCommande.adresse_enlevement?.ville}
-                    </div>
-                  </div>
-                  <div className="text-gray-400">→</div>
-                  <div className="text-sm">
-                    <div className="font-medium">Livraison</div>
-                    <div className="text-gray-600 dark:text-gray-400">
-                      {selectedCommande.adresse_livraison?.rue}, {selectedCommande.adresse_livraison?.ville}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {selectedCommande.description && (
-              <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Description
-                </h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedCommande.description}
-                </p>
-              </div>
-            )}
 
             <div className="flex justify-end space-x-3">
               <button
