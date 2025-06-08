@@ -1,0 +1,54 @@
+<!-- templates/transport/supprimer_commande.html -->
+{% extends 'base.html' %}
+
+{% block title %}Annuler la commande #{{ commande.id }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2>Annuler la commande #{{ commande.id }}</h2>
+    
+    <div style="background-color: #fff3cd; color: #856404; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+        <strong>Attention!</strong> Cette action est irréversible.
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Détails de la commande</h3>
+        <table>
+            <tr>
+                <td><strong>Type de marchandise:</strong></td>
+                <td>{{ commande.type_marchandise }}</td>
+            </tr>
+            <tr>
+                <td><strong>Poids:</strong></td>
+                <td>{{ commande.poids }} kg</td>
+            </tr>
+            <tr>
+                <td><strong>Date de création:</strong></td>
+                <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Statut actuel:</strong></td>
+                <td>
+                    <span class="status-badge status-{{ commande.statut|lower }}">
+                        {{ commande.get_statut_display }}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    <form method="post" style="margin-top: 2rem;">
+        {% csrf_token %}
+        <p>Êtes-vous sûr de vouloir annuler cette commande?</p>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn" style="background-color: #dc3545;">
+                Oui, annuler la commande
+            </button>
+            <a href="{% url 'suivre_commande' commande.id %}" class="btn" style="background-color: #6c757d;">
+                Non, retour
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

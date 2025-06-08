@@ -1,0 +1,37 @@
+<!-- templates/transport/generer_rapport.html -->
+{% extends 'base.html' %}
+
+{% block title %}Générer un rapport{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 600px; margin: 0 auto;">
+    <h2>Générer un rapport de commandes</h2>
+    
+    <p>Générez un rapport de vos commandes pour une période donnée.</p>
+    
+    <form method="post" style="margin-top: 2rem;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.date_debut.id_for_label }}">{{ form.date_debut.label }}:</label>
+            {{ form.date_debut }}
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.date_fin.id_for_label }}">{{ form.date_fin.label }}:</label>
+            {{ form.date_fin }}
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.format_export.id_for_label }}">{{ form.format_export.label }}:</label>
+            {{ form.format_export }}
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%;">Générer le rapport</button>
+    </form>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'liste_commandes' %}">Retour à mes commandes</a>
+    </div>
+</div>
+{% endblock %}

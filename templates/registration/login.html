@@ -1,0 +1,35 @@
+<!-- templates/registration/login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Connexion{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+    <h2 style="text-align: center; margin-bottom: 2rem;">Connexion</h2>
+    
+    {% if form.errors %}
+        <div style="background-color: #f8d7da; color: #721c24; padding: 1rem; border-radius: 4px; margin-bottom: 1rem;">
+            Nom d'utilisateur ou mot de passe incorrect.
+        </div>
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.username.id_for_label }}">Nom d'utilisateur:</label>
+            <input type="text" name="username" class="form-control" required>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label for="{{ form.password.id_for_label }}">Mot de passe:</label>
+            <input type="password" name="password" class="form-control" required>
+        </div>
+        
+        <button type="submit" class="btn" style="width: 100%; margin-bottom: 1rem;">Se connecter</button>
+    </form>
+    
+    <p style="text-align: center;">
+        Pas encore de compte? <a href="{% url 'inscription' %}">S'inscrire</a>
+    </p>
+</div>
+{% endblock %}

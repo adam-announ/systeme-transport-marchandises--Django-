@@ -1,0 +1,74 @@
+<!-- templates/transport/creer_commande.html -->
+{% extends 'base.html' %}
+
+{% block title %}Créer une commande{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Nouvelle Commande</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Informations de la marchandise</h3>
+        <div style="margin-bottom: 1rem;">
+            <label>Type de marchandise:</label>
+            {{ commande_form.type_marchandise }}
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label>Poids (kg):</label>
+            {{ commande_form.poids }}
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Adresse d'enlèvement</h3>
+        <div style="margin-bottom: 1rem;">
+            <label>Rue:</label>
+            {{ adresse_enlevement_form.rue }}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label>Ville:</label>
+                {{ adresse_enlevement_form.ville }}
+            </div>
+            <div>
+                <label>Code postal:</label>
+                {{ adresse_enlevement_form.code_postal }}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 1rem;">
+            <label>Pays:</label>
+            {{ adresse_enlevement_form.pays }}
+        </div>
+        
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Adresse de livraison</h3>
+        <div style="margin-bottom: 1rem;">
+            <label>Rue:</label>
+            {{ adresse_livraison_form.rue }}
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div>
+                <label>Ville:</label>
+                {{ adresse_livraison_form.ville }}
+            </div>
+            <div>
+                <label>Code postal:</label>
+                {{ adresse_livraison_form.code_postal }}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 2rem;">
+            <label>Pays:</label>
+            {{ adresse_livraison_form.pays }}
+        </div>
+        
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn">Créer la commande</button>
+            <a href="{% url 'liste_commandes' %}" class="btn" style="background-color: #6c757d;">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+<!-- templates/transport/suivre_commande.html -->
+{% extends 'base.html' %}
+
+{% block title %}Suivi de commande #{{ commande.id }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Suivi de la commande #{{ commande.id }}</h2>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Statut actuel</h3>
+        <p style="font-size: 1.2rem;">
+            <span class="status-badge status-{{ commande.statut|lower }}">
+                {{ commande.get_statut_display }}
+            </span>
+        </p>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Informations de la commande</h3>
+        <table>
+            <tr>
+                <td><strong>Date de création:</strong></td>
+                <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+            </tr>
+            <tr>
+                <td><strong>Type de marchandise:</strong></td>
+                <td>{{ commande.type_marchandise }}</td>
+            </tr>
+            <tr>
+                <td><strong>Poids:</strong></td>
+                <td>{{ commande.poids }} kg</td>
+            </tr>
+            {% if commande.transporteur %}
+            <tr>
+                <td><strong>Transporteur:</strong></td>
+                <td>{{ commande.transporteur.matricule }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Adresses</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                <h4>Enlèvement</h4>
+                <p>
+                    {{ commande.adresse_enlevement.rue }}<br>
+                    {{ commande.adresse_enlevement.code_postal }} {{ commande.adresse_enlevement.ville }}<br>
+                    {{ commande.adresse_enlevement.pays }}
+                </p>
+            </div>
+            <div>
+                <h4>Livraison</h4>
+                <p>
+                    {{ commande.adresse_livraison.rue }}<br>
+                    {{ commande.adresse_livraison.code_postal }} {{ commande.adresse_livraison.ville }}<br>
+                    {{ commande.adresse_livraison.pays }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Historique du statut</h3>
+        <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px;">
+            <p>{{ commande.date_creation|date:"d/m/Y H:i" }} - Commande créée</p>
+            {% if commande.statut != 'EN_ATTENTE' %}
+                <p>Statut actuel: {{ commande.get_statut_display }}</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+        <a href="{% url 'liste_commandes' %}" class="btn">Retour à la liste</a>
+        {% if commande.statut == 'EN_ATTENTE' %}
+            <a href="{% url 'supprimer_commande' commande.id %}" class="btn" style="background-color: #dc3545;">
+                Annuler la commande
+            </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
