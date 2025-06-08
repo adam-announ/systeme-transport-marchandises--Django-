@@ -1,0 +1,19 @@
+<!-- templates/transport/index.html -->
+{% extends 'base.html' %}
+
+{% block title %}Accueil - Système de Transport{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h1>Bienvenue sur le Système de Transport de Marchandises</h1>
+    <p>Notre plateforme vous permet de gérer efficacement vos commandes de transport.</p>
+    
+    {% if user.is_authenticated %}
+        <p>Bonjour {{ user.username }}!</p>
+        <a href="{% url 'creer_commande' %}" class="btn">Créer une nouvelle commande</a>
+    {% else %}
+        <p>Connectez-vous pour commencer à utiliser nos services.</p>
+        <a href="{% url 'login' %}" class="btn">Se connecter</a>
+    {% endif %}
+</div>
+{% endblock %}

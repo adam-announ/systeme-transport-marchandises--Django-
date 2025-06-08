@@ -1,0 +1,45 @@
+<!-- templates/transport/liste_commandes.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mes Commandes{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Mes Commandes</h2>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>N° Commande</th>
+                <th>Date</th>
+                <th>Type de marchandise</th>
+                <th>Poids</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for commande in commandes %}
+            <tr>
+                <td>#{{ commande.id }}</td>
+                <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+                <td>{{ commande.type_marchandise }}</td>
+                <td>{{ commande.poids }} kg</td>
+                <td>
+                    <span class="status-badge status-{{ commande.statut|lower }}">
+                        {{ commande.get_statut_display }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{% url 'suivre_commande' commande.id %}">Suivre</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">Aucune commande trouvée.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
