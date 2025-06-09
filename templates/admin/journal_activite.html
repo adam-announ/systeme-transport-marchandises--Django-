@@ -1,0 +1,42 @@
+<!-- templates/admin/journal_activite.html -->
+{% extends 'base.html' %}
+
+{% block title %}Journal d'activité{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Journal d'activité du système</h2>
+    
+    {% regroup activites by type as activites_par_type %}
+    
+    <table style="margin-top: 2rem;">
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Date/Heure</th>
+                <th>Description</th>
+                <th>Utilisateur</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for type_activite in activites_par_type %}
+            <tr>
+                <td colspan="4"><strong>{{ type_activite.grouper }}</strong></td>
+            </tr>
+            {% for activite in type_activite.list %}
+            <tr>
+                <td></td>
+                <td>{{ activite.date|date:"d/m/Y H:i" }}</td>
+                <td>{{ activite.description }}</td>
+                <td>{{ activite.utilisateur.username }}</td>
+            </tr>
+            {% endfor %}
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

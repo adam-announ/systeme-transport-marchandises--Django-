@@ -1,8 +1,9 @@
-# transport/views.py
+# transport/views.py - Version corrigée pour les administrateurs
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.contrib import messages
+from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse
 from django.utils import timezone
 from datetime import datetime
@@ -25,6 +26,7 @@ def inscription(request):
         form = InscriptionForm()
     return render(request, 'registration/inscription.html', {'form': form})
 
+@require_http_methods(["GET", "POST"])
 def logout_view(request):
     logout(request)
     messages.info(request, 'Vous avez été déconnecté avec succès.')
@@ -32,6 +34,12 @@ def logout_view(request):
 
 @login_required
 def liste_commandes(request):
+    # Les administrateurs peuvent voir toutes les commandes
+    if request.user.is_staff:
+        commandes = Commande.objects.all().order_by('-date_creation')
+        return render(request, 'transport/liste_commandes.html', {'commandes': commandes})
+    
+    # Les clients voient seulement leurs commandes
     try:
         client = request.user.client
         commandes = Commande.objects.filter(client=client).order_by('-date_creation')
@@ -43,6 +51,11 @@ def liste_commandes(request):
 
 @login_required
 def creer_commande(request):
+    # Les administrateurs ne peuvent pas créer de commandes directement
+    if request.user.is_staff:
+        messages.error(request, 'Les administrateurs ne peuvent pas créer de commandes. Veuillez utiliser un compte client.')
+        return redirect('index')
+    
     try:
         client = request.user.client
     except Client.DoesNotExist:
@@ -83,6 +96,12 @@ def creer_commande(request):
 
 @login_required
 def suivre_commande(request, commande_id):
+    # Les administrateurs peuvent voir toutes les commandes
+    if request.user.is_staff:
+        commande = get_object_or_404(Commande, id=commande_id)
+        return render(request, 'transport/suivre_commande.html', {'commande': commande})
+    
+    # Les clients ne peuvent voir que leurs propres commandes
     try:
         client = request.user.client
         commande = get_object_or_404(Commande, id=commande_id, client=client)
@@ -94,29 +113,86 @@ def suivre_commande(request, commande_id):
 
 @login_required
 def supprimer_commande(request, commande_id):
-    try:
-        client = request.user.client
-        commande = get_object_or_404(Commande, id=commande_id, client=client)
-        
-        # Vérifier que la commande peut être supprimée (pas en transit ou livrée)
-        if commande.statut in ['EN_TRANSIT', 'LIVREE']:
-            messages.error(request, 'Cette commande ne peut pas être supprimée.')
-            return redirect('liste_commandes')
-        
-        if request.method == 'POST':
-            commande.statut = 'ANNULEE'
-            commande.save()
-            messages.success(request, f'Commande #{commande.id} annulée avec succès.')
-            return redirect('liste_commandes')
-            
-    except Client.DoesNotExist:
-        messages.error(request, 'Veuillez compléter votre profil client.')
-        return redirect('index')
+    # Les administrateurs peuvent supprimer n'importe quelle commande
+    if request.user.is_staff:
+        commande = get_object_or_404(Commande, id=commande_id)
+    else:
+        try:
+            client = request.user.client
+            commande = get_object_or_404(Commande, id=commande_id, client=client)
+        except Client.DoesNotExist:
+            messages.error(request, 'Veuillez compléter votre profil client.')
+            return redirect('index')
+    
+    # Vérifier que la commande peut être supprimée
+    if commande.statut in ['EN_TRANSIT', 'LIVREE']:
+        messages.error(request, 'Cette commande ne peut pas être supprimée.')
+        return redirect('liste_commandes')
+    
+    if request.method == 'POST':
+        commande.statut = 'ANNULEE'
+        commande.save()
+        messages.success(request, f'Commande #{commande.id} annulée avec succès.')
+        return redirect('liste_commandes')
     
     return render(request, 'transport/supprimer_commande.html', {'commande': commande})
 
 @login_required
 def generer_rapport(request):
+    # Les administrateurs peuvent générer des rapports pour tous les clients
+    if request.user.is_staff:
+        if request.method == 'POST':
+            form = RapportForm(request.POST)
+            if form.is_valid():
+                date_debut = form.cleaned_data['date_debut']
+                date_fin = form.cleaned_data['date_fin']
+                format_export = form.cleaned_data['format_export']
+                
+                # Récupérer toutes les commandes dans la période
+                commandes = Commande.objects.filter(
+                    date_creation__date__gte=date_debut,
+                    date_creation__date__lte=date_fin
+                ).order_by('-date_creation')
+                
+                if format_export == 'csv':
+                    response = HttpResponse(content_type='text/csv')
+                    response['Content-Disposition'] = f'attachment; filename="rapport_global_{date_debut}_{date_fin}.csv"'
+                    
+                    writer = csv.writer(response)
+                    writer.writerow(['N° Commande', 'Client', 'Date', 'Type Marchandise', 'Poids (kg)', 
+                                   'Adresse Enlèvement', 'Adresse Livraison', 'Statut'])
+                    
+                    for commande in commandes:
+                        writer.writerow([
+                            commande.id,
+                            commande.client.user.username,
+                            commande.date_creation.strftime('%d/%m/%Y %H:%M'),
+                            commande.type_marchandise,
+                            commande.poids,
+                            str(commande.adresse_enlevement),
+                            str(commande.adresse_livraison),
+                            commande.get_statut_display()
+                        ])
+                    
+                    return response
+                else:
+                    context = {
+                        'commandes': commandes,
+                        'date_debut': date_debut,
+                        'date_fin': date_fin,
+                        'client': None,  # Pas de client spécifique pour l'admin
+                        'total_commandes': commandes.count(),
+                        'commandes_livrees': commandes.filter(statut='LIVREE').count(),
+                        'commandes_en_cours': commandes.filter(statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT']).count(),
+                        'commandes_annulees': commandes.filter(statut='ANNULEE').count(),
+                    }
+                    return render(request, 'transport/rapport_pdf.html', context)
+        else:
+            form = RapportForm()
+        
+        return render(request, 'transport/generer_rapport.html', {'form': form})
+    
+    # Pour les clients normaux
     try:
         client = request.user.client
     except Client.DoesNotExist:
@@ -130,7 +206,6 @@ def generer_rapport(request):
             date_fin = form.cleaned_data['date_fin']
             format_export = form.cleaned_data['format_export']
             
-            # Récupérer les commandes dans la période
             commandes = Commande.objects.filter(
                 client=client,
                 date_creation__date__gte=date_debut,
@@ -138,7 +213,6 @@ def generer_rapport(request):
             ).order_by('-date_creation')
             
             if format_export == 'csv':
-                # Générer un CSV
                 response = HttpResponse(content_type='text/csv')
                 response['Content-Disposition'] = f'attachment; filename="rapport_commandes_{date_debut}_{date_fin}.csv"'
                 
@@ -159,7 +233,6 @@ def generer_rapport(request):
                 
                 return response
             else:
-                # Pour PDF, on affiche une page de rapport HTML (qui pourrait être convertie en PDF)
                 context = {
                     'commandes': commandes,
                     'date_debut': date_debut,
@@ -175,17 +248,3 @@ def generer_rapport(request):
         form = RapportForm()
     
     return render(request, 'transport/generer_rapport.html', {'form': form})
-
-@login_required
-def optimiser_itineraire(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Accès non autorisé.')
-        return redirect('index')
-    
-    commandes_en_attente = Commande.objects.filter(statut='EN_ATTENTE')
-    transporteurs_disponibles = Transporteur.objects.filter(disponible=True)
-    
-    return render(request, 'transport/optimiser_itineraire.html', {
-        'commandes': commandes_en_attente,
-        'transporteurs': transporteurs_disponibles
-    })

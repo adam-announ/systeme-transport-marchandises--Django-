@@ -27,6 +27,7 @@
             list-style: none;
             display: flex;
             gap: 2rem;
+            align-items: center;
         }
         
         .navbar a {
@@ -36,6 +37,17 @@
         
         .navbar a:hover {
             text-decoration: underline;
+        }
+        
+        .admin-menu {
+            margin-left: auto;
+            background-color: #dc3545;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+        
+        .admin-menu:hover {
+            background-color: #c82333;
         }
         
         .container {
@@ -94,6 +106,7 @@
             padding: 0.25rem 0.5rem;
             border-radius: 4px;
             font-size: 0.875rem;
+            color: white;
         }
         
         .status-en-attente {
@@ -119,10 +132,13 @@
             {% if user.is_authenticated %}
                 <li><a href="{% url 'liste_commandes' %}">Mes Commandes</a></li>
                 <li><a href="{% url 'creer_commande' %}">Nouvelle Commande</a></li>
+                <li><a href="{% url 'logout' %}">Déconnexion ({{ user.username }})</a></li>
+                
                 {% if user.is_staff %}
-                    <li><a href="{% url 'optimiser_itineraire' %}">Optimisation</a></li>
+                    <li class="admin-menu">
+                        <a href="{% url 'admin_dashboard' %}">🛡️ Administration</a>
+                    </li>
                 {% endif %}
-                <li><a href="{% url 'logout' %}">Déconnexion</a></li>
             {% else %}
                 <li><a href="{% url 'login' %}">Connexion</a></li>
             {% endif %}

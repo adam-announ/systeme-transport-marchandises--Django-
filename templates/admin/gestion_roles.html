@@ -1,0 +1,82 @@
+<!-- templates/admin/gestion_roles.html -->
+{% extends 'base.html' %}
+
+{% block title %}Gestion des rôles{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Gestion des rôles et permissions</h2>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Créer un nouveau groupe</h3>
+        <form method="post" style="display: flex; gap: 1rem; align-items: end;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="create_group">
+            <div>
+                <label>Nom du groupe:</label>
+                <input type="text" name="group_name" class="form-control" required>
+            </div>
+            <button type="submit" class="btn">Créer le groupe</button>
+        </form>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Groupes existants</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom du groupe</th>
+                    <th>Nombre d'utilisateurs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in groups %}
+                <tr>
+                    <td>{{ group.id }}</td>
+                    <td>{{ group.name }}</td>
+                    <td>{{ group.user_set.count }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">Aucun groupe créé</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Assigner un utilisateur à un groupe</h3>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign_user">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 600px;">
+                <div>
+                    <label>Utilisateur:</label>
+                    <select name="user_id" class="form-control" required>
+                        <option value="">Sélectionner un utilisateur</option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Groupe:</label>
+                    <select name="group_id" class="form-control" required>
+                        <option value="">Sélectionner un groupe</option>
+                        {% for group in groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn" style="margin-top: 1rem;">Assigner au groupe</button>
+        </form>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn" style="background-color: #6c757d;">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

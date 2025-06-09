@@ -1,0 +1,51 @@
+<!-- templates/admin/parametres_systeme.html -->
+{% extends 'base.html' %}
+
+{% block title %}Paramètres système{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Paramètres du système</h2>
+    
+    <form method="post" style="margin-top: 2rem;">
+        {% csrf_token %}
+        
+        <div style="display: grid; gap: 1rem; max-width: 600px;">
+            <div>
+                <label>Nom de l'entreprise:</label>
+                <input type="text" name="nom_entreprise" value="{{ parametres.nom_entreprise }}" class="form-control">
+            </div>
+            
+            <div>
+                <label>Email de contact:</label>
+                <input type="email" name="email_contact" value="{{ parametres.email_contact }}" class="form-control">
+            </div>
+            
+            <div>
+                <label>Délai d'annulation (heures):</label>
+                <input type="number" name="delai_annulation" value="{{ parametres.delai_annulation }}" class="form-control">
+            </div>
+            
+            <div>
+                <label>Commission (%):</label>
+                <input type="number" name="commission" value="{{ parametres.commission }}" step="0.1" class="form-control">
+            </div>
+            
+            <div>
+                <label>Devise:</label>
+                <select name="devise" class="form-control">
+                    <option value="MAD" {% if parametres.devise == 'MAD' %}selected{% endif %}>MAD - Dirham Marocain</option>
+                    <option value="EUR" {% if parametres.devise == 'EUR' %}selected{% endif %}>EUR - Euro</option>
+                    <option value="USD" {% if parametres.devise == 'USD' %}selected{% endif %}>USD - Dollar US</option>
+                </select>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn" style="margin-top: 2rem;">Enregistrer les paramètres</button>
+    </form>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn" style="background-color: #6c757d;">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

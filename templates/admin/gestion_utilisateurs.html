@@ -1,0 +1,77 @@
+<!-- templates/admin/gestion_utilisateurs.html -->
+{% extends 'base.html' %}
+
+{% block title %}Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Gestion des utilisateurs</h2>
+    
+    <table style="margin-top: 2rem;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nom d'utilisateur</th>
+                <th>Email</th>
+                <th>Date d'inscription</th>
+                <th>Type</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.date_joined|date:"d/m/Y" }}</td>
+                <td>
+                    {% if user.is_superuser %}
+                        <span style="color: red;">Super Admin</span>
+                    {% elif user.is_staff %}
+                        <span style="color: blue;">Admin</span>
+                    {% elif user.client %}
+                        <span style="color: green;">Client</span>
+                    {% else %}
+                        <span>Utilisateur</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_active %}
+                        <span style="color: green;">✓ Actif</span>
+                    {% else %}
+                        <span style="color: red;">✗ Inactif</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="hidden" name="action" value="toggle_active">
+                        <button type="submit" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                            {% if user.is_active %}Désactiver{% else %}Activer{% endif %}
+                        </button>
+                    </form>
+                    
+                    {% if not user.is_staff and not user.is_superuser %}
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                        <input type="hidden" name="action" value="make_staff">
+                        <button type="submit" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.875rem; background-color: #17a2b8;">
+                            Promouvoir Admin
+                        </button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'admin_dashboard' %}" class="btn" style="background-color: #6c757d;">Retour au tableau de bord</a>
+    </div>
+</div>
+{% endblock %}

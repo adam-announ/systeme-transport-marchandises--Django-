@@ -1,0 +1,45 @@
+<!-- templates/admin/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Admin{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Tableau de bord Administrateur</h2>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-top: 2rem;">
+        <div class="card" style="background-color: #e3f2fd;">
+            <h3>{{ total_users }}</h3>
+            <p>Utilisateurs totaux</p>
+        </div>
+        
+        <div class="card" style="background-color: #f3e5f5;">
+            <h3>{{ total_clients }}</h3>
+            <p>Clients inscrits</p>
+        </div>
+        
+        <div class="card" style="background-color: #e8f5e9;">
+            <h3>{{ total_transporteurs }}</h3>
+            <p>Transporteurs</p>
+            <small>{{ transporteurs_disponibles }} disponibles</small>
+        </div>
+        
+        <div class="card" style="background-color: #fff3e0;">
+            <h3>{{ commandes_jour }}</h3>
+            <p>Commandes aujourd'hui</p>
+            <small>{{ commandes_attente }} en attente</small>
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <h3>Actions rapides</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'gestion_utilisateurs' %}" class="btn">Gérer les utilisateurs</a>
+            <a href="{% url 'gestion_roles' %}" class="btn">Gérer les rôles</a>
+            <a href="{% url 'journal_activite' %}" class="btn">Journal d'activité</a>
+            <a href="{% url 'parametres_systeme' %}" class="btn">Paramètres système</a>
+            <a href="/admin/" class="btn" style="background-color: #28a745;">Django Admin</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
