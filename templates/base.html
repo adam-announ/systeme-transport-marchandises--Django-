@@ -1,4 +1,4 @@
-<!-- templates/base.html -->
+<!-- templates/base.html - Version mise à jour -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -28,6 +28,7 @@
             display: flex;
             gap: 2rem;
             align-items: center;
+            flex-wrap: wrap;
         }
         
         .navbar a {
@@ -48,6 +49,26 @@
         
         .admin-menu:hover {
             background-color: #c82333;
+        }
+        
+        .transporteur-menu {
+            background-color: #17a2b8;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+        
+        .transporteur-menu:hover {
+            background-color: #138496;
+        }
+        
+        .planificateur-menu {
+            background-color: #28a745;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+        }
+        
+        .planificateur-menu:hover {
+            background-color: #218838;
         }
         
         .container {
@@ -114,13 +135,23 @@
             color: #000;
         }
         
-        .status-en-transit {
+        .status-affectee {
             background-color: #17a2b8;
+            color: #fff;
+        }
+        
+        .status-en-transit {
+            background-color: #007bff;
             color: #fff;
         }
         
         .status-livree {
             background-color: #28a745;
+            color: #fff;
+        }
+        
+        .status-annulee {
+            background-color: #dc3545;
             color: #fff;
         }
     </style>
@@ -130,17 +161,38 @@
         <ul>
             <li><a href="{% url 'index' %}">Accueil</a></li>
             {% if user.is_authenticated %}
-                <li><a href="{% url 'liste_commandes' %}">Mes Commandes</a></li>
-                <li><a href="{% url 'creer_commande' %}">Nouvelle Commande</a></li>
-                <li><a href="{% url 'logout' %}">Déconnexion ({{ user.username }})</a></li>
+                {% if user.client %}
+                    <!-- Menu Client -->
+                    <li><a href="{% url 'liste_commandes' %}">Mes Commandes</a></li>
+                    <li><a href="{% url 'creer_commande' %}">Nouvelle Commande</a></li>
+                    <li><a href="{% url 'rapport' %}">Rapports</a></li>
+                {% endif %}
+                
+                {% if user.transporteur %}
+                    <!-- Menu Transporteur -->
+                    <li class="transporteur-menu">
+                        <a href="{% url 'dashboard_transporteur' %}">🚚 Espace Transporteur</a>
+                    </li>
+                {% endif %}
                 
                 {% if user.is_staff %}
+                    <!-- Menu Planificateur -->
+                    <li class="planificateur-menu">
+                        <a href="{% url 'dashboard_planificateur' %}">📊 Centre de Contrôle</a>
+                    </li>
+                    
+                    <!-- Menu Admin -->
                     <li class="admin-menu">
                         <a href="{% url 'admin_dashboard' %}">🛡️ Administration</a>
                     </li>
                 {% endif %}
+                
+                <li style="margin-left: auto;">
+                    <a href="{% url 'logout' %}">Déconnexion ({{ user.username }})</a>
+                </li>
             {% else %}
                 <li><a href="{% url 'login' %}">Connexion</a></li>
+                <li><a href="{% url 'inscription' %}">Inscription</a></li>
             {% endif %}
         </ul>
     </nav>
@@ -148,7 +200,8 @@
     <div class="container">
         {% if messages %}
             {% for message in messages %}
-                <div class="card" style="background-color: #d4edda; color: #155724;">
+                <div class="card" style="background-color: {% if message.tags == 'error' %}#f8d7da{% else %}#d4edda{% endif %}; 
+                                       color: {% if message.tags == 'error' %}#721c24{% else %}#155724{% endif %};">
                     {{ message }}
                 </div>
             {% endfor %}

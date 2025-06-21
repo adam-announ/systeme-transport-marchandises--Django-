@@ -1,0 +1,147 @@
+<!-- templates/transport/planificateur/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Planificateur{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Centre de contrôle - Planification</h2>
+    
+    <!-- Statistiques temps réel -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+        <div class="card" style="background-color: #fff3e0; text-align: center;">
+            <h3>{{ stats.commandes_en_attente }}</h3>
+            <p>Commandes en attente</p>
+        </div>
+        <div class="card" style="background-color: #e3f2fd; text-align: center;">
+            <h3>{{ stats.transporteurs_disponibles }}</h3>
+            <p>Transporteurs disponibles</p>
+        </div>
+        <div class="card" style="background-color: #e8f5e9; text-align: center;">
+            <h3>{{ stats.missions_en_cours }}</h3>
+            <p>Missions en cours</p>
+        </div>
+        <div class="card" style="background-color: #f3e5f5; text-align: center;">
+            <h3>{{ stats.taux_livraison }}%</h3>
+            <p>Taux de livraison du jour</p>
+        </div>
+    </div>
+    
+    <!-- Alertes météo/trafic -->
+    {% if alertes %}
+    <div style="margin-bottom: 2rem;">
+        <h3>Alertes en cours</h3>
+        <div style="max-height: 200px; overflow-y: auto;">
+            {% for alerte in alertes %}
+            <div style="background-color: {% if alerte.niveau == 'haute' %}#f8d7da{% elif alerte.niveau == 'dense' %}#fff3cd{% else %}#cce5ff{% endif %}; 
+                        padding: 0.75rem; margin-bottom: 0.5rem; border-radius: 4px;">
+                <strong>{{ alerte.type|upper }}</strong> - {{ alerte.zone }} - {{ alerte.message }}
+                <small style="float: right;">{{ alerte.heure|date:"H:i" }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Actions rapides -->
+    <div style="margin-bottom: 2rem;">
+        <h3>Actions rapides</h3>
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'optimiser_itineraires' %}" class="btn">
+                📍 Optimiser les itinéraires
+            </a>
+            <a href="{% url 'donnees_trafic' %}" class="btn" style="background-color: #17a2b8;">
+                🚦 Données trafic
+            </a>
+            <a href="{% url 'donnees_meteo' %}" class="btn" style="background-color: #6c757d;">
+                ☁️ Données météo
+            </a>
+        </div>
+    </div>
+    
+    <!-- Commandes à affecter -->
+    <div style="margin-bottom: 2rem;">
+        <h3>Commandes à affecter</h3>
+        {% if commandes_a_affecter %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Client</th>
+                        <th>Type</th>
+                        <th>Poids</th>
+                        <th>Enlèvement</th>
+                        <th>Livraison</th>
+                        <th>Priorité</th>
+                        <th>Temps attente</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commande in commandes_a_affecter %}
+                    <tr {% if commande.priorite == 2 %}style="background-color: #ffe0e0;"{% endif %}>
+                        <td>#{{ commande.id }}</td>
+                        <td>{{ commande.client.user.username }}</td>
+                        <td>{{ commande.type_marchandise }}</td>
+                        <td>{{ commande.poids }} kg</td>
+                        <td>{{ commande.adresse_enlevement.ville }}</td>
+                        <td>{{ commande.adresse_livraison.ville }}</td>
+                        <td>
+                            {% if commande.priorite == 2 %}
+                                <span style="color: red; font-weight: bold;">URGENTE</span>
+                            {% elif commande.priorite == 1 %}
+                                <span style="color: orange;">Haute</span>
+                            {% else %}
+                                Normale
+                            {% endif %}
+                        </td>
+                        <td>{{ commande.date_creation|timesince }}</td>
+                        <td>
+                            <a href="{% url 'affecter_commande' commande.id %}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                                Affecter
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Aucune commande en attente d'affectation.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Transporteurs disponibles -->
+    <div>
+        <h3>Transporteurs disponibles</h3>
+        {% if transporteurs_disponibles %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+                {% for transporteur in transporteurs_disponibles %}
+                <div style="border: 1px solid #ddd; padding: 1rem; border-radius: 4px;">
+                    <strong>{{ transporteur.matricule }}</strong><br>
+                    <small>{{ transporteur.user.get_full_name|default:transporteur.user.username }}</small><br>
+                    <div style="margin-top: 0.5rem;">
+                        <span>Type: {{ transporteur.type_vehicule }}</span><br>
+                        <span>Capacité: {{ transporteur.capacite_charge }} kg</span><br>
+                        <span>Missions actives: {{ transporteur.missions_actives }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Aucun transporteur disponible actuellement.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Actualisation automatique des données toutes les 30 secondes
+setInterval(function() {
+    fetch("{% url 'api_donnees_temps_reel' %}")
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour l'interface avec les nouvelles données
+            console.log('Données actualisées:', data);
+        });
+}, 30000);
+</script>
+{% endblock %}

@@ -1,0 +1,159 @@
+<!-- templates/transport/transporteur/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Transporteur{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Tableau de bord Transporteur - {{ transporteur.matricule }}</h2>
+    
+    <div style="margin: 1rem 0;">
+        <p>Bienvenue, {{ transporteur.user.get_full_name|default:transporteur.user.username }}</p>
+        <p>
+            Statut: 
+            {% if transporteur.disponible %}
+                <span style="color: green;">✓ Disponible</span>
+            {% else %}
+                <span style="color: red;">✗ Indisponible</span>
+            {% endif %}
+            <a href="{% url 'basculer_disponibilite' %}" class="btn" style="margin-left: 1rem; padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                Changer statut
+            </a>
+        </p>
+    </div>
+    
+    <!-- Statistiques -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+        <div class="card" style="background-color: #e3f2fd; text-align: center;">
+            <h3>{{ missions_actives.count }}</h3>
+            <p>Missions actives</p>
+        </div>
+        <div class="card" style="background-color: #e8f5e9; text-align: center;">
+            <h3>{{ nombre_livraisons_jour }}</h3>
+            <p>Livraisons aujourd'hui</p>
+        </div>
+        <div class="card" style="background-color: #fff3e0; text-align: center;">
+            <h3>{{ notifications.count }}</h3>
+            <p>Notifications non lues</p>
+        </div>
+    </div>
+    
+    <!-- Missions actives -->
+    <div style="margin-top: 2rem;">
+        <h3>Missions actives</h3>
+        {% if missions_actives %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° Mission</th>
+                        <th>Commande</th>
+                        <th>Client</th>
+                        <th>Enlèvement</th>
+                        <th>Livraison</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mission in missions_actives %}
+                    <tr>
+                        <td>#{{ mission.id }}</td>
+                        <td>#{{ mission.commande.id }}</td>
+                        <td>{{ mission.commande.client.user.username }}</td>
+                        <td>{{ mission.commande.adresse_enlevement.ville }}</td>
+                        <td>{{ mission.commande.adresse_livraison.ville }}</td>
+                        <td>
+                            <span class="status-badge status-{{ mission.statut|lower }}">
+                                {{ mission.get_statut_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'voir_mission' mission.id %}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                                Détails
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Aucune mission active pour le moment.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Notifications -->
+    <div style="margin-top: 2rem;">
+        <h3>Notifications récentes</h3>
+        {% if notifications %}
+            <div style="max-height: 300px; overflow-y: auto;">
+                {% for notification in notifications %}
+                <div style="background-color: #f8f9fa; padding: 1rem; margin-bottom: 0.5rem; border-radius: 4px; border-left: 4px solid {% if notification.priorite == 'HAUTE' %}#dc3545{% else %}#007bff{% endif %};">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <strong>{{ notification.titre }}</strong>
+                            <p style="margin: 0.5rem 0;">{{ notification.message }}</p>
+                            <small>{{ notification.date_creation|date:"d/m/Y H:i" }}</small>
+                        </div>
+                        <a href="{% url 'marquer_notification_lue' notification.id %}" style="text-decoration: none; color: #666;">✓</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p>Aucune notification non lue.</p>
+        {% endif %}
+    </div>
+    
+    <!-- Missions terminées récemment -->
+    <div style="margin-top: 2rem;">
+        <h3>Historique récent</h3>
+        {% if missions_terminees %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>N° Mission</th>
+                        <th>Date fin</th>
+                        <th>Client</th>
+                        <th>Trajet</th>
+                        <th>Durée</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mission in missions_terminees %}
+                    <tr>
+                        <td>#{{ mission.id }}</td>
+                        <td>{{ mission.date_fin|date:"d/m/Y H:i" }}</td>
+                        <td>{{ mission.commande.client.user.username }}</td>
+                        <td>{{ mission.commande.adresse_enlevement.ville }} → {{ mission.commande.adresse_livraison.ville }}</td>
+                        <td>
+                            {% if mission.date_debut and mission.date_fin %}
+                                {{ mission.date_fin|timeuntil:mission.date_debut }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Aucune mission terminée récemment.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .status-assignee {
+        background-color: #17a2b8;
+        color: white;
+    }
+    .status-en_cours {
+        background-color: #007bff;
+        color: white;
+    }
+    .status-terminee {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,176 @@
+<!-- templates/transport/transporteur/voir_mission.html -->
+{% extends 'base.html' %}
+
+{% block title %}Mission #{{ mission.id }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Détails de la mission #{{ mission.id }}</h2>
+    
+    <!-- Statut et actions rapides -->
+    <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px; margin: 1rem 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <strong>Statut actuel:</strong>
+                <span class="status-badge status-{{ mission.statut|lower }}">
+                    {{ mission.get_statut_display }}
+                </span>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <a href="{% url 'mettre_a_jour_statut' mission.id %}" class="btn">
+                    Mettre à jour statut
+                </a>
+                <a href="{% url 'generer_bon_livraison' mission.id %}" class="btn" style="background-color: #28a745;">
+                    Bon de livraison
+                </a>
+                <a href="{% url 'notifier_incident' mission.id %}" class="btn" style="background-color: #dc3545;">
+                    Signaler incident
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informations de la commande -->
+    <div style="margin-top: 2rem;">
+        <h3>Informations de la commande</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+            <div>
+                <table>
+                    <tr>
+                        <td><strong>N° Commande:</strong></td>
+                        <td>#{{ commande.id }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Client:</strong></td>
+                        <td>{{ commande.client.user.get_full_name|default:commande.client.user.username }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Téléphone client:</strong></td>
+                        <td>{{ commande.client.telephone }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Type marchandise:</strong></td>
+                        <td>{{ commande.type_marchandise }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Poids:</strong></td>
+                        <td>{{ commande.poids }} kg</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Priorité:</strong></td>
+                        <td>
+                            {% if commande.priorite == 2 %}
+                                <span style="color: red;">Urgente</span>
+                            {% elif commande.priorite == 1 %}
+                                <span style="color: orange;">Haute</span>
+                            {% else %}
+                                Normale
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div>
+                <h4>Adresse d'enlèvement</h4>
+                <p>
+                    {{ commande.adresse_enlevement.rue }}<br>
+                    {{ commande.adresse_enlevement.code_postal }} {{ commande.adresse_enlevement.ville }}<br>
+                    {{ commande.adresse_enlevement.pays }}
+                </p>
+                
+                <h4 style="margin-top: 1rem;">Adresse de livraison</h4>
+                <p>
+                    {{ commande.adresse_livraison.rue }}<br>
+                    {{ commande.adresse_livraison.code_postal }} {{ commande.adresse_livraison.ville }}<br>
+                    {{ commande.adresse_livraison.pays }}
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Itinéraire optimisé -->
+    <div style="margin-top: 2rem;">
+        <h3>Itinéraire optimisé</h3>
+        {% if itineraire %}
+            <div style="background-color: #e3f2fd; padding: 1rem; border-radius: 4px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; text-align: center;">
+                    <div>
+                        <strong>Distance totale</strong><br>
+                        {{ itineraire.distance }} km
+                    </div>
+                    <div>
+                        <strong>Temps estimé</strong><br>
+                        {{ itineraire.temps_estime }} minutes
+                    </div>
+                    <div>
+                        <strong>Type de route</strong><br>
+                        {{ itineraire.type_route|default:"Nationale" }}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions de navigation -->
+            {% if itineraire.instructions %}
+                <div style="margin-top: 1rem;">
+                    <h4>Instructions de navigation</h4>
+                    <ol>
+                        {% for instruction in itineraire.instructions %}
+                        <li style="margin-bottom: 0.5rem;">
+                            {{ instruction.instruction }}
+                            {% if instruction.distance > 0 %}
+                                <small>({{ instruction.distance }} km)</small>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            {% endif %}
+        {% else %}
+            <p>Itinéraire en cours de calcul...</p>
+        {% endif %}
+    </div>
+    
+    <!-- Carte (placeholder) -->
+    <div style="margin-top: 2rem;">
+        <h3>Carte</h3>
+        <div style="background-color: #f0f0f0; height: 400px; border-radius: 4px; display: flex; align-items: center; justify-content: center;">
+            <p style="color: #666;">Carte interactive (nécessite intégration API de cartographie)</p>
+        </div>
+    </div>
+    
+    <!-- Chronologie de la mission -->
+    <div style="margin-top: 2rem;">
+        <h3>Chronologie</h3>
+        <div style="background-color: #f8f9fa; padding: 1rem; border-radius: 4px;">
+            <p><strong>{{ mission.date_assignation|date:"d/m/Y H:i" }}</strong> - Mission assignée</p>
+            {% if mission.date_debut %}
+                <p><strong>{{ mission.date_debut|date:"d/m/Y H:i" }}</strong> - Mission démarrée</p>
+            {% endif %}
+            {% if mission.date_fin %}
+                <p><strong>{{ mission.date_fin|date:"d/m/Y H:i" }}</strong> - Mission terminée</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div style="margin-top: 2rem;">
+        <a href="{% url 'dashboard_transporteur' %}" class="btn" style="background-color: #6c757d;">
+            Retour au tableau de bord
+        </a>
+    </div>
+</div>
+
+<style>
+    .status-assignee {
+        background-color: #17a2b8;
+        color: white;
+    }
+    .status-en_cours {
+        background-color: #007bff;
+        color: white;
+    }
+    .status-terminee {
+        background-color: #28a745;
+        color: white;
+    }
+</style>
+{% endblock %}

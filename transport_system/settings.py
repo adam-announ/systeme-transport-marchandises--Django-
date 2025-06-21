@@ -2,6 +2,7 @@
 """
 Django settings for transport_system project.
 """
+import os
 
 from pathlib import Path
 
@@ -24,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'transport',
 ]
 
@@ -56,7 +58,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'transport_system.wsgi.application'
-
+ASGI_APPLICATION = 'transport_system.asgi.application'
 # Database
 DATABASES = {
     'default': {
@@ -107,3 +109,79 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
 LOGIN_URL = 'login'
+
+
+
+
+# API Keys (à remplacer par vos vraies clés)
+GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'
+OPENWEATHERMAP_API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY'
+OPENROUTESERVICE_API_KEY = 'YOUR_OPENROUTESERVICE_API_KEY'
+MAPBOX_API_KEY = 'YOUR_MAPBOX_API_KEY'
+HERE_API_KEY = 'YOUR_HERE_API_KEY'
+
+# Firebase configuration
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
+
+
+
+# Channel Layers (Redis pour production, In-Memory pour développement)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'  # Pour développement
+        # Pour production avec Redis:
+        # 'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        # 'CONFIG': {
+        #     "hosts": [('127.0.0.1', 6379)],
+        # },
+    },
+}
+
+# Cache configuration (pour stocker les résultats d'API)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes par défaut
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+        }
+    }
+}
+
+# Logging configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, 'logs/transport.log'),
+            'formatter': 'verbose',
+        },
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'transport': {
+            'handlers': ['file', 'console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Créer le dossier logs s'il n'existe pas
+LOGS_DIR = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(LOGS_DIR):
+    os.makedirs(LOGS_DIR)
