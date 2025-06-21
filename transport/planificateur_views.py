@@ -19,6 +19,78 @@ from .utils import (
     obtenir_donnees_trafic,
     calculer_score_transporteur
 )
+from .models import Commande, Transporteur, MissionTransporteur, Itineraire, DonneesMeteo, DonneesTrafic, Notification
+from .utils import (calculer_itineraire_optimise, obtenir_donnees_meteo, obtenir_donnees_trafic,
+                    calculer_score_transporteur, calculer_itineraire_avance, recuperer_alertes_actuelles,
+                    suggerer_transporteurs, identifier_zones_actives, obtenir_villes_avec_missions,
+                    obtenir_donnees_trafic_zone, obtenir_donnees_meteo_ville)
+
+@staff_member_required
+def dashboard_planificateur(request):
+    """Tableau de bord du planificateur"""
+    stats = {
+        'commandes_en_attente': Commande.objects.filter(statut='EN_ATTENTE').count(),
+        'transporteurs_disponibles': Transporteur.objects.filter(disponible=True).count(),
+        'missions_en_cours': MissionTransporteur.objects.filter(statut='EN_COURS').count(),
+        'taux_livraison': calculer_taux_livraison_journalier(),
+    }
+    commandes_a_affecter = Commande.objects.filter(statut='EN_ATTENTE').select_related('client', 'adresse_enlevement', 'adresse_livraison').order_by('date_creation')
+    transporteurs_disponibles = Transporteur.objects.filter(disponible=True).annotate(
+        missions_actives=Count('missiontransporteur', filter=Q(missiontransporteur__statut='EN_COURS'))
+    ).order_by('missions_actives')
+    alertes = recuperer_alertes_actuelles()
+    return render(request, 'transport/planificateur/dashboard.html', {
+        'stats': stats,
+        'commandes_a_affecter': commandes_a_affecter,
+        'transporteurs_disponibles': transporteurs_disponibles,
+        'alertes': alertes,
+    })
+
+@staff_member_required
+def affecter_commande(request, commande_id):
+    """Affecter une commande en attente à un transporteur disponible"""
+    commande = get_object_or_404(Commande, id=commande_id, statut='EN_ATTENTE')
+    if request.method == 'POST':
+        transporteur_id = request.POST.get('transporteur_id')
+        if transporteur_id:
+            transporteur = get_object_or_404(Transporteur, id=transporteur_id)
+            # Vérifier conflits : transporteur déjà occupé
+            deja_active = MissionTransporteur.objects.filter(transporteur=transporteur, statut__in=['ASSIGNEE','EN_COURS']).exists()
+            if deja_active or not transporteur.disponible:
+                messages.error(request, f"Le transporteur {transporteur.matricule} n'est pas disponible (mission en cours ou indisponible).")
+                return redirect('dashboard_planificateur')
+            # Vérifier capacité : si poids trop élevé
+            if transporteur.capacite_charge < commande.poids:
+                messages.error(request, f"Le poids de la commande excède la capacité du transporteur {transporteur.matricule}.")
+                return redirect('dashboard_planificateur')
+            # Calculer l'itinéraire optimisé entre les adresses
+            itineraire = calculer_itineraire_optimise(commande.adresse_enlevement, commande.adresse_livraison)
+            # Créer la mission
+            MissionTransporteur.objects.create(commande=commande, transporteur=transporteur, itineraire_optimise=itineraire, statut='ASSIGNEE')
+            # Mettre à jour la commande
+            commande.statut = 'AFFECTEE'
+            commande.transporteur = transporteur
+            commande.save()
+            # Notifier le transporteur assigné
+            Notification.objects.create(
+                destinataire=transporteur.user,
+                transporteur=transporteur,
+                type='MISSION',
+                titre='Nouvelle mission assignée',
+                message=f"Commande #{commande.id} - {commande.type_marchandise}",
+                commande=commande,
+                priorite='HAUTE'
+            )
+            messages.success(request, f"Commande #{commande.id} affectée à {transporteur.user.username}.")
+            return redirect('dashboard_planificateur')
+    # Si GET, suggérer les meilleurs transporteurs
+    transporteurs_suggeres = suggerer_transporteurs(commande)
+    return render(request, 'transport/planificateur/affecter_commande.html', {
+        'commande': commande,
+        'transporteurs_suggeres': transporteurs_suggeres,
+    })
+
+# ... (les autres vues planificateur restent inchangées, notamment optimiser_itineraires, donnees_trafic, donnees_meteo, etc.)
 
 @staff_member_required
 def dashboard_planificateur(request):

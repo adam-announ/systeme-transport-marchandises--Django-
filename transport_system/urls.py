@@ -12,7 +12,7 @@ def redirect_logout(request):
 urlpatterns = [
     # Django admin
     path('admin/', admin.site.urls),
-    
+    path('api/', include('api.urls'))
     # Custom admin routes
     path('admin/dashboard/', admin_views.dashboard_admin, name='admin_dashboard'),
     path('admin/utilisateurs/', admin_views.gestion_utilisateurs, name='gestion_utilisateurs'),

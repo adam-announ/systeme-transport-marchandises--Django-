@@ -1,4 +1,3 @@
-# transport/models.py - Version mise à jour
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -16,7 +15,7 @@ class Adresse(models.Model):
 
 class Client(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    adresse = models.CharField(max_length=255)
+    adresse = models.CharField(max_length=255)  # Adresse textuelle (peut être améliorée en ForeignKey)
     telephone = models.CharField(max_length=20)
     
     def __str__(self):
@@ -43,7 +42,6 @@ class Commande(models.Model):
         ('LIVREE', 'Livrée'),
         ('ANNULEE', 'Annulée'),
     ]
-    
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     date_creation = models.DateTimeField(auto_now_add=True)
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='EN_ATTENTE')
@@ -64,7 +62,6 @@ class MissionTransporteur(models.Model):
         ('TERMINEE', 'Terminée'),
         ('ANNULEE', 'Annulée'),
     ]
-    
     commande = models.ForeignKey(Commande, on_delete=models.CASCADE)
     transporteur = models.ForeignKey(Transporteur, on_delete=models.CASCADE)
     date_assignation = models.DateTimeField(auto_now_add=True)
@@ -108,7 +105,6 @@ class Incident(models.Model):
         ('METEO', 'Conditions météo'),
         ('AUTRE', 'Autre'),
     ]
-    
     mission = models.ForeignKey(MissionTransporteur, on_delete=models.CASCADE)
     transporteur = models.ForeignKey(Transporteur, on_delete=models.CASCADE)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
@@ -127,13 +123,11 @@ class Notification(models.Model):
         ('INCIDENT', 'Incident signalé'),
         ('SYSTEME', 'Message système'),
     ]
-    
     PRIORITE_CHOICES = [
         ('BASSE', 'Basse'),
         ('NORMALE', 'Normale'),
         ('HAUTE', 'Haute'),
     ]
-    
     destinataire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications_recues')
     transporteur = models.ForeignKey(Transporteur, on_delete=models.CASCADE, null=True, blank=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
@@ -151,13 +145,13 @@ class DonneesMeteo(models.Model):
     zone = models.CharField(max_length=100)
     date_creation = models.DateTimeField(auto_now_add=True)
     temperature = models.FloatField()
-    conditions = models.CharField(max_length=50)  # ensoleillé, nuageux, pluie, neige
+    conditions = models.CharField(max_length=50)  # ensoleillé, nuageux, pluie, neige, etc.
     vent_vitesse = models.FloatField()  # km/h
-    vent_direction = models.CharField(max_length=10, blank=True)  # N, S, E, O
+    vent_direction = models.CharField(max_length=10, blank=True)  # N, S, E, O par ex.
     visibilite = models.IntegerField()  # en mètres
     precipitation = models.FloatField(default=0)  # mm
     alerte = models.BooleanField(default=False)
-    niveau_alerte = models.CharField(max_length=20, blank=True)  # basse, moyenne, haute
+    niveau_alerte = models.CharField(max_length=20, blank=True)  # ex: 'haute', 'moyenne'
     description = models.TextField(blank=True)
     
     def __str__(self):
@@ -170,12 +164,11 @@ class DonneesTrafic(models.Model):
         ('dense', 'Dense'),
         ('bloque', 'Bloqué'),
     ]
-    
     zone = models.CharField(max_length=100)
     date_creation = models.DateTimeField(auto_now_add=True)
     niveau = models.CharField(max_length=20, choices=NIVEAU_CHOICES, default='normal')
     vitesse_moyenne = models.FloatField()  # km/h
-    temps_retard = models.IntegerField(default=0)  # minutes
+    temps_retard = models.IntegerField(default=0)  # minutes de retard estimé
     incidents = models.JSONField(default=list, blank=True)
     routes_affectees = models.JSONField(default=list, blank=True)
     
@@ -185,7 +178,7 @@ class DonneesTrafic(models.Model):
 class ParametreSysteme(models.Model):
     nom = models.CharField(max_length=100, unique=True)
     valeur = models.CharField(max_length=255)
-    type = models.CharField(max_length=20)  # string, int, float, bool
+    type = models.CharField(max_length=20)  # ex: 'string', 'int', 'float', 'bool'
     description = models.TextField(blank=True)
     
     def __str__(self):
@@ -200,3 +193,14 @@ class JournalActivite(models.Model):
     
     def __str__(self):
         return f"{self.utilisateur} - {self.action} - {self.date}"
+
+# Nouveau modèle de messagerie support
+class SupportMessage(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_envoyes')
+    destinataire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages_recus')
+    contenu = models.TextField()
+    date_envoi = models.DateTimeField(auto_now_add=True)
+    lu = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"Msg de {self.sender.username} à {self.destinataire.username} - {self.date_envoi:%Y-%m-%d %H:%M}"

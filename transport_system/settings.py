@@ -27,6 +27,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'transport',
+    'rest_framework'
+    'rest_framework_simplejwt'
 ]
 
 MIDDLEWARE = [
