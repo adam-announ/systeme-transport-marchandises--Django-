@@ -6,7 +6,7 @@
 {% block content %}
 <div class="card">
     <h2>Tableau de bord Transporteur - {{ transporteur.matricule }}</h2>
-    
+    <link rel="stylesheet" href="/static/css/modern-style.css">
     <div style="margin: 1rem 0;">
         <p>Bienvenue, {{ transporteur.user.get_full_name|default:transporteur.user.username }}</p>
         <p>
