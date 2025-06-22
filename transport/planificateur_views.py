@@ -39,7 +39,7 @@ def dashboard_planificateur(request):
         missions_actives=Count('missiontransporteur', filter=Q(missiontransporteur__statut='EN_COURS'))
     ).order_by('missions_actives')
     alertes = recuperer_alertes_actuelles()
-    return render(request, 'transport/planificateur/dashboard.html', {
+    return render(request, 'transport/transporteur/planificateur/dashboard.html', {
         'stats': stats,
         'commandes_a_affecter': commandes_a_affecter,
         'transporteurs_disponibles': transporteurs_disponibles,
@@ -125,7 +125,7 @@ def dashboard_planificateur(request):
         'alertes': alertes,
     }
     
-    return render(request, 'transport/planificateur/dashboard.html', context)
+    return render(request, 'transport/transporteur/planificateur/dashboard.html', context)
 
 @staff_member_required
 def affecter_commande(request, commande_id):

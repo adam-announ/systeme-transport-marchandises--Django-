@@ -1,355 +1,819 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Client - TransportPro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --gray: #6b7280;
+            --light: #f9fafb;
+            --white: #ffffff;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
 
-{% block title %}Tableau de bord - TransportPro{% endblock %}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block extra_css %}
-<link rel="stylesheet" href="/static/css/modern-style.css">
-<style>
-    
-    .welcome-banner {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        color: white;
-        padding: 2rem;
-        border-radius: 16px;
-        margin-bottom: 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .welcome-banner::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: float 15s infinite linear;
-    }
-    
-    .quick-actions {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
-        margin: 2rem 0;
-    }
-    
-    .quick-action-card {
-        background: white;
-        border: 2px solid var(--gray-200);
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        transition: all var(--transition-fast);
-        cursor: pointer;
-        text-decoration: none;
-        color: inherit;
-    }
-    
-    .quick-action-card:hover {
-        border-color: var(--primary-color);
-        transform: translateY(-4px);
-        box-shadow: var(--shadow-lg);
-    }
-    
-    .quick-action-icon {
-        width: 60px;
-        height: 60px;
-        margin: 0 auto 1rem;
-        background: var(--gray-100);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.5rem;
-        transition: all var(--transition-fast);
-    }
-    
-    .quick-action-card:hover .quick-action-icon {
-        background: var(--primary-color);
-        color: white;
-    }
-    
-    .recent-orders {
-        background: white;
-        border-radius: 16px;
-        box-shadow: var(--shadow-md);
-        overflow: hidden;
-    }
-    
-    .order-item {
-        padding: 1.5rem;
-        border-bottom: 1px solid var(--gray-100);
-        transition: background-color var(--transition-fast);
-        display: grid;
-        grid-template-columns: auto 1fr auto;
-        gap: 1rem;
-        align-items: center;
-    }
-    
-    .order-item:hover {
-        background-color: var(--gray-50);
-    }
-    
-    .order-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.25rem;
-    }
-    
-    .chart-container {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: var(--shadow-md);
-        margin-bottom: 2rem;
-    }
-</style>
-{% endblock %}
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+        }
 
-{% block content %}
-<!-- Welcome Banner -->
-<div class="welcome-banner">
-    <div style="position: relative; z-index: 1;">
-        <h1>Bonjour, {{ user.first_name|default:user.username }} ! 👋</h1>
-        <p style="font-size: 1.125rem; opacity: 0.9;">
-            Bienvenue sur votre tableau de bord TransportPro
-        </p>
-    </div>
-</div>
+        /* Navigation */
+        .navbar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-lg);
+        }
 
-<!-- Stats Overview -->
-<div class="dashboard-grid">
-    <div class="stat-card">
-        <div class="stat-card-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;">
-            <i class="fas fa-box"></i>
+        .nav-container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 1rem;
+            list-style: none;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Welcome Section */
+        .welcome-section {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 1rem;
+            padding: 3rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: float 20s infinite linear;
+        }
+
+        @keyframes float {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .action-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 1rem;
+            background: var(--light);
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .action-card:hover .action-icon {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Recent Orders */
+        .section-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .orders-list {
+            background: white;
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .order-item {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1rem;
+            align-items: center;
+            transition: background 0.3s;
+        }
+
+        .order-item:hover {
+            background: var(--light);
+        }
+
+        .order-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .order-details h4 {
+            margin-bottom: 0.25rem;
+        }
+
+        .order-meta {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            padding: 0.375rem 0.875rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-en-attente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-en-transit {
+            background: #dbeafe;
+            color: #1e3a8a;
+        }
+
+        .status-livree {
+            background: #d1fae5;
+            color: #064e3b;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Charts Container */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .chart-card h3 {
+            margin-bottom: 1rem;
+        }
+
+        /* Live Tracking Map */
+        .map-container {
+            height: 400px;
+            background: #e5e7eb;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray);
+            margin-top: 2rem;
+        }
+
+        /* Notifications */
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .nav-menu {
+                display: none;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Price Calculator */
+        .calculator-section {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            margin-top: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .price-result {
+            background: var(--light);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .price-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-brand">
+                <i class="fas fa-truck"></i>
+                TransportPro
+            </a>
+            <ul class="nav-menu">
+                <li><a href="#dashboard" class="nav-link active">Dashboard</a></li>
+                <li><a href="#orders" class="nav-link">Mes Commandes</a></li>
+                <li><a href="#tracking" class="nav-link">Suivi</a></li>
+                <li><a href="#calculator" class="nav-link">Tarifs</a></li>
+                <li><a href="#support" class="nav-link">Support</a></li>
+                <li>
+                    <a href="#notifications" class="nav-link" style="position: relative;">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </a>
+                </li>
+                <li><a href="#logout" class="nav-link"><i class="fas fa-sign-out-alt"></i></a></li>
+            </ul>
         </div>
-        <div class="stat-card-value">{{ stats.total_commandes|default:0 }}</div>
-        <div class="stat-card-label">Commandes Totales</div>
-        <div class="stat-card-trend trend-up">
-            <i class="fas fa-arrow-up"></i> +12%
-        </div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-card-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
-            <i class="fas fa-check-circle"></i>
-        </div>
-        <div class="stat-card-value">{{ stats.commandes_livrees|default:0 }}</div>
-        <div class="stat-card-label">Livrées</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-card-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
-            <i class="fas fa-truck"></i>
-        </div>
-        <div class="stat-card-value">{{ stats.commandes_en_cours|default:0 }}</div>
-        <div class="stat-card-label">En Cours</div>
-    </div>
-    
-    <div class="stat-card">
-        <div class="stat-card-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
-            <i class="fas fa-chart-line"></i>
-        </div>
-        <div class="stat-card-value">{{ stats.taux_satisfaction|default:98 }}%</div>
-        <div class="stat-card-label">Satisfaction</div>
-    </div>
-</div>
+    </nav>
 
-<!-- Quick Actions -->
-<section style="margin: 3rem 0;">
-    <h2 style="margin-bottom: 1.5rem;">Actions Rapides</h2>
-    <div class="quick-actions">
-        <a href="{% url 'creer_commande' %}" class="quick-action-card">
-            <div class="quick-action-icon">
-                <i class="fas fa-plus"></i>
-            </div>
-            <h4>Nouvelle Commande</h4>
-            <p style="color: var(--gray-600); font-size: 0.875rem;">
-                Créer une nouvelle demande de transport
-            </p>
-        </a>
-        
-        <a href="{% url 'liste_commandes' %}" class="quick-action-card">
-            <div class="quick-action-icon">
-                <i class="fas fa-list-ul"></i>
-            </div>
-            <h4>Mes Commandes</h4>
-            <p style="color: var(--gray-600); font-size: 0.875rem;">
-                Voir toutes vos commandes
-            </p>
-        </a>
-        
-        <a href="{% url 'generer_rapport' %}" class="quick-action-card">
-            <div class="quick-action-icon">
-                <i class="fas fa-file-pdf"></i>
-            </div>
-            <h4>Rapports</h4>
-            <p style="color: var(--gray-600); font-size: 0.875rem;">
-                Générer des rapports détaillés
-            </p>
-        </a>
-        
-        <a href="#" class="quick-action-card">
-            <div class="quick-action-icon">
-                <i class="fas fa-headset"></i>
-            </div>
-            <h4>Support</h4>
-            <p style="color: var(--gray-600); font-size: 0.875rem;">
-                Obtenir de l'aide rapidement
-            </p>
-        </a>
-    </div>
-</section>
-
-<!-- Recent Orders & Chart -->
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 3rem 0;">
-    <!-- Recent Orders -->
-    <div>
-        <h3 style="margin-bottom: 1.5rem;">Commandes Récentes</h3>
-        <div class="recent-orders">
-            {% for commande in commandes_recentes %}
-            <div class="order-item">
-                <div class="order-icon" style="background: 
-                    {% if commande.statut == 'LIVREE' %}linear-gradient(135deg, #d1fae5, #34d399){% elif commande.statut == 'EN_TRANSIT' %}linear-gradient(135deg, #dbeafe, #60a5fa){% else %}linear-gradient(135deg, #fef3c7, #fcd34d){% endif %};">
-                    <i class="fas fa-box" style="color: 
-                        {% if commande.statut == 'LIVREE' %}#064e3b{% elif commande.statut == 'EN_TRANSIT' %}#1e3a8a{% else %}#92400e{% endif %};"></i>
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Welcome Section -->
+        <section class="welcome-section fade-in">
+            <div style="position: relative; z-index: 1;">
+                <h1>Bonjour, Ahmed ! 👋</h1>
+                <p style="font-size: 1.125rem; opacity: 0.9;">
+                    Bienvenue sur votre espace client TransportPro
+                </p>
+                <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <a href="#new-order" class="btn" style="background: white; color: var(--primary);">
+                        <i class="fas fa-plus-circle"></i>
+                        Nouvelle Commande
+                    </a>
+                    <a href="#quick-quote" class="btn" style="background: rgba(255,255,255,0.2); border: 2px solid white;">
+                        <i class="fas fa-calculator"></i>
+                        Devis Rapide
+                    </a>
                 </div>
-                <div>
-                    <div style="font-weight: 600;">Commande #{{ commande.id }}</div>
-                    <div style="color: var(--gray-600); font-size: 0.875rem;">
-                        {{ commande.type_marchandise }} - {{ commande.poids }}kg
-                    </div>
-                    <div style="color: var(--gray-500); font-size: 0.75rem;">
-                        {{ commande.date_creation|date:"d/m/Y H:i" }}
-                    </div>
+            </div>
+        </section>
+
+        <!-- Stats Grid -->
+        <section class="stats-grid fade-in">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;">
+                    <i class="fas fa-box"></i>
                 </div>
-                <div style="text-align: right;">
-                    <span class="status-badge status-{{ commande.statut|lower }}">
-                        {{ commande.get_statut_display }}
-                    </span>
-                    <div style="margin-top: 0.5rem;">
-                        <a href="{% url 'suivre_commande' commande.id %}" class="btn btn-sm">
-                            Suivre
-                        </a>
-                    </div>
+                <div class="stat-value">127</div>
+                <div class="stat-label">Commandes Totales</div>
+                <div style="margin-top: 0.5rem; color: var(--secondary); font-size: 0.875rem;">
+                    <i class="fas fa-arrow-up"></i> +12% ce mois
                 </div>
             </div>
-            {% empty %}
-            <div style="padding: 3rem; text-align: center; color: var(--gray-500);">
-                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                <p>Aucune commande récente</p>
-                <a href="{% url 'creer_commande' %}" class="btn" style="margin-top: 1rem;">
-                    Créer votre première commande
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value">118</div>
+                <div class="stat-label">Livrées avec Succès</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="stat-value">3</div>
+                <div class="stat-label">En Transit</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-value">4.8</div>
+                <div class="stat-label">Note Moyenne</div>
+            </div>
+        </section>
+
+        <!-- Quick Actions -->
+        <section>
+            <h2 style="margin-bottom: 1.5rem;">Actions Rapides</h2>
+            <div class="quick-actions">
+                <a href="#new-order" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-plus" style="color: var(--primary);"></i>
+                    </div>
+                    <h4>Nouvelle Commande</h4>
+                    <p style="color: var(--gray); font-size: 0.875rem;">
+                        Créer une demande de transport
+                    </p>
+                </a>
+
+                <a href="#track" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-map-marker-alt" style="color: var(--secondary);"></i>
+                    </div>
+                    <h4>Suivre Livraison</h4>
+                    <p style="color: var(--gray); font-size: 0.875rem;">
+                        Tracking en temps réel
+                    </p>
+                </a>
+
+                <a href="#recurring" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-redo" style="color: var(--accent);"></i>
+                    </div>
+                    <h4>Commandes Récurrentes</h4>
+                    <p style="color: var(--gray); font-size: 0.875rem;">
+                        Gérer vos favoris
+                    </p>
+                </a>
+
+                <a href="#history" class="action-card">
+                    <div class="action-icon">
+                        <i class="fas fa-history" style="color: var(--danger);"></i>
+                    </div>
+                    <h4>Historique</h4>
+                    <p style="color: var(--gray); font-size: 0.875rem;">
+                        Consulter vos archives
+                    </p>
                 </a>
             </div>
-            {% endfor %}
-        </div>
-    </div>
-    
-    <!-- Chart -->
-    <div>
-        <h3 style="margin-bottom: 1.5rem;">Statistiques Mensuelles</h3>
-        <div class="chart-container">
-            <canvas id="monthlyChart" height="300"></canvas>
-        </div>
-    </div>
-</div>
+        </section>
 
-<!-- Notifications -->
-{% if notifications %}
-<section style="margin: 3rem 0;">
-    <h3 style="margin-bottom: 1.5rem;">Notifications Récentes</h3>
-    <div style="display: grid; gap: 1rem;">
-        {% for notification in notifications %}
-        <div class="alert alert-{{ notification.type|lower }}" style="display: grid; grid-template-columns: 1fr auto; align-items: center;">
-            <div>
-                <strong>{{ notification.titre }}</strong>
-                <p style="margin: 0.25rem 0 0 0; opacity: 0.9;">{{ notification.message }}</p>
-                <small style="opacity: 0.7;">{{ notification.date_creation|timesince }}</small>
+        <!-- Recent Orders -->
+        <section style="margin-top: 3rem;">
+            <div class="section-header">
+                <h2>Commandes Récentes</h2>
+                <a href="#all-orders" class="btn btn-sm btn-outline">
+                    Voir tout
+                </a>
             </div>
-            <button onclick="markAsRead({{ notification.id }})" class="btn btn-sm">
-                Marquer comme lu
-            </button>
+            
+            <div class="orders-list">
+                <div class="order-item">
+                    <div class="order-icon" style="background: linear-gradient(135deg, #dbeafe, #60a5fa);">
+                        <i class="fas fa-box" style="color: #1e3a8a;"></i>
+                    </div>
+                    <div class="order-details">
+                        <h4>Commande #2024-0127</h4>
+                        <div class="order-meta">
+                            <span>Casablanca → Rabat</span> • 
+                            <span>Matériel électronique - 45kg</span> • 
+                            <span>Il y a 2 heures</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge status-en-transit">En Transit</span>
+                        <div style="margin-top: 0.5rem;">
+                            <a href="#track-2024-0127" class="btn btn-sm">
+                                <i class="fas fa-eye"></i> Suivre
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-item">
+                    <div class="order-icon" style="background: linear-gradient(135deg, #d1fae5, #34d399);">
+                        <i class="fas fa-box" style="color: #064e3b;"></i>
+                    </div>
+                    <div class="order-details">
+                        <h4>Commande #2024-0126</h4>
+                        <div class="order-meta">
+                            <span>Marrakech → Agadir</span> • 
+                            <span>Produits alimentaires - 120kg</span> • 
+                            <span>Hier</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge status-livree">Livrée</span>
+                        <div style="margin-top: 0.5rem;">
+                            <a href="#rate-2024-0126" class="btn btn-sm btn-outline">
+                                <i class="fas fa-star"></i> Évaluer
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-item">
+                    <div class="order-icon" style="background: linear-gradient(135deg, #fef3c7, #fcd34d);">
+                        <i class="fas fa-box" style="color: #92400e;"></i>
+                    </div>
+                    <div class="order-details">
+                        <h4>Commande #2024-0125</h4>
+                        <div class="order-meta">
+                            <span>Fès → Meknès</span> • 
+                            <span>Textiles - 80kg</span> • 
+                            <span>Il y a 2 jours</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="status-badge status-en-attente">En Attente</span>
+                        <div style="margin-top: 0.5rem;">
+                            <a href="#edit-2024-0125" class="btn btn-sm btn-outline">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <div class="charts-container">
+            <div class="chart-card">
+                <h3>Évolution des Livraisons</h3>
+                <canvas id="deliveriesChart" height="200"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Répartition par Type</h3>
+                <canvas id="typesChart" height="200"></canvas>
+            </div>
         </div>
-        {% endfor %}
+
+        <!-- Live Tracking Map -->
+        <section style="margin-top: 3rem;">
+            <h2>Suivi en Temps Réel</h2>
+            <div class="map-container">
+                <p>Carte interactive de suivi (Google Maps API)</p>
+            </div>
+        </section>
+
+        <!-- Price Calculator -->
+        <section class="calculator-section" id="calculator">
+            <h2>Calculateur de Prix</h2>
+            <p style="color: var(--gray); margin-bottom: 2rem;">
+                Estimez le coût de votre livraison instantanément
+            </p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="form-group">
+                    <label class="form-label">Ville de départ</label>
+                    <select class="form-control" id="cityFrom">
+                        <option>Casablanca</option>
+                        <option>Rabat</option>
+                        <option>Marrakech</option>
+                        <option>Fès</option>
+                        <option>Tanger</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Ville d'arrivée</label>
+                    <select class="form-control" id="cityTo">
+                        <option>Rabat</option>
+                        <option>Casablanca</option>
+                        <option>Marrakech</option>
+                        <option>Fès</option>
+                        <option>Tanger</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Poids (kg)</label>
+                    <input type="number" class="form-control" id="weight" value="50" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Type de marchandise</label>
+                    <select class="form-control" id="goodsType">
+                        <option>Standard</option>
+                        <option>Fragile (+15%)</option>
+                        <option>Périssable (+20%)</option>
+                        <option>Dangereux (+30%)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn" onclick="calculatePrice()" style="width: 100%;">
+                <i class="fas fa-calculator"></i>
+                Calculer le Prix
+            </button>
+            
+            <div class="price-result" style="display: none;" id="priceResult">
+                <p style="color: var(--gray); margin-bottom: 0.5rem;">Prix estimé</p>
+                <div class="price-value">450 MAD</div>
+                <p style="color: var(--gray); font-size: 0.875rem; margin-top: 0.5rem;">
+                    Livraison en 24-48h
+                </p>
+            </div>
+        </section>
     </div>
-</section>
-{% endif %}
-{% endblock %}
 
-{% block extra_js %}
-<script>
-// Monthly Chart
-const ctx = document.getElementById('monthlyChart').getContext('2d');
-const monthlyChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
-        datasets: [{
-            label: 'Commandes',
-            data: [12, 19, 15, 25, 22, 30],
-            borderColor: 'rgb(37, 99, 235)',
-            backgroundColor: 'rgba(37, 99, 235, 0.1)',
-            tension: 0.4,
-            fill: true
-        }, {
-            label: 'Livrées',
-            data: [10, 17, 14, 23, 20, 28],
-            borderColor: 'rgb(34, 197, 94)',
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            tension: 0.4,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'bottom',
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    display: true,
-                    drawBorder: false
-                }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Deliveries Chart
+        const ctx1 = document.getElementById('deliveriesChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                datasets: [{
+                    label: 'Commandes',
+                    data: [15, 22, 18, 28, 25, 32],
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
             },
-            x: {
-                grid: {
-                    display: false
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
-        }
-    }
-});
+        });
 
-// Mark notification as read
-function markAsRead(notificationId) {
-    fetch(`/notification/${notificationId}/read/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'Content-Type': 'application/json'
-        }
-    }).then(response => {
-        if (response.ok) {
-            location.reload();
-        }
-    });
-}
+        // Types Chart
+        const ctx2 = document.getElementById('typesChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Électronique', 'Alimentaire', 'Textile', 'Autres'],
+                datasets: [{
+                    data: [30, 25, 20, 25],
+                    backgroundColor: [
+                        '#3b82f6',
+                        '#10b981',
+                        '#f59e0b',
+                        '#8b5cf6'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
 
-// Auto-refresh stats every 30 seconds
-setInterval(() => {
-    // You can implement AJAX call here to refresh stats
-    console.log('Refreshing stats...');
-}, 30000);
-</script>
-{% endblock %}
+        // Price Calculator
+        function calculatePrice() {
+            const result = document.getElementById('priceResult');
+            result.style.display = 'block';
+            
+            // Animation
+            result.style.opacity = '0';
+            setTimeout(() => {
+                result.style.transition = 'opacity 0.3s';
+                result.style.opacity = '1';
+            }, 100);
+        }
+
+        // Add page animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.fade-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    el.style.transition = 'all 0.5s ease-out';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
