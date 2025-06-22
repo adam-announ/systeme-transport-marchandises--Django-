@@ -9,12 +9,25 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 from django.contrib.auth.forms import UserCreationForm
 from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
 
 from .models import (
     Client, Commande, Transporteur, Incident,
-    Notification, SupportMessage, ParametreSysteme
+    Notification, SupportMessage, ParametreSysteme, MissionTransporteur
 )
 from .forms import InscriptionForm
+
+@login_required  
+def dashboard_redirect(request):
+    """Redirection intelligente vers le bon dashboard"""
+    if request.user.is_staff:
+        return redirect('admin_dashboard')
+    elif hasattr(request.user, 'client'):
+        return redirect('client_dashboard')
+    elif hasattr(request.user, 'transporteur'):
+        return redirect('dashboard_transporteur')
+    else:
+        return redirect('index')
 
 @staff_member_required
 def dashboard_admin(request):
@@ -216,6 +229,7 @@ def gestion_utilisateurs(request):
     user_type = request.GET.get('type', 'all')
     search = request.GET.get('search', '')
     
+    # Commencer avec tous les utilisateurs
     users = User.objects.all().order_by('-date_joined')
     
     # Appliquer les filtres

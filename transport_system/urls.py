@@ -1,4 +1,4 @@
-# transport_system/urls.py
+# transport_system/urls.py - CORRECTION COMPLÈTE
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
@@ -9,17 +9,18 @@ def redirect_logout(request):
     return redirect('logout')
 
 urlpatterns = [
-    # Django admin
-    path('admin/', admin.site.urls),
+    # IMPORTANT: Include transport urls BEFORE Django admin
+    # pour éviter les conflits avec /admin/
+    path('', include('transport.urls')),
     
     # API endpoints
     path('api/', include('api.urls')),
     
+    # Django admin APRÈS nos URLs custom
+    path('django-admin/', admin.site.urls),  # Changé de 'admin/' vers 'django-admin/'
+    
     # Logout redirect
     path('accounts/logout/', redirect_logout),
-    
-    # Include transport urls (incluant toutes les routes admin custom)
-    path('', include('transport.urls')),
 ]
 
 if settings.DEBUG:

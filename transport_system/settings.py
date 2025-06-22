@@ -34,13 +34,19 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'transport.middleware.SecurityHeadersMiddleware',
+    'transport.middleware.RateLimitingMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'transport.middleware.ProfileCompletionMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'transport.middleware.RequestLoggingMiddleware',
+    'transport.middleware.PerformanceMonitoringMiddleware',
+    'transport.middleware.MaintenanceModeMiddleware',
 ]
 
 ROOT_URLCONF = 'transport_system.urls'
