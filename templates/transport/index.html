@@ -1,19 +1,88 @@
-<!-- templates/transport/index.html -->
 {% extends 'base.html' %}
 
-{% block title %}Accueil - Système de Transport{% endblock %}
+{% block title %}Accueil - TransportPro{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h1>Bienvenue sur le Système de Transport de Marchandises</h1>
-    <p>Notre plateforme vous permet de gérer efficacement vos commandes de transport.</p>
+<!-- Page d'accueil simple et fonctionnelle -->
+<div class="card" style="text-align: center; padding: 3rem;">
+    <h1 style="color: var(--primary-color); margin-bottom: 1rem;">
+        <i class="fas fa-truck" style="margin-right: 0.5rem;"></i>
+        Bienvenue sur TransportPro
+    </h1>
+    
+    <p style="font-size: 1.25rem; color: var(--gray-600); margin-bottom: 2rem;">
+        Votre solution complète pour la gestion du transport de marchandises
+    </p>
     
     {% if user.is_authenticated %}
-        <p>Bonjour {{ user.username }}!</p>
-        <a href="{% url 'creer_commande' %}" class="btn">Créer une nouvelle commande</a>
+        <div style="margin-bottom: 2rem;">
+            <p style="font-size: 1.125rem;">
+                Bonjour <strong>{{ user.username }}</strong> !
+            </p>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+            {% if user.is_staff %}
+                <a href="{% url 'dashboard_planificateur' %}" class="btn btn-lg">
+                    <i class="fas fa-chart-line"></i>
+                    Centre de Contrôle
+                </a>
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-lg btn-danger">
+                    <i class="fas fa-shield-alt"></i>
+                    Administration
+                </a>
+            {% else %}
+                {% if hasattr(user, 'client') %}
+                    <a href="{% url 'creer_commande' %}" class="btn btn-lg">
+                        <i class="fas fa-plus-circle"></i>
+                        Nouvelle Commande
+                    </a>
+                    <a href="{% url 'liste_commandes' %}" class="btn btn-lg btn-secondary">
+                        <i class="fas fa-list"></i>
+                        Mes Commandes
+                    </a>
+                {% endif %}
+                
+                {% if hasattr(user, 'transporteur') %}
+                    <a href="{% url 'dashboard_transporteur' %}" class="btn btn-lg">
+                        <i class="fas fa-truck"></i>
+                        Mon Espace Transporteur
+                    </a>
+                {% endif %}
+            {% endif %}
+        </div>
     {% else %}
-        <p>Connectez-vous pour commencer à utiliser nos services.</p>
-        <a href="{% url 'login' %}" class="btn">Se connecter</a>
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3rem;">
+            <a href="{% url 'login' %}" class="btn btn-lg">
+                <i class="fas fa-sign-in-alt"></i>
+                Se Connecter
+            </a>
+            <a href="{% url 'inscription' %}" class="btn btn-lg btn-success">
+                <i class="fas fa-user-plus"></i>
+                S'inscrire
+            </a>
+        </div>
+        
+        <div style="background-color: var(--gray-100); padding: 2rem; border-radius: 12px; margin-top: 2rem;">
+            <h3 style="margin-bottom: 1rem;">Pourquoi choisir TransportPro ?</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; text-align: left;">
+                <div>
+                    <i class="fas fa-map-marked-alt" style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <h4>Suivi en Temps Réel</h4>
+                    <p>Suivez vos marchandises à chaque étape</p>
+                </div>
+                <div>
+                    <i class="fas fa-route" style="color: var(--secondary-color); font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <h4>Itinéraires Optimisés</h4>
+                    <p>Économisez temps et carburant</p>
+                </div>
+                <div>
+                    <i class="fas fa-bell" style="color: var(--accent-color); font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                    <h4>Notifications</h4>
+                    <p>Restez informé en temps réel</p>
+                </div>
+            </div>
+        </div>
     {% endif %}
 </div>
 {% endblock %}

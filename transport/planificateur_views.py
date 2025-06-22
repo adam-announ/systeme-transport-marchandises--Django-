@@ -20,11 +20,11 @@ from .utils import (
     calculer_score_transporteur
 )
 from .models import Commande, Transporteur, MissionTransporteur, Itineraire, DonneesMeteo, DonneesTrafic, Notification
-from .utils import (calculer_itineraire_optimise, obtenir_donnees_meteo, obtenir_donnees_trafic,
-                    calculer_score_transporteur, calculer_itineraire_avance, recuperer_alertes_actuelles,
+"""from .utils import (calculer_itineraire_optimise, obtenir_donnees_meteo, obtenir_donnees_trafic,
+                    calculer_score_transporteur, calculer_itineraire_optimise, recuperer_alertes_actuelles,
                     suggerer_transporteurs, identifier_zones_actives, obtenir_villes_avec_missions,
                     obtenir_donnees_trafic_zone, obtenir_donnees_meteo_ville)
-
+"""
 @staff_member_required
 def dashboard_planificateur(request):
     """Tableau de bord du planificateur"""

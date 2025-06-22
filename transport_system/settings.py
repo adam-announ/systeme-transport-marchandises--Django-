@@ -3,7 +3,6 @@
 Django settings for transport_system project.
 """
 import os
-
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -15,7 +14,7 @@ SECRET_KEY = 'django-insecure-79z!hfu@6zzh7b4#p5yf$o93t=pbmerphb**cc#&6)pg@v82r9
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 # Application definition
 INSTALLED_APPS = [
@@ -27,13 +26,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'channels',
     'transport',
-    'rest_framework'
-    'rest_framework_simplejwt'
+    'api',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -54,6 +56,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'transport.context_processors.google_maps_key',  # Ajout du context processor
             ],
         },
     },
@@ -61,6 +64,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'transport_system.wsgi.application'
 ASGI_APPLICATION = 'transport_system.asgi.application'
+
 # Database
 DATABASES = {
     'default': {
@@ -93,11 +97,7 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-
-# Commenter cette ligne si le dossier static n'existe pas encore
-# STATICFILES_DIRS = [BASE_DIR / 'static']
-
-# Pour la production
+STATICFILES_DIRS = [BASE_DIR / 'static'] if os.path.exists(BASE_DIR / 'static') else []
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files
@@ -112,20 +112,15 @@ LOGIN_REDIRECT_URL = 'index'
 LOGOUT_REDIRECT_URL = 'index'
 LOGIN_URL = 'login'
 
-
-
-
 # API Keys (à remplacer par vos vraies clés)
-GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'
-OPENWEATHERMAP_API_KEY = 'YOUR_OPENWEATHERMAP_API_KEY'
-OPENROUTESERVICE_API_KEY = 'YOUR_OPENROUTESERVICE_API_KEY'
-MAPBOX_API_KEY = 'YOUR_MAPBOX_API_KEY'
-HERE_API_KEY = 'YOUR_HERE_API_KEY'
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY', 'AIzaSyBRVCample_key_here')
+OPENWEATHERMAP_API_KEY = os.getenv('OPENWEATHERMAP_API_KEY', '445013d62878273453742b5ef6b260ce')
+OPENROUTESERVICE_API_KEY = os.getenv('OPENROUTESERVICE_API_KEY', '5b3ce3597851110001cf6248e5502527fc534e09872f5341eb32c63e')
+MAPBOX_API_KEY = os.getenv('MAPBOX_API_KEY', 'YOUR_MAPBOX_API_KEY')
+HERE_API_KEY = os.getenv('HERE_API_KEY', 'YOUR_HERE_API_KEY')
 
 # Firebase configuration
 FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-credentials.json')
-
-
 
 # Channel Layers (Redis pour production, In-Memory pour développement)
 CHANNEL_LAYERS = {
@@ -150,6 +145,29 @@ CACHES = {
         }
     }
 }
+
+# Email configuration (pour les notifications)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'  # Pour dev
+DEFAULT_FROM_EMAIL = 'noreply@transportpro.ma'
+
+# REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+}
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
 
 # Logging configuration
 LOGGING = {
@@ -183,7 +201,8 @@ LOGGING = {
     },
 }
 
-# Créer le dossier logs s'il n'existe pas
-LOGS_DIR = os.path.join(BASE_DIR, 'logs')
-if not os.path.exists(LOGS_DIR):
-    os.makedirs(LOGS_DIR)
+# Créer les dossiers nécessaires s'ils n'existent pas
+for directory in ['logs', 'media', 'static']:
+    dir_path = os.path.join(BASE_DIR, directory)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)

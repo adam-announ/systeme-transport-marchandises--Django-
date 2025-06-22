@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Envoyer une notification globale{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2>
+        <i class="fas fa-bell"></i>
+        Envoyer une notification globale
+    </h2>
+    
+    <form method="post" style="margin-top: 2rem;">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="titre">Titre de la notification :</label>
+            <input 
+                type="text" 
+                name="titre" 
+                id="titre" 
+                class="form-control" 
+                placeholder="Ex: Maintenance prévue"
+                required
+            >
+        </div>
+        
+        <div class="form-group">
+            <label for="message">Message :</label>
+            <textarea 
+                name="message" 
+                id="message" 
+                class="form-control" 
+                rows="5" 
+                placeholder="Contenu détaillé de la notification..."
+                required
+            ></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="cible">Destinataires :</label>
+            <select name="cible" id="cible" class="form-control" required>
+                <option value="">-- Sélectionner les destinataires --</option>
+                <option value="all">Tous les utilisateurs</option>
+                <option value="clients">Clients uniquement</option>
+                <option value="transporteurs">Transporteurs uniquement</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>Priorité :</label>
+            <div style="display: flex; gap: 1rem;">
+                <label style="font-weight: normal;">
+                    <input type="radio" name="priorite" value="NORMALE" checked>
+                    Normale
+                </label>
+                <label style="font-weight: normal;">
+                    <input type="radio" name="priorite" value="HAUTE">
+                    Haute
+                </label>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn">
+                <i class="fas fa-paper-plane"></i>
+                Envoyer la notification
+            </button>
+            <a href="{% url 'admin_dashboard' %}" class="btn btn-secondary">
+                Annuler
+            </a>
+        </div>
+    </form>
+    
+    <div style="margin-top: 2rem; padding: 1rem; background: var(--gray-100); border-radius: 8px;">
+        <h4>
+            <i class="fas fa-info-circle"></i>
+            Informations
+        </h4>
+        <ul>
+            <li>Les notifications seront envoyées immédiatement à tous les destinataires sélectionnés</li>
+            <li>Les utilisateurs recevront la notification dans leur interface</li>
+            <li>Les notifications de priorité haute seront mises en évidence</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

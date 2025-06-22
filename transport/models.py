@@ -204,3 +204,11 @@ class SupportMessage(models.Model):
     
     def __str__(self):
         return f"Msg de {self.sender.username} à {self.destinataire.username} - {self.date_envoi:%Y-%m-%d %H:%M}"
+class ParametreSysteme(models.Model):
+    nom = models.CharField(max_length=100, unique=True)
+    valeur = models.CharField(max_length=255)
+    type = models.CharField(max_length=20, default='string')  # ex: 'string', 'int', 'float', 'bool'
+    description = models.TextField(blank=True)
+    
+    def __str__(self):
+        return f"{self.nom} = {self.valeur}"
