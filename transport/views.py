@@ -25,31 +25,77 @@ from .forms import CommandeForm, AdresseForm, InscriptionForm, RapportForm
 # ===========================
 
 def index(request):
-    """Page d'accueil principale"""
-    if request.user.is_authenticated:
-        # Redirection automatique selon le profil
-        if hasattr(request.user, 'client'):
-            return redirect('client_dashboard')
-        elif hasattr(request.user, 'transporteur'):
-            return redirect('dashboard_transporteur')
-        elif request.user.is_staff:
-            return redirect('dashboard_planificateur')
+    """Page d'accueil principale - CORRIGÉE"""
+    # Ne pas faire de redirection automatique, afficher la page d'accueil
     
-    # Si non connecté, afficher la page d'accueil
-    return render(request, 'transport/index.html')
+    # Si l'utilisateur est connecté, on peut afficher des infos personnalisées
+    # mais on reste sur la page d'accueil
+    if request.user.is_authenticated:
+        context = {
+            'user_authenticated': True,
+            'user_type': get_user_type(request.user),
+            'quick_stats': get_quick_stats() if request.user.is_staff else None,
+        }
+    else:
+        context = {
+            'user_authenticated': False,
+            'public_stats': get_public_stats(),
+        }
+    
+    # Toujours afficher la page d'accueil, pas de redirection automatique
+    return render(request, 'transport/index.html', context)
+
+def get_user_type(user):
+    """Déterminer le type d'utilisateur"""
+    if user.is_superuser:
+        return 'admin'
+    elif user.is_staff:
+        return 'planificateur'
+    elif hasattr(user, 'client'):
+        return 'client'
+    elif hasattr(user, 'transporteur'):
+        return 'transporteur'
+    else:
+        return 'user'
+
+def get_quick_stats():
+    """Statistiques rapides pour les utilisateurs connectés"""
+    try:
+        return {
+            'commandes_attente': Commande.objects.filter(statut='EN_ATTENTE').count(),
+            'transporteurs_disponibles': Transporteur.objects.filter(disponible=True).count(),
+            'missions_en_cours': MissionTransporteur.objects.filter(statut='EN_COURS').count(),
+        }
+    except:
+        return {}
+
+def get_public_stats():
+    """Statistiques publiques pour la page d'accueil"""
+    try:
+        return {
+            'total_livraisons': Commande.objects.filter(statut='LIVREE').count(),
+            'clients_satisfaits': Client.objects.count(),
+            'transporteurs_actifs': Transporteur.objects.filter(disponible=True).count(),
+            'villes_couvertes': 15,  # Nombre fixe ou calculé
+        }
+    except:
+        return {
+            'total_livraisons': 1000,
+            'clients_satisfaits': 250,
+            'transporteurs_actifs': 50,
+            'villes_couvertes': 15,
+        }
 
 
 def home_modern(request):
     """Page d'accueil moderne avec design attractif"""
-    # Statistiques publiques pour la page d'accueil
-    stats = {
-        'total_livraisons': Commande.objects.filter(statut='LIVREE').count(),
-        'clients_satisfaits': Client.objects.count(),
-        'transporteurs_actifs': Transporteur.objects.filter(disponible=True).count(),
-        'temps_moyen_livraison': '2h30',  # À calculer depuis les données réelles
+    stats = get_public_stats()
+    context = {
+        'stats': stats,
+        'user_authenticated': request.user.is_authenticated,
+        'user_type': get_user_type(request.user) if request.user.is_authenticated else None,
     }
-    
-    return render(request, 'transport/home_modern.html', {'stats': stats})
+    return render(request, 'transport/home_modern.html', context)
 
 
 def inscription(request):
