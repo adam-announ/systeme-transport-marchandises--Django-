@@ -1,0 +1,77 @@
+{% extends 'utilisateurs/base.html' %}
+{% block title %}Accueil - Système de Transport{% endblock %}
+{% block content %}
+<!-- Hero Section -->
+<section class="hero text-center">
+    <div class="hero-overlay p-4 rounded-3 d-inline-block">
+        <h1 class="display-4 fw-bold mb-3">Optimisez le Transport de vos Marchandises</h1>
+        <p class="lead mb-4">Gestion intelligente, suivi en temps réel, optimisation des ressources.</p>
+        <a href="#services" class="btn btn-primary btn-lg">Découvrir nos services</a>
+    </div>
+</section>
+
+<!-- About Section -->
+<section id="about" class="py-5 bg-light">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <img src="https://www.lecoindesentrepreneurs.fr/wp-content/uploads/2019/11/assurance-entreprise-de-transport.png" alt="About" class="img-fluid rounded shadow">
+            </div>
+            <div class="col-md-6">
+                <h2>À propos de notre système</h2>
+                <p>Notre plateforme permet de gérer efficacement le transport de marchandises, de la prise de commande à la livraison, en passant par l'optimisation des tournées et le suivi en temps réel.</p>
+                <ul>
+                    <li>Gestion des commandes et des clients</li>
+                    <li>Suivi des véhicules et chauffeurs</li>
+                    <li>Optimisation des itinéraires</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Services Section -->
+<section id="services" class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold">Nos Services</h2>
+            <p class="text-muted">Des solutions adaptées à vos besoins logistiques</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <a href="{% url 'gestion_commandes' %}" class="text-decoration-none service-link">
+                    <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                        <div class="icon-box mb-3">
+                            <img src="https://cdn-icons-png.flaticon.com/512/2821/2821876.png" alt="Gestion des Commandes" width="48" height="48">
+                        </div>
+                        <h5 class="card-title">Gestion des Commandes</h5>
+                        <p class="card-text">Enregistrez, suivez et gérez toutes vos commandes de transport en un seul endroit.</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'optimisation_tournees' %}" class="text-decoration-none service-link">
+                    <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                        <div class="icon-box mb-3">
+                            <img src="https://cdn-icons-png.flaticon.com/512/5250/5250109.png" alt="Optimisation des Tournées" width="48" height="48">
+                        </div>
+                        <h5 class="card-title">Optimisation des Tournées</h5>
+                        <p class="card-text">Optimisez les itinéraires pour réduire les coûts et améliorer l'efficacité de vos livraisons.</p>
+                    </div>
+                </a>
+            </div>
+            <div class="col-md-4">
+                <a href="{% url 'suivi_temps_reel' %}" class="text-decoration-none service-link">
+                    <div class="card h-100 text-center p-4 border-0 shadow-sm">
+                        <div class="icon-box mb-3">
+                            <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="Suivi" width="48" height="48">
+                        </div>
+                        <h5 class="card-title">Suivi en Temps Réel</h5>
+                        <p class="card-text">Visualisez la progression de vos livraisons et recevez des notifications en temps réel.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

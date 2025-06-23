@@ -1,0 +1,212 @@
+/* Styles généraux */
+body {
+    padding-top: 76px; /* Compensation pour la navbar fixe */
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Hero Section */
+.hero {
+    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80');
+    background-size: cover;
+    background-position: center;
+    height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: white;
+}
+
+.hero-content {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 3rem;
+    border-radius: 15px;
+    max-width: 600px;
+}
+
+.hero h1 {
+    font-size: 3rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+}
+
+/* Services Section */
+.service-link .card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    height: 1 00%;
+}
+
+.service-link:hover .card {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.service-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.icon-box {
+    font-size: 2.5rem;
+    color: #0d6efd;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* Sections générales */
+.section-padding {
+    padding: 4rem 0;
+}
+
+/* Navbar améliorée */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.navbar-brand i {
+    margin-right: 0.5rem;
+    color: #007bff;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #007bff !important;
+}
+
+/* Badges dans la navbar */
+.badge {
+    font-size: 0.7rem;
+}
+
+/* Footer amélioré */
+footer {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+footer h5 {
+    color: #3498db;
+    margin-bottom: 1rem;
+}
+
+footer a {
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: #3498db !important;
+}
+
+/* Pages d'authentification */
+/* Page de connexion */
+.login-page body {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 0; /* Pas de navbar sur les pages auth */
+}
+
+.login-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    max-width: 500px;
+    width: 100%;
+}
+
+.login-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.login-body {
+    padding: 2rem;
+}
+
+/* Page d'inscription */
+.register-page body {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 0;
+    padding-top: 2rem; /* Pas de navbar sur les pages auth */
+}
+
+.register-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+    overflow: hidden;
+    max-width: 700px;
+    width: 100%;
+}
+
+.register-header {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.register-body {
+    padding: 2rem;
+}
+
+/* Styles pour les pages de services */
+.min-vh-70 { 
+    min-height: 70vh; 
+}
+
+.img-service { 
+    max-height: 300px; 
+    object-fit: cover; 
+}
+
+.img-contact { 
+    max-height: 400px; 
+    object-fit: cover; 
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .hero p {
+        font-size: 1rem;
+    }
+    
+    .hero-content {
+        padding: 2rem;
+        margin: 1rem;
+    }
+    
+    body {
+        padding-top: 56px; /* Navbar plus petite sur mobile */
+    }
+    
+    /* Pages auth responsive */
+    .login-page body,
+    .register-page body {
+        padding-top: 1rem;
+    }
+} 
