@@ -1,4 +1,4 @@
-# transport/services.py - Services métier pour séparer la logique
+# transport/services.py - Services métier optimisés
 
 from django.utils import timezone
 from django.db.models import Count, Sum, Q, Avg
@@ -9,24 +9,13 @@ import logging
 
 from .models import (
     Commande, Client, Transporteur, MissionTransporteur, 
-    Notification, Adresse, ParametreSysteme
+    Notification, ParametreSysteme
 )
 
 logger = logging.getLogger(__name__)
 
 class StatisticsService:
     """Service pour gérer les statistiques"""
-    
-    @staticmethod
-    def get_dashboard_stats(user_type, user=None):
-        """Obtenir les statistiques pour le dashboard selon le type d'utilisateur"""
-        if user_type in ['admin', 'planificateur']:
-            return StatisticsService.get_admin_stats()
-        elif user_type == 'client' and user:
-            return StatisticsService.get_client_stats(user.client)
-        elif user_type == 'transporteur' and user:
-            return StatisticsService.get_transporteur_stats(user.transporteur)
-        return {}
     
     @staticmethod
     def get_admin_stats():
@@ -55,9 +44,7 @@ class StatisticsService:
                     statut='TERMINEE',
                     date_fin__date=today
                 ).count(),
-                'revenus_mois': StatisticsService.calculate_monthly_revenue(),
                 'taux_reussite': StatisticsService.calculate_success_rate(),
-                'croissance': StatisticsService.calculate_growth_rate(),
             }
             
             # Cache pour 5 minutes
@@ -74,7 +61,6 @@ class StatisticsService:
             en_cours=Count('id', filter=Q(statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT'])),
             annulees=Count('id', filter=Q(statut='ANNULEE')),
             poids_total=Sum('poids'),
-            depenses_estimees=Sum('prix_estime'),
         )
     
     @staticmethod
@@ -93,26 +79,27 @@ class StatisticsService:
             ).count(),
             'note_moyenne': transporteur.note_moyenne,
             'taux_reussite': transporteur.taux_reussite,
-            'kilometres_parcourus': missions.aggregate(
-                total=Sum('distance_parcourue')
-            )['total'] or 0,
         }
     
     @staticmethod
-    def calculate_monthly_revenue():
-        """Calculer les revenus du mois"""
-        try:
-            debut_mois = timezone.now().replace(day=1)
-            commandes_mois = Commande.objects.filter(
-                date_creation__gte=debut_mois,
-                statut='LIVREE'
-            ).aggregate(
-                total=Sum('prix_estime')
-            )['total'] or 0
-            
-            return round(commandes_mois, 2)
-        except:
-            return 0
+    def get_public_stats():
+        """Statistiques publiques pour la page d'accueil"""
+        cache_key = 'public_stats'
+        stats = cache.get(cache_key)
+        
+        if not stats:
+            stats = {
+                'total_livraisons': Commande.objects.filter(statut='LIVREE').count(),
+                'clients_actifs': Client.objects.filter(actif=True).count(),
+                'transporteurs_actifs': Transporteur.objects.filter(
+                    disponible=True, actif=True
+                ).count(),
+                'villes_couvertes': StatisticsService.get_covered_cities_count(),
+            }
+            # Cache pour 1 heure
+            cache.set(cache_key, stats, 3600)
+        
+        return stats
     
     @staticmethod
     def calculate_success_rate():
@@ -134,30 +121,22 @@ class StatisticsService:
             return 95
     
     @staticmethod
-    def calculate_growth_rate():
-        """Calculer le taux de croissance mensuel"""
+    def get_covered_cities_count():
+        """Calculer le nombre de villes couvertes"""
         try:
-            today = timezone.now()
-            debut_mois = today.replace(day=1)
-            debut_mois_precedent = (debut_mois - timedelta(days=1)).replace(day=1)
+            from .models import Adresse
             
-            commandes_mois = Commande.objects.filter(
-                date_creation__gte=debut_mois
-            ).count()
+            villes_enlevement = set(Adresse.objects.filter(
+                commandes_enlevement__isnull=False
+            ).values_list('ville', flat=True))
             
-            commandes_mois_precedent = Commande.objects.filter(
-                date_creation__gte=debut_mois_precedent,
-                date_creation__lt=debut_mois
-            ).count()
+            villes_livraison = set(Adresse.objects.filter(
+                commandes_livraison__isnull=False
+            ).values_list('ville', flat=True))
             
-            if commandes_mois_precedent == 0:
-                return 100 if commandes_mois > 0 else 0
-            
-            croissance = ((commandes_mois - commandes_mois_precedent) / commandes_mois_precedent) * 100
-            return round(croissance, 1)
+            return len(villes_enlevement.union(villes_livraison))
         except:
-            return 0
-
+            return 15
 
 class NotificationService:
     """Service pour gérer les notifications"""
@@ -173,12 +152,9 @@ class NotificationService:
                 message=message,
                 priorite=kwargs.get('priorite', 'NORMALE'),
                 commande=kwargs.get('commande'),
-                action_url=kwargs.get('action_url', '')
             )
             
-            # Log de la création
             logger.info(f"Notification créée: {titre} pour {destinataire.username}")
-            
             return notification
         except Exception as e:
             logger.error(f"Erreur création notification: {e}")
@@ -199,7 +175,6 @@ class NotificationService:
                        f'{commande.adresse_livraison.ville}',
                 commande=commande,
                 priorite='HAUTE' if commande.priorite == 2 else 'NORMALE',
-                action_url=f'/planificateur/commande/{commande.id}/affecter/'
             )
     
     @staticmethod
@@ -212,10 +187,9 @@ class NotificationService:
             titre=f"Mise à jour de votre commande #{mission.commande.id}",
             message=f"Nouveau statut: {mission.get_statut_display()}. {commentaire}",
             commande=mission.commande,
-            action_url=f'/commande/{mission.commande.id}/suivre/'
         )
         
-        # Notifier les administrateurs si c'est important
+        # Notifier les administrateurs si important
         if nouveau_statut in ['ANNULEE'] or mission.commande.priorite == 2:
             admins = User.objects.filter(is_staff=True, is_active=True)
             for admin in admins:
@@ -251,17 +225,6 @@ class NotificationService:
             message=f"Un incident a été signalé: {incident.get_type_display()}",
             commande=incident.mission.commande
         )
-    
-    @staticmethod
-    def get_user_notifications(user, limit=10, unread_only=False):
-        """Obtenir les notifications d'un utilisateur"""
-        queryset = Notification.objects.filter(destinataire=user)
-        
-        if unread_only:
-            queryset = queryset.filter(lu=False)
-        
-        return queryset.select_related('commande').order_by('-date_creation')[:limit]
-
 
 class PricingService:
     """Service pour gérer les calculs de prix"""
@@ -320,59 +283,9 @@ class PricingService:
             return float(param.valeur) if param.type in ['FLOAT', 'INTEGER'] else param.valeur
         except (ParametreSysteme.DoesNotExist, ValueError):
             return default_value
-    
-    @staticmethod
-    def estimate_delivery_time(distance, conditions_meteo=None, conditions_trafic=None):
-        """Estimer le temps de livraison"""
-        # Vitesse de base
-        vitesse_base = 60  # km/h
-        
-        # Ajustements selon les conditions
-        if conditions_meteo:
-            if conditions_meteo in ['pluie', 'neige']:
-                vitesse_base *= 0.8
-            elif conditions_meteo == 'brouillard':
-                vitesse_base *= 0.6
-        
-        if conditions_trafic:
-            if conditions_trafic == 'dense':
-                vitesse_base *= 0.7
-            elif conditions_trafic == 'bloque':
-                vitesse_base *= 0.5
-        
-        # Temps en heures
-        temps_heures = distance / vitesse_base
-        
-        # Ajout du temps de chargement/déchargement
-        temps_heures += 0.5
-        
-        return round(temps_heures, 1)
-
 
 class AddressService:
     """Service pour gérer les adresses"""
-    
-    @staticmethod
-    def get_client_frequent_addresses(client, limit=5):
-        """Obtenir les adresses fréquemment utilisées par un client"""
-        # Adresses d'enlèvement
-        enlevements = Adresse.objects.filter(
-            commandes_enlevement__client=client
-        ).annotate(
-            usage_count=Count('commandes_enlevement')
-        ).order_by('-usage_count', '-id')[:limit]
-        
-        # Adresses de livraison
-        livraisons = Adresse.objects.filter(
-            commandes_livraison__client=client
-        ).annotate(
-            usage_count=Count('commandes_livraison')
-        ).order_by('-usage_count', '-id')[:limit]
-        
-        return {
-            'enlevements': enlevements,
-            'livraisons': livraisons
-        }
     
     @staticmethod
     def calculate_distance(addr1, addr2):
@@ -393,32 +306,66 @@ class AddressService:
     @staticmethod
     def estimate_distance_by_cities(ville1, ville2):
         """Estimer la distance entre villes"""
-        # Matrice des distances entre principales villes du Maroc
         distances = {
             ('Casablanca', 'Rabat'): 90,
             ('Casablanca', 'Marrakech'): 240,
-            ('Casablanca', 'Fès'): 300,
-            ('Casablanca', 'Tanger'): 340,
-            ('Casablanca', 'Agadir'): 500,
             ('Rabat', 'Fès'): 200,
-            ('Rabat', 'Marrakech'): 320,
-            ('Rabat', 'Tanger'): 250,
-            ('Marrakech', 'Agadir'): 260,
-            ('Marrakech', 'Fès'): 480,
-            ('Fès', 'Tanger'): 200,
-            ('Fès', 'Oujda'): 160,
-            ('Tanger', 'Tétouan'): 60,
+            ('Casablanca', 'Fès'): 290,
+            ('Marrakech', 'Agadir'): 250,
+            ('Casablanca', 'Tanger'): 340,
         }
         
-        # Chercher dans les deux sens
-        distance = distances.get((ville1, ville2)) or distances.get((ville2, ville1))
+        key1 = (ville1, ville2)
+        key2 = (ville2, ville1)
         
-        if distance:
-            return distance
-        
-        # Si pas trouvé, estimation par défaut
-        return 150
+        return distances.get(key1, distances.get(key2, 100))
 
+class ValidationService:
+    """Service pour les validations métier"""
+    
+    @staticmethod
+    def can_assign_transporteur(transporteur, commande):
+        """Vérifier si un transporteur peut être assigné"""
+        if not transporteur.disponible:
+            return False, "Transporteur non disponible"
+        
+        if transporteur.capacite_charge < commande.poids:
+            return False, "Capacité insuffisante"
+        
+        # Vérifier les missions en cours
+        missions_actives = transporteur.missiontransporteur_set.filter(
+            statut__in=['ASSIGNEE', 'EN_COURS']
+        ).count()
+        
+        if missions_actives >= 3:  # Limite configurable
+            return False, "Trop de missions en cours"
+        
+        return True, "Assignation possible"
+    
+    @staticmethod
+    def can_cancel_order(commande, user):
+        """Vérifier si une commande peut être annulée"""
+        # Vérifier les permissions
+        if not (user.is_staff or (hasattr(user, 'client') and commande.client == user.client)):
+            return False, "Permissions insuffisantes"
+        
+        # Vérifier le statut
+        if commande.statut in ['EN_TRANSIT', 'LIVREE']:
+            return False, "Commande en cours ou livrée"
+        
+        # Vérifier le délai (24h par défaut)
+        delai_h = 24
+        try:
+            param = ParametreSysteme.objects.get(nom='delai_annulation')
+            delai_h = int(param.valeur)
+        except:
+            pass
+        
+        limite = commande.date_creation + timedelta(hours=delai_h)
+        if timezone.now() > limite:
+            return False, f"Délai dépassé ({delai_h}h)"
+        
+        return True, "Annulation autorisée"
 
 class ReportService:
     """Service pour générer des rapports"""
@@ -430,18 +377,17 @@ class ReportService:
             client=client,
             date_creation__date__gte=date_debut,
             date_creation__date__lte=date_fin
-        ).select_related('transporteur', 'adresse_enlevement', 'adresse_livraison')
+        ).select_related('transporteur')
         
         stats = commandes.aggregate(
             total=Count('id'),
             livrees=Count('id', filter=Q(statut='LIVREE')),
             en_cours=Count('id', filter=Q(statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT'])),
             annulees=Count('id', filter=Q(statut='ANNULEE')),
-            poids_total=Sum('poids'),
-            prix_total=Sum('prix_estime')
+            poids_total=Sum('poids')
         )
         
-        # Calculs supplémentaires
+        # Calcul du taux de livraison
         taux_livraison = 0
         if stats['total'] > 0:
             taux_livraison = round((stats['livrees'] / stats['total']) * 100, 1)
@@ -452,46 +398,148 @@ class ReportService:
             'taux_livraison': taux_livraison,
             'periode': f"{date_debut.strftime('%d/%m/%Y')} - {date_fin.strftime('%d/%m/%Y')}"
         }
+
+class OptimizationService:
+    """Service pour l'optimisation des itinéraires et affectations"""
     
     @staticmethod
-    def generate_admin_report(date_debut, date_fin):
-        """Générer un rapport global pour les administrateurs"""
-        commandes = Commande.objects.filter(
-            date_creation__date__gte=date_debut,
-            date_creation__date__lte=date_fin
-        ).select_related('client', 'transporteur')
+    def suggest_best_transporteurs(commande):
+        """Suggérer les meilleurs transporteurs pour une commande"""
+        transporteurs = Transporteur.objects.filter(
+            disponible=True,
+            actif=True,
+            capacite_charge__gte=commande.poids
+        ).select_related('user')
         
-        # Statistiques globales
-        stats = commandes.aggregate(
-            total=Count('id'),
-            livrees=Count('id', filter=Q(statut='LIVREE')),
-            en_cours=Count('id', filter=Q(statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT'])),
-            annulees=Count('id', filter=Q(statut='ANNULEE')),
-            revenus=Sum('prix_estime', filter=Q(statut='LIVREE'))
+        suggestions = []
+        for transporteur in transporteurs:
+            score = OptimizationService.calculate_transporteur_score(transporteur, commande)
+            if score > 0:
+                suggestions.append({
+                    'transporteur': transporteur,
+                    'score': score,
+                    'missions_actives': transporteur.missiontransporteur_set.filter(
+                        statut__in=['ASSIGNEE', 'EN_COURS']
+                    ).count(),
+                    'taux_reussite': transporteur.taux_reussite
+                })
+        
+        # Trier par score décroissant
+        suggestions.sort(key=lambda x: x['score'], reverse=True)
+        return suggestions[:5]
+    
+    @staticmethod
+    def calculate_transporteur_score(transporteur, commande):
+        """Calculer un score d'adéquation transporteur/commande"""
+        score = 100
+        
+        # Capacité de charge
+        if transporteur.capacite_charge < commande.poids:
+            return 0
+        elif transporteur.capacite_charge < commande.poids * 1.5:
+            score -= 10
+        
+        # Missions en cours
+        missions_actives = transporteur.missiontransporteur_set.filter(
+            statut__in=['ASSIGNEE', 'EN_COURS']
+        ).count()
+        score -= missions_actives * 15
+        
+        # Note moyenne
+        if transporteur.note_moyenne < 3:
+            score -= 30
+        elif transporteur.note_moyenne > 4.5:
+            score += 10
+        
+        # Priorité de la commande
+        if commande.priorite == 2 and missions_actives == 0:
+            score += 20
+        
+        return max(0, score)
+
+class MonitoringService:
+    """Service pour le monitoring et les alertes"""
+    
+    @staticmethod
+    def check_system_health():
+        """Vérifier la santé du système"""
+        issues = []
+        
+        # Commandes en attente depuis trop longtemps
+        commandes_anciennes = Commande.objects.filter(
+            statut='EN_ATTENTE',
+            date_creation__lt=timezone.now() - timedelta(hours=24)
+        ).count()
+        
+        if commandes_anciennes > 0:
+            issues.append({
+                'type': 'warning',
+                'message': f'{commandes_anciennes} commandes en attente depuis +24h',
+                'action': 'Vérifier les affectations'
+            })
+        
+        # Transporteurs inactifs
+        transporteurs_inactifs = Transporteur.objects.filter(
+            derniere_maj_position__lt=timezone.now() - timedelta(hours=6),
+            disponible=True
+        ).count()
+        
+        if transporteurs_inactifs > 0:
+            issues.append({
+                'type': 'info',
+                'message': f'{transporteurs_inactifs} transporteurs sans mise à jour position',
+                'action': 'Contacter les transporteurs'
+            })
+        
+        # Incidents non résolus
+        incidents_ouverts = Incident.objects.filter(
+            resolu=False,
+            date_signalement__lt=timezone.now() - timedelta(hours=12)
+        ).count()
+        
+        if incidents_ouverts > 0:
+            issues.append({
+                'type': 'error',
+                'message': f'{incidents_ouverts} incidents non résolus',
+                'action': 'Traiter les incidents'
+            })
+        
+        return issues
+    
+    @staticmethod
+    def get_performance_metrics():
+        """Obtenir les métriques de performance"""
+        today = timezone.now().date()
+        week_ago = today - timedelta(days=7)
+        
+        # Temps moyen de traitement des commandes
+        from django.db.models import Avg, F
+        
+        temps_moyen = MissionTransporteur.objects.filter(
+            statut='TERMINEE',
+            date_fin__date__gte=week_ago
+        ).aggregate(
+            temps_moyen=Avg(F('date_fin') - F('date_assignation'))
+        )['temps_moyen']
+        
+        # Taux de livraison dans les délais
+        missions_semaine = MissionTransporteur.objects.filter(
+            date_assignation__date__gte=week_ago
         )
         
-        # Top clients
-        top_clients = Client.objects.filter(
-            commande__date_creation__date__gte=date_debut,
-            commande__date_creation__date__lte=date_fin
-        ).annotate(
-            nb_commandes=Count('commande'),
-            chiffre_affaires=Sum('commande__prix_estime', filter=Q(commande__statut='LIVREE'))
-        ).order_by('-nb_commandes')[:10]
+        total_missions = missions_semaine.count()
+        missions_a_temps = missions_semaine.filter(
+            statut='TERMINEE',
+            date_fin__lte=F('date_assignation') + timedelta(days=2)
+        ).count()
         
-        # Top transporteurs
-        top_transporteurs = Transporteur.objects.filter(
-            missiontransporteur__date_assignation__date__gte=date_debut,
-            missiontransporteur__date_assignation__date__lte=date_fin
-        ).annotate(
-            nb_missions=Count('missiontransporteur'),
-            nb_livrees=Count('missiontransporteur', filter=Q(missiontransporteur__statut='TERMINEE'))
-        ).order_by('-nb_missions')[:10]
+        taux_ponctualite = 0
+        if total_missions > 0:
+            taux_ponctualite = round((missions_a_temps / total_missions) * 100, 1)
         
         return {
-            'commandes': commandes,
-            'stats': stats,
-            'top_clients': top_clients,
-            'top_transporteurs': top_transporteurs,
-            'periode': f"{date_debut.strftime('%d/%m/%Y')} - {date_fin.strftime('%d/%m/%Y')}"
+            'temps_moyen_heures': temps_moyen.total_seconds() / 3600 if temps_moyen else 0,
+            'taux_ponctualite': taux_ponctualite,
+            'missions_semaine': total_missions,
+            'periode': f"{week_ago.strftime('%d/%m')} - {today.strftime('%d/%m')}"
         }

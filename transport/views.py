@@ -1,235 +1,60 @@
-# transport/views.py - Version complète avec toutes les fonctions manquantes
+# transport/views.py - Vues unifiées et optimisées
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
 from django.contrib import messages
-from django.views.decorators.http import require_http_methods
-from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
-from datetime import datetime, timedelta
-from django.db.models import Q, Count, Sum, Avg
+from django.db.models import Q, Count, Sum
 from django.contrib.auth.models import User
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.paginator import Paginator
+from datetime import datetime, timedelta
 import csv
 import json
 import logging
 
 from .models import (
-    Commande, Client, Transporteur, Adresse, SupportMessage, 
-    Notification, ParametreSysteme, MissionTransporteur
+    Commande, Client, Transporteur, Adresse, 
+    Notification, MissionTransporteur, Incident
 )
-from .forms import CommandeForm, AdresseForm, InscriptionForm, RapportForm
+from .forms import CommandeForm, AdresseForm, InscriptionForm, IncidentForm
+from .services import StatisticsService, NotificationService, PricingService
+from .utils import calculer_itineraire_optimise, calculer_distance
 
 logger = logging.getLogger(__name__)
 
-# ===========================
-# REDIRECTIONS INTELLIGENTES
-# ===========================
-
-@staff_member_required
-def admin_redirect(request):
-    """Redirection pour les anciennes URLs admin"""
-    return redirect('admin_dashboard')
-
-@login_required  
-def dashboard_redirect(request):
-    """Redirection intelligente vers le bon dashboard"""
-    user_type = get_user_type(request.user)
-    
-    if user_type == 'admin' or user_type == 'planificateur':
-        return redirect('admin_dashboard')
-    elif user_type == 'client':
-        return redirect('client_dashboard')
-    elif user_type == 'transporteur':
-        return redirect('dashboard_transporteur')
-    elif user_type == 'incomplete':
-        messages.warning(request, 
-            "Votre profil n'est pas encore configuré. "
-            "Contactez l'administrateur pour activer votre compte."
-        )
-        return redirect('index')
-    else:
-        return redirect('index')
-
-# ===========================
-# VUES PUBLIQUES (Sans authentification)
-# ===========================
+# ==========================================
+# VUES PUBLIQUES ET AUTHENTIFICATION
+# ==========================================
 
 def index(request):
-    """Page d'accueil principale - Version améliorée"""
+    """Page d'accueil avec redirection intelligente"""
     if request.user.is_authenticated:
         user_type = get_user_type(request.user)
         
-        # Gestion des profils incomplets
-        if user_type == 'incomplete':
-            messages.info(request, 
-                "Votre compte n'est pas encore configuré. "
-                "Contactez l'administrateur pour activer votre profil."
-            )
-        
-        context = {
-            'user_authenticated': True,
-            'user_type': user_type,
-            'quick_stats': get_quick_stats() if request.user.is_staff else None,
-            'user_notifications_count': get_user_notifications_count(request.user),
-        }
-    else:
-        context = {
-            'user_authenticated': False,
-            'public_stats': get_public_stats(),
-        }
+        if user_type == 'admin':
+            return redirect('admin_dashboard')
+        elif user_type == 'client':
+            return redirect('client_dashboard')
+        elif user_type == 'transporteur':
+            return redirect('transporteur_dashboard')
+        else:
+            messages.warning(request, "Profil incomplet. Contactez l'administrateur.")
     
-    return render(request, 'transport/index.html', context)
-
-def get_user_type(user):
-    """Déterminer le type d'utilisateur avec gestion améliorée"""
-    if user.is_superuser:
-        return 'admin'
-    elif user.is_staff:
-        return 'planificateur'
-    elif hasattr(user, 'client'):
-        return 'client'
-    elif hasattr(user, 'transporteur'):
-        return 'transporteur'
-    else:
-        # Utilisateur sans profil spécifique
-        return 'incomplete'
-
-def get_quick_stats():
-    """Statistiques rapides pour les utilisateurs connectés - Améliorées"""
-    try:
-        stats = {
-            'commandes_attente': Commande.objects.filter(statut='EN_ATTENTE').count(),
-            'transporteurs_disponibles': Transporteur.objects.filter(disponible=True).count(),
-            'missions_en_cours': MissionTransporteur.objects.filter(statut='EN_COURS').count(),
-        }
-        
-        # Ajouter des statistiques supplémentaires
-        today = timezone.now().date()
-        stats.update({
-            'livraisons_jour': MissionTransporteur.objects.filter(
-                statut='TERMINEE',
-                date_fin__date=today
-            ).count(),
-            'taux_reussite': calculate_success_rate(),
-        })
-        
-        return stats
-    except Exception as e:
-        logger.error(f"Erreur lors du calcul des statistiques: {e}")
-        return {}
-
-def get_public_stats():
-    """Statistiques publiques pour la page d'accueil - Améliorées"""
-    try:
-        # Statistiques réelles avec cache
-        cache_key = 'public_stats'
-        from django.core.cache import cache
-        
-        stats = cache.get(cache_key)
-        if not stats:
-            stats = {
-                'total_livraisons': Commande.objects.filter(statut='LIVREE').count(),
-                'clients_satisfaits': Client.objects.filter(actif=True).count(),
-                'transporteurs_actifs': Transporteur.objects.filter(
-                    disponible=True, 
-                    actif=True
-                ).count(),
-                'villes_couvertes': get_covered_cities_count(),
-            }
-            # Cache pour 1 heure
-            cache.set(cache_key, stats, 3600)
-        
-        return stats
-    except Exception as e:
-        logger.error(f"Erreur lors du calcul des statistiques publiques: {e}")
-        return {
-            'total_livraisons': 1000,
-            'clients_satisfaits': 250,
-            'transporteurs_actifs': 50,
-            'villes_couvertes': 15,
-        }
-
-def get_user_notifications_count(user):
-    """Obtenir le nombre de notifications non lues pour un utilisateur"""
-    try:
-        return Notification.objects.filter(
-            destinataire=user,
-            lu=False
-        ).count()
-    except:
-        return 0
-
-def get_covered_cities_count():
-    """Calculer le nombre de villes couvertes"""
-    try:
-        villes_enlevement = set(Adresse.objects.filter(
-            commandes_enlevement__isnull=False
-        ).values_list('ville', flat=True))
-        
-        villes_livraison = set(Adresse.objects.filter(
-            commandes_livraison__isnull=False
-        ).values_list('ville', flat=True))
-        
-        return len(villes_enlevement.union(villes_livraison))
-    except:
-        return 15
-
-def calculate_success_rate():
-    """Calculer le taux de réussite global"""
-    try:
-        total_missions = MissionTransporteur.objects.filter(
-            statut__in=['TERMINEE', 'ANNULEE']
-        ).count()
-        
-        if total_missions == 0:
-            return 100
-        
-        missions_reussies = MissionTransporteur.objects.filter(
-            statut='TERMINEE'
-        ).count()
-        
-        return round((missions_reussies / total_missions) * 100, 1)
-    except:
-        return 95
-
-def home_modern(request):
-    """Page d'accueil moderne avec design attractif"""
-    stats = get_public_stats()
+    # Statistiques publiques
+    stats = StatisticsService.get_public_stats()
     
-    # Ajouter des témoignages ou actualités
-    actualites = get_recent_news()
-    
-    context = {
+    return render(request, 'transport/index.html', {
         'stats': stats,
-        'actualites': actualites,
         'user_authenticated': request.user.is_authenticated,
-        'user_type': get_user_type(request.user) if request.user.is_authenticated else None,
-    }
-    return render(request, 'transport/home_modern.html', context)
-
-def get_recent_news():
-    """Obtenir les actualités récentes (simulation)"""
-    return [
-        {
-            'titre': 'Nouvelle fonctionnalité: Suivi GPS en temps réel',
-            'date': timezone.now() - timedelta(days=2),
-            'description': 'Suivez vos livraisons avec une précision GPS.'
-        },
-        {
-            'titre': 'Extension de notre réseau à 5 nouvelles villes',
-            'date': timezone.now() - timedelta(days=7),
-            'description': 'Nous couvrons maintenant 20 villes au Maroc.'
-        }
-    ]
+    })
 
 def inscription(request):
-    """Inscription d'un nouvel utilisateur - Version améliorée"""
+    """Inscription utilisateur"""
     if request.user.is_authenticated:
-        messages.info(request, "Vous êtes déjà connecté.")
-        return redirect('dashboard_redirect')
+        return redirect('index')
     
     if request.method == 'POST':
         form = InscriptionForm(request.POST)
@@ -238,234 +63,71 @@ def inscription(request):
                 user = form.save()
                 login(request, user)
                 
-                # Log de l'inscription
-                logger.info(f"Nouvelle inscription: {user.username} ({form.cleaned_data['type_compte']})")
-                
-                # Message de bienvenue personnalisé
                 type_compte = form.cleaned_data['type_compte']
                 if type_compte == 'client':
-                    messages.success(request, 
-                        "Inscription réussie! Bienvenue sur TransportPro. "
-                        "Vous pouvez maintenant créer vos premières commandes."
-                    )
+                    messages.success(request, "Inscription réussie! Bienvenue.")
                     return redirect('client_dashboard')
                 else:
-                    messages.success(request, 
-                        "Inscription réussie! Votre profil transporteur est en attente de validation. "
-                        "Vous recevrez une notification dès qu'il sera activé."
-                    )
-                    return redirect('dashboard_transporteur')
+                    messages.success(request, "Inscription réussie! Profil en attente de validation.")
+                    return redirect('transporteur_dashboard')
                     
             except Exception as e:
-                logger.error(f"Erreur lors de l'inscription: {e}")
-                messages.error(request, "Une erreur est survenue lors de l'inscription.")
+                logger.error(f"Erreur inscription: {e}")
+                messages.error(request, "Erreur lors de l'inscription.")
     else:
         form = InscriptionForm()
     
     return render(request, 'registration/inscription.html', {'form': form})
 
-@require_http_methods(["GET", "POST"])
 def logout_view(request):
-    """Déconnexion de l'utilisateur - Version améliorée"""
+    """Déconnexion"""
     username = request.user.username if request.user.is_authenticated else "Utilisateur"
     logout(request)
-    messages.info(request, f"Au revoir {username}! Vous avez été déconnecté avec succès.")
+    messages.info(request, f"Au revoir {username}!")
     return redirect('index')
 
-# ===========================
-# VUES CLIENT - Améliorées
-# ===========================
+# ==========================================
+# VUES CLIENT
+# ==========================================
 
 @login_required
 def client_dashboard(request):
-    """Dashboard principal du client - Version améliorée"""
+    """Dashboard client"""
     try:
         client = request.user.client
     except Client.DoesNotExist:
         messages.error(request, "Veuillez compléter votre profil client.")
         return redirect('index')
     
-    # Statistiques du client avec optimisation
-    commandes_queryset = Commande.objects.filter(client=client)
+    # Statistiques optimisées
+    stats = StatisticsService.get_client_stats(client)
     
-    stats = commandes_queryset.aggregate(
-        total=Count('id'),
-        livrees=Count('id', filter=Q(statut='LIVREE')),
-        en_cours=Count('id', filter=Q(statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT'])),
-        annulees=Count('id', filter=Q(statut='ANNULEE')),
-        poids_total=Sum('poids')
-    )
-    
-    # Calcul du taux de satisfaction
-    taux_satisfaction = 0
-    if stats['total'] > 0:
-        taux_satisfaction = round((stats['livrees'] / stats['total']) * 100, 1)
-    
-    # Commandes récentes avec optimisation
-    commandes_recentes = commandes_queryset.select_related(
+    # Commandes récentes
+    commandes_recentes = Commande.objects.filter(client=client).select_related(
         'transporteur', 'adresse_enlevement', 'adresse_livraison'
     ).order_by('-date_creation')[:5]
     
     # Notifications non lues
     notifications = Notification.objects.filter(
-        destinataire=request.user, 
-        lu=False
+        destinataire=request.user, lu=False
     ).order_by('-date_creation')[:5]
-    
-    # Estimation des dépenses
-    depenses_mois = estimate_monthly_expenses(client)
-    
-    # Analyse des tendances
-    tendances = analyze_client_trends(client)
     
     context = {
         'client': client,
-        'commandes_total': stats['total'],
-        'commandes_livrees': stats['livrees'],
-        'commandes_en_cours': stats['en_cours'],
-        'commandes_annulees': stats['annulees'],
-        'poids_total': stats['poids_total'] or 0,
+        'stats': stats,
         'commandes_recentes': commandes_recentes,
         'notifications': notifications,
-        'taux_satisfaction': taux_satisfaction,
-        'depenses_mois': depenses_mois,
-        'tendances': tendances,
     }
     
     return render(request, 'transport/client_dashboard.html', context)
 
-def estimate_monthly_expenses(client):
-    """Estimer les dépenses mensuelles d'un client"""
-    try:
-        # Calculer sur les 30 derniers jours
-        date_debut = timezone.now() - timedelta(days=30)
-        
-        commandes_mois = Commande.objects.filter(
-            client=client,
-            date_creation__gte=date_debut,
-            statut='LIVREE'
-        ).aggregate(
-            count=Count('id'),
-            poids_total=Sum('poids')
-        )
-        
-        # Estimation basée sur un prix moyen
-        prix_base = 50
-        prix_par_kg = 2
-        
-        total_estimé = (commandes_mois['count'] or 0) * prix_base
-        total_estimé += (commandes_mois['poids_total'] or 0) * prix_par_kg
-        
-        return round(total_estimé, 2)
-    except:
-        return 0
-
-def analyze_client_trends(client):
-    """Analyser les tendances d'un client"""
-    try:
-        # Commandes par mois des 6 derniers mois
-        trends = []
-        for i in range(6):
-            date_fin = timezone.now().replace(day=1) - timedelta(days=i*30)
-            date_debut = date_fin - timedelta(days=30)
-            
-            count = Commande.objects.filter(
-                client=client,
-                date_creation__gte=date_debut,
-                date_creation__lt=date_fin
-            ).count()
-            
-            trends.append({
-                'mois': date_fin.strftime('%B'),
-                'commandes': count
-            })
-        
-        return reversed(trends)
-    except:
-        return []
-
-@login_required
-def liste_commandes(request):
-    """Liste des commandes avec pagination et filtres avancés"""
-    # Déterminer les permissions
-    if request.user.is_staff:
-        base_queryset = Commande.objects.all()
-        is_admin = True
-    else:
-        try:
-            client = request.user.client
-            base_queryset = Commande.objects.filter(client=client)
-            is_admin = False
-        except Client.DoesNotExist:
-            messages.error(request, "Veuillez compléter votre profil client.")
-            return redirect('index')
-    
-    # Optimisation avec select_related
-    commandes = base_queryset.select_related(
-        'client', 'transporteur', 'adresse_enlevement', 'adresse_livraison'
-    ).order_by('-date_creation')
-    
-    # Filtres avancés
-    statut_filter = request.GET.get('statut')
-    date_filter = request.GET.get('date')
-    ville_filter = request.GET.get('ville')
-    transporteur_filter = request.GET.get('transporteur')
-    
-    if statut_filter:
-        commandes = commandes.filter(statut=statut_filter)
-    
-    if date_filter:
-        try:
-            date_obj = datetime.strptime(date_filter, '%Y-%m-%d').date()
-            commandes = commandes.filter(date_creation__date=date_obj)
-        except ValueError:
-            pass
-    
-    if ville_filter:
-        commandes = commandes.filter(
-            Q(adresse_enlevement__ville__icontains=ville_filter) |
-            Q(adresse_livraison__ville__icontains=ville_filter)
-        )
-    
-    if transporteur_filter and is_admin:
-        commandes = commandes.filter(transporteur__id=transporteur_filter)
-    
-    # Pagination
-    paginator = Paginator(commandes, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Options pour les filtres
-    statuts_disponibles = Commande.STATUT_CHOICES
-    transporteurs_disponibles = Transporteur.objects.filter(actif=True) if is_admin else None
-    
-    context = {
-        'page_obj': page_obj,
-        'is_admin': is_admin,
-        'statut_filter': statut_filter,
-        'date_filter': date_filter,
-        'ville_filter': ville_filter,
-        'transporteur_filter': transporteur_filter,
-        'statuts_disponibles': statuts_disponibles,
-        'transporteurs_disponibles': transporteurs_disponibles,
-    }
-    
-    return render(request, 'transport/liste_commandes.html', context)
-
 @login_required
 def creer_commande(request):
-    """Création d'une nouvelle commande - Version améliorée"""
-    # Vérification des permissions
-    if request.user.is_staff and not hasattr(request.user, 'client'):
-        messages.warning(request, 
-            "Les administrateurs doivent utiliser un compte client pour créer des commandes."
-        )
-        return redirect('index')
-    
+    """Création de commande"""
     try:
         client = request.user.client
     except Client.DoesNotExist:
-        messages.error(request, "Veuillez compléter votre profil client.")
+        messages.error(request, "Profil client requis.")
         return redirect('index')
     
     if request.method == 'POST':
@@ -482,118 +144,45 @@ def creer_commande(request):
                 adr_enlev = adresse_enlevement_form.save()
                 adr_livr = adresse_livraison_form.save()
                 
-                # Géocoder les adresses si possible
-                geocode_addresses(adr_enlev, adr_livr)
-                
                 # Créer la commande
                 commande = commande_form.save(commit=False)
                 commande.client = client
                 commande.adresse_enlevement = adr_enlev
                 commande.adresse_livraison = adr_livr
                 
-                # Calculer l'estimation de prix
-                distance = calculate_distance_between_addresses(adr_enlev, adr_livr)
-                commande.prix_estime = calculer_prix_estimation(
-                    commande.poids, 
-                    distance, 
-                    commande.type_marchandise
+                # Calculer le prix
+                distance = calculer_distance(adr_enlev, adr_livr)
+                commande.prix_estime = PricingService.calculate_price(
+                    commande.poids, distance, commande.type_marchandise, commande.priorite
                 )
                 
                 commande.save()
                 
-                # Notifications aux planificateurs
-                notify_planners_new_order(commande)
+                # Notifications
+                NotificationService.notify_new_order(commande)
                 
-                # Log de la création
-                logger.info(f"Nouvelle commande créée: #{commande.id} par {client.user.username}")
-                
-                messages.success(request, 
-                    f"Commande #{commande.id} créée avec succès! "
-                    f"Prix estimé: {commande.prix_estime} MAD"
-                )
+                messages.success(request, f"Commande #{commande.id} créée avec succès!")
                 return redirect('suivre_commande', commande_id=commande.id)
                 
             except Exception as e:
-                logger.error(f"Erreur lors de la création de commande: {e}")
-                messages.error(request, "Une erreur est survenue lors de la création de la commande.")
+                logger.error(f"Erreur création commande: {e}")
+                messages.error(request, "Erreur lors de la création.")
     else:
         commande_form = CommandeForm()
         adresse_enlevement_form = AdresseForm(prefix='enlevement')
         adresse_livraison_form = AdresseForm(prefix='livraison')
     
-    # Adresses récentes du client pour auto-complétion
-    adresses_recentes = get_client_recent_addresses(client)
-    
     context = {
         'commande_form': commande_form,
         'adresse_enlevement_form': adresse_enlevement_form,
         'adresse_livraison_form': adresse_livraison_form,
-        'adresses_recentes': adresses_recentes,
     }
     
     return render(request, 'transport/creer_commande.html', context)
 
 @login_required
 def suivre_commande(request, commande_id):
-    """Suivi détaillé d'une commande avec carte"""
-    # Vérifier les permissions
-    if request.user.is_staff:
-        commande = get_object_or_404(
-            Commande.objects.select_related(
-                'client', 'transporteur', 'adresse_enlevement', 'adresse_livraison'
-            ), 
-            id=commande_id
-        )
-    else:
-        try:
-            client = request.user.client
-            commande = get_object_or_404(
-                Commande.objects.select_related(
-                    'transporteur', 'adresse_enlevement', 'adresse_livraison'
-                ), 
-                id=commande_id, 
-                client=client
-            )
-        except Client.DoesNotExist:
-            messages.error(request, "Accès refusé.")
-            return redirect('index')
-    
-    # Récupérer la mission associée
-    mission = None
-    itineraire = None
-    if commande.transporteur:
-        try:
-            mission = MissionTransporteur.objects.get(commande=commande)
-            itineraire = mission.itineraire_optimise
-        except MissionTransporteur.DoesNotExist:
-            pass
-    
-    # Préparer les données pour la carte
-    map_data = {
-        'enlev_lat': commande.adresse_enlevement.latitude or 33.5731,
-        'enlev_lng': commande.adresse_enlevement.longitude or -7.5898,
-        'livr_lat': commande.adresse_livraison.latitude or 33.5731,
-        'livr_lng': commande.adresse_livraison.longitude or -7.5898,
-    }
-    
-    # Position actuelle du transporteur (si disponible)
-    if commande.transporteur:
-        map_data['transp_lat'] = commande.transporteur.latitude_actuelle
-        map_data['transp_lng'] = commande.transporteur.longitude_actuelle
-    
-    context = {
-        'commande': commande,
-        'mission': mission,
-        'itineraire': itineraire,
-        'map_data': json.dumps(map_data),
-    }
-    
-    return render(request, 'transport/suivre_commande.html', context)
-
-@login_required
-def supprimer_commande(request, commande_id):
-    """Annulation d'une commande"""
-    # Vérifier les permissions
+    """Suivi de commande"""
     if request.user.is_staff:
         commande = get_object_or_404(Commande, id=commande_id)
     else:
@@ -604,402 +193,369 @@ def supprimer_commande(request, commande_id):
             messages.error(request, "Accès refusé.")
             return redirect('index')
     
-    # Vérifier que l'annulation est possible
-    delai_h = 24  # Délai par défaut
-    try:
-        param = ParametreSysteme.objects.get(nom='delai_annulation')
-        delai_h = int(param.valeur)
-    except:
-        pass
-    
-    # Empêcher l'annulation si déjà en transit ou livrée
-    if commande.statut in ['EN_TRANSIT', 'LIVREE']:
-        messages.error(request, "Cette commande ne peut plus être annulée.")
-        return redirect('liste_commandes')
-    
-    # Vérifier le délai d'annulation
-    if commande.date_creation < timezone.now() - timedelta(hours=delai_h):
-        messages.error(request, f"Délai d'annulation dépassé ({delai_h}h).")
-        return redirect('liste_commandes')
-    
-    if request.method == 'POST':
-        # Annuler la commande
-        commande.statut = 'ANNULEE'
-        commande.save()
-        
-        # Annuler la mission associée
+    # Mission associée
+    mission = None
+    if commande.transporteur:
         try:
             mission = MissionTransporteur.objects.get(commande=commande)
-            mission.statut = 'ANNULEE'
+        except MissionTransporteur.DoesNotExist:
+            pass
+    
+    context = {
+        'commande': commande,
+        'mission': mission,
+    }
+    
+    return render(request, 'transport/suivre_commande.html', context)
+
+@login_required
+def liste_commandes(request):
+    """Liste des commandes avec filtres"""
+    if request.user.is_staff:
+        commandes = Commande.objects.all()
+    else:
+        try:
+            client = request.user.client
+            commandes = Commande.objects.filter(client=client)
+        except Client.DoesNotExist:
+            messages.error(request, "Profil client requis.")
+            return redirect('index')
+    
+    # Optimisation des requêtes
+    commandes = commandes.select_related(
+        'client', 'transporteur', 'adresse_enlevement', 'adresse_livraison'
+    ).order_by('-date_creation')
+    
+    # Filtres
+    statut_filter = request.GET.get('statut')
+    if statut_filter:
+        commandes = commandes.filter(statut=statut_filter)
+    
+    # Pagination
+    paginator = Paginator(commandes, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+        'statut_filter': statut_filter,
+        'statuts_disponibles': Commande.STATUT_CHOICES,
+    }
+    
+    return render(request, 'transport/liste_commandes.html', context)
+
+# ==========================================
+# VUES TRANSPORTEUR
+# ==========================================
+
+@login_required
+def transporteur_dashboard(request):
+    """Dashboard transporteur"""
+    try:
+        transporteur = request.user.transporteur
+    except Transporteur.DoesNotExist:
+        messages.error(request, "Profil transporteur requis.")
+        return redirect('index')
+    
+    # Statistiques
+    stats = StatisticsService.get_transporteur_stats(transporteur)
+    
+    # Missions actives
+    missions_actives = MissionTransporteur.objects.filter(
+        transporteur=transporteur, 
+        statut__in=['EN_COURS', 'ASSIGNEE']
+    ).select_related('commande', 'commande__client').order_by('-date_assignation')
+    
+    # Notifications
+    notifications = Notification.objects.filter(
+        destinataire=request.user, lu=False
+    ).order_by('-date_creation')[:5]
+    
+    context = {
+        'transporteur': transporteur,
+        'stats': stats,
+        'missions_actives': missions_actives,
+        'notifications': notifications,
+    }
+    
+    return render(request, 'transport/transporteur_dashboard.html', context)
+
+@login_required
+def voir_mission(request, mission_id):
+    """Détails d'une mission"""
+    try:
+        transporteur = request.user.transporteur
+        mission = get_object_or_404(MissionTransporteur, id=mission_id, transporteur=transporteur)
+    except Transporteur.DoesNotExist:
+        messages.error(request, "Accès non autorisé.")
+        return redirect('index')
+    
+    # Calculer l'itinéraire si nécessaire
+    if not mission.itineraire_optimise:
+        try:
+            itineraire = calculer_itineraire_optimise(
+                mission.commande.adresse_enlevement,
+                mission.commande.adresse_livraison
+            )
+            mission.itineraire_optimise = itineraire
             mission.save()
+        except Exception as e:
+            logger.error(f"Erreur calcul itinéraire: {e}")
+    
+    context = {
+        'mission': mission,
+        'commande': mission.commande,
+    }
+    
+    return render(request, 'transport/voir_mission.html', context)
+
+@login_required
+def mettre_a_jour_statut(request, mission_id):
+    """Mise à jour du statut de mission"""
+    try:
+        transporteur = request.user.transporteur
+        mission = get_object_or_404(MissionTransporteur, id=mission_id, transporteur=transporteur)
+    except Transporteur.DoesNotExist:
+        messages.error(request, "Accès non autorisé.")
+        return redirect('index')
+    
+    if request.method == 'POST':
+        nouveau_statut = request.POST.get('statut')
+        commentaire = request.POST.get('commentaire', '')
+        
+        # Mettre à jour la mission
+        mission.statut = nouveau_statut
+        
+        if nouveau_statut == 'TERMINEE':
+            mission.date_fin = timezone.now()
+            mission.commande.statut = 'LIVREE'
+        elif nouveau_statut == 'EN_COURS':
+            mission.date_debut = mission.date_debut or timezone.now()
+            mission.commande.statut = 'EN_TRANSIT'
+        
+        mission.save()
+        mission.commande.save()
+        
+        # Notification client
+        NotificationService.notify_status_change(mission, nouveau_statut, commentaire)
+        
+        messages.success(request, "Statut mis à jour avec succès.")
+        return redirect('voir_mission', mission_id=mission.id)
+    
+    return render(request, 'transport/mettre_a_jour_statut.html', {'mission': mission})
+
+@login_required
+def notifier_incident(request, mission_id):
+    """Signalement d'incident"""
+    try:
+        transporteur = request.user.transporteur
+        mission = get_object_or_404(MissionTransporteur, id=mission_id, transporteur=transporteur)
+    except Transporteur.DoesNotExist:
+        messages.error(request, "Accès non autorisé.")
+        return redirect('index')
+    
+    if request.method == 'POST':
+        form = IncidentForm(request.POST, request.FILES)
+        if form.is_valid():
+            incident = form.save(commit=False)
+            incident.mission = mission
+            incident.transporteur = transporteur
+            incident.save()
             
-            # Notifier le transporteur
-            Notification.objects.create(
-                destinataire=mission.transporteur.user,
-                type='STATUT',
-                titre='Mission annulée',
-                message=f'La commande #{commande.id} a été annulée.',
+            # Notifications
+            NotificationService.notify_incident(incident)
+            
+            messages.success(request, "Incident signalé avec succès.")
+            return redirect('voir_mission', mission_id=mission.id)
+    else:
+        form = IncidentForm()
+    
+    return render(request, 'transport/notifier_incident.html', {
+        'mission': mission,
+        'form': form
+    })
+
+# ==========================================
+# VUES ADMIN/PLANIFICATEUR
+# ==========================================
+
+@staff_member_required
+def admin_dashboard(request):
+    """Dashboard administrateur"""
+    # Statistiques globales
+    stats = StatisticsService.get_admin_stats()
+    
+    # Commandes en attente
+    commandes_attente = Commande.objects.filter(
+        statut='EN_ATTENTE'
+    ).select_related('client').order_by('date_creation')[:10]
+    
+    # Transporteurs disponibles
+    transporteurs_disponibles = Transporteur.objects.filter(
+        disponible=True, actif=True
+    ).select_related('user')[:10]
+    
+    # Incidents récents
+    incidents_recents = Incident.objects.filter(
+        resolu=False
+    ).select_related('mission', 'transporteur').order_by('-date_signalement')[:5]
+    
+    context = {
+        'stats': stats,
+        'commandes_attente': commandes_attente,
+        'transporteurs_disponibles': transporteurs_disponibles,
+        'incidents_recents': incidents_recents,
+    }
+    
+    return render(request, 'transport/admin_dashboard.html', context)
+
+@staff_member_required
+def affecter_commande(request, commande_id):
+    """Affectation d'une commande à un transporteur"""
+    commande = get_object_or_404(Commande, id=commande_id, statut='EN_ATTENTE')
+    
+    if request.method == 'POST':
+        transporteur_id = request.POST.get('transporteur_id')
+        if transporteur_id:
+            transporteur = get_object_or_404(Transporteur, id=transporteur_id, disponible=True)
+            
+            # Vérifications
+            if transporteur.capacite_charge < commande.poids:
+                messages.error(request, "Capacité insuffisante.")
+                return redirect('admin_dashboard')
+            
+            # Créer la mission
+            mission = MissionTransporteur.objects.create(
+                commande=commande,
+                transporteur=transporteur,
+                statut='ASSIGNEE'
+            )
+            
+            # Mettre à jour la commande
+            commande.statut = 'AFFECTEE'
+            commande.transporteur = transporteur
+            commande.save()
+            
+            # Notification transporteur
+            NotificationService.create_notification(
+                destinataire=transporteur.user,
+                type_notif='MISSION',
+                titre='Nouvelle mission assignée',
+                message=f'Commande #{commande.id} - {commande.type_marchandise}',
                 commande=commande,
                 priorite='HAUTE'
             )
-        except MissionTransporteur.DoesNotExist:
-            pass
-        
-        messages.success(request, f"Commande #{commande.id} annulée avec succès.")
-        return redirect('liste_commandes')
+            
+            messages.success(request, f'Commande affectée à {transporteur.user.username}')
+            return redirect('admin_dashboard')
     
-    return render(request, 'transport/supprimer_commande.html', {'commande': commande})
+    # Transporteurs disponibles
+    transporteurs = Transporteur.objects.filter(
+        disponible=True,
+        capacite_charge__gte=commande.poids
+    ).select_related('user')
+    
+    context = {
+        'commande': commande,
+        'transporteurs': transporteurs,
+    }
+    
+    return render(request, 'transport/affecter_commande.html', context)
+
+@staff_member_required
+def gestion_utilisateurs(request):
+    """Gestion des utilisateurs"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        user_id = request.POST.get('user_id')
+        
+        if user_id:
+            user = get_object_or_404(User, id=user_id)
+            
+            if action == 'toggle_active':
+                user.is_active = not user.is_active
+                user.save()
+                status = "activé" if user.is_active else "désactivé"
+                messages.success(request, f"Utilisateur {user.username} {status}")
+    
+    # Liste des utilisateurs avec filtres
+    users = User.objects.all().order_by('-date_joined')
+    
+    # Pagination
+    paginator = Paginator(users, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'transport/gestion_utilisateurs.html', context)
+
+# ==========================================
+# RAPPORTS ET EXPORTS
+# ==========================================
 
 @login_required
 def generer_rapport(request):
-    """Génération de rapport de commandes"""
-    # Déterminer le profil
-    is_admin = request.user.is_staff
-    client = None
-    
-    if not is_admin:
-        try:
-            client = request.user.client
-        except Client.DoesNotExist:
-            messages.error(request, "Profil client requis pour générer un rapport.")
-            return redirect('index')
-    
+    """Génération de rapports"""
     if request.method == 'POST':
-        form = RapportForm(request.POST)
-        if form.is_valid():
-            date_debut = form.cleaned_data['date_debut']
-            date_fin = form.cleaned_data['date_fin']
-            format_export = form.cleaned_data['format_export']
-            
-            # Filtrer les commandes
-            if is_admin:
-                commandes = Commande.objects.filter(
-                    date_creation__date__gte=date_debut,
-                    date_creation__date__lte=date_fin
-                ).select_related(
-                    'client', 'transporteur', 'adresse_enlevement', 'adresse_livraison'
-                ).order_by('-date_creation')
-            else:
+        date_debut = datetime.strptime(request.POST['date_debut'], '%Y-%m-%d').date()
+        date_fin = datetime.strptime(request.POST['date_fin'], '%Y-%m-%d').date()
+        format_export = request.POST.get('format_export', 'csv')
+        
+        # Filtrer les commandes selon les permissions
+        if request.user.is_staff:
+            commandes = Commande.objects.filter(
+                date_creation__date__gte=date_debut,
+                date_creation__date__lte=date_fin
+            ).select_related('client', 'transporteur')
+        else:
+            try:
+                client = request.user.client
                 commandes = Commande.objects.filter(
                     client=client,
                     date_creation__date__gte=date_debut,
                     date_creation__date__lte=date_fin
-                ).select_related(
-                    'transporteur', 'adresse_enlevement', 'adresse_livraison'
-                ).order_by('-date_creation')
-            
-            if format_export == 'csv':
-                # Export CSV
-                response = HttpResponse(content_type='text/csv; charset=utf-8')
-                filename = f'rapport_commandes_{date_debut}_{date_fin}.csv'
-                response['Content-Disposition'] = f'attachment; filename="{filename}"'
-                
-                # BOM pour Excel
-                response.write('\ufeff'.encode('utf8'))
-                
-                writer = csv.writer(response)
-                # En-têtes
-                headers = ['N° Commande', 'Date', 'Type Marchandise', 'Poids (kg)', 
-                          'Ville Enlèvement', 'Ville Livraison', 'Statut']
-                if is_admin:
-                    headers.insert(1, 'Client')
-                
-                writer.writerow(headers)
-                
-                # Données
-                for commande in commandes:
-                    row = [
-                        commande.id,
-                        commande.date_creation.strftime('%d/%m/%Y %H:%M'),
-                        commande.type_marchandise,
-                        commande.poids,
-                        commande.adresse_enlevement.ville,
-                        commande.adresse_livraison.ville,
-                        commande.get_statut_display()
-                    ]
-                    if is_admin:
-                        row.insert(1, commande.client.user.username)
-                    
-                    writer.writerow(row)
-                
-                return response
-            else:
-                # Affichage HTML/PDF
-                # Calculer les statistiques
-                stats = {
-                    'total_commandes': commandes.count(),
-                    'commandes_livrees': commandes.filter(statut='LIVREE').count(),
-                    'commandes_en_cours': commandes.filter(
-                        statut__in=['EN_ATTENTE', 'AFFECTEE', 'EN_TRANSIT']
-                    ).count(),
-                    'commandes_annulees': commandes.filter(statut='ANNULEE').count(),
-                }
-                
-                # Statistiques supplémentaires
-                poids_total = commandes.aggregate(Sum('poids'))['poids__sum'] or 0
-                
-                # Taux de livraison
-                taux_livraison = 0
-                if stats['total_commandes'] > 0:
-                    taux_livraison = round(
-                        (stats['commandes_livrees'] / stats['total_commandes']) * 100, 1
-                    )
-                
-                context = {
-                    'commandes': commandes,
-                    'date_debut': date_debut,
-                    'date_fin': date_fin,
-                    'client': client,
-                    'is_admin': is_admin,
-                    'stats': stats,
-                    'poids_total': poids_total,
-                    'taux_livraison': taux_livraison,
-                }
-                
-                return render(request, 'transport/rapport_pdf.html', context)
-    else:
-        # Proposer des dates par défaut (dernier mois)
-        date_fin = timezone.now().date()
-        date_debut = date_fin - timedelta(days=30)
-        
-        form = RapportForm(initial={
-            'date_debut': date_debut,
-            'date_fin': date_fin,
-        })
-    
-    return render(request, 'transport/generer_rapport.html', {
-        'form': form,
-        'is_admin': is_admin
-    })
-
-@login_required
-def messagerie_support(request):
-    """Interface de messagerie support"""
-    # Les admins utilisent une interface différente
-    if request.user.is_staff:
-        return redirect('support_clients')
-    
-    # Récupérer l'historique de conversation
-    messages_chain = SupportMessage.objects.filter(
-        Q(sender=request.user, destinataire__is_staff=True) | 
-        Q(sender__is_staff=True, destinataire=request.user)
-    ).order_by('date_envoi')
-    
-    # Marquer comme lus
-    SupportMessage.objects.filter(
-        sender__is_staff=True, 
-        destinataire=request.user, 
-        lu=False
-    ).update(lu=True)
-    
-    if request.method == 'POST':
-        contenu = request.POST.get('contenu', '').strip()
-        if contenu:
-            # Trouver un admin disponible
-            admin_user = User.objects.filter(is_staff=True).first()
-            if admin_user:
-                # Créer le message
-                SupportMessage.objects.create(
-                    sender=request.user, 
-                    destinataire=admin_user, 
-                    contenu=contenu
                 )
-                
-                # Notifier l'admin
-                Notification.objects.create(
-                    destinataire=admin_user,
-                    type='SYSTEME',
-                    titre='Nouveau message support',
-                    message=f'Message de {request.user.username}',
-                    priorite='NORMALE'
-                )
-                
-                messages.success(request, "Message envoyé au support.")
-            else:
-                messages.error(request, "Aucun administrateur disponible.")
+            except Client.DoesNotExist:
+                messages.error(request, "Profil client requis.")
+                return redirect('index')
+        
+        if format_export == 'csv':
+            response = HttpResponse(content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = f'attachment; filename="rapport_{date_debut}_{date_fin}.csv"'
             
-            return redirect('messagerie_support')
+            writer = csv.writer(response)
+            writer.writerow(['N° Commande', 'Date', 'Client', 'Type', 'Poids', 'Statut'])
+            
+            for commande in commandes:
+                writer.writerow([
+                    commande.id,
+                    commande.date_creation.strftime('%d/%m/%Y'),
+                    commande.client.user.username,
+                    commande.type_marchandise,
+                    commande.poids,
+                    commande.get_statut_display()
+                ])
+            
+            return response
     
-    # Informations de contact
-    contact_info = {
-        'email': ParametreSysteme.objects.filter(nom='email_contact').first(),
-        'telephone': '+212 600 000 000',  # À récupérer depuis les paramètres
-        'horaires': 'Lundi - Vendredi: 8h00 - 18h00',
-    }
-    
-    return render(request, 'transport/messagerie_support.html', {
-        'messages': messages_chain,
-        'contact_info': contact_info,
-    })
+    return render(request, 'transport/generer_rapport.html')
 
-# ===========================
-# FONCTIONS UTILITAIRES
-# ===========================
-
-def geocode_addresses(adr_enlev, adr_livr):
-    """Géocoder les adresses si l'API est disponible"""
-    try:
-        from .api_integrations import geocode_service
-        
-        coords_enlev = geocode_service.geocode_address(adr_enlev)
-        coords_livr = geocode_service.geocode_address(adr_livr)
-        
-        adr_enlev.latitude = coords_enlev.get('lat')
-        adr_enlev.longitude = coords_enlev.get('lng')
-        adr_enlev.save()
-        
-        adr_livr.latitude = coords_livr.get('lat')
-        adr_livr.longitude = coords_livr.get('lng')
-        adr_livr.save()
-        
-    except ImportError:
-        # API non disponible, utiliser des coordonnées par défaut ou villes connues
-        from .utils import calculer_distance
-        # Logique de fallback
-        pass
-    except Exception as e:
-        logger.warning(f"Erreur de géocodage: {e}")
-
-def calculate_distance_between_addresses(adr1, adr2):
-    """Calculer la distance entre deux adresses"""
-    try:
-        from .utils import calculer_distance
-        
-        if all([adr1.latitude, adr1.longitude, adr2.latitude, adr2.longitude]):
-            return calculer_distance(
-                adr1.latitude, adr1.longitude,
-                adr2.latitude, adr2.longitude
-            )
-        else:
-            # Estimation basée sur les villes
-            return estimate_distance_by_cities(adr1.ville, adr2.ville)
-    except:
-        return 50  # Distance par défaut
-
-def estimate_distance_by_cities(ville1, ville2):
-    """Estimer la distance entre deux villes"""
-    distances_villes = {
-        ('Casablanca', 'Rabat'): 90,
-        ('Casablanca', 'Marrakech'): 240,
-        ('Rabat', 'Fès'): 200,
-        ('Rabat', 'Marrakech'): 320,
-        ('Casablanca', 'Fès'): 290,
-        ('Marrakech', 'Agadir'): 250,
-        ('Casablanca', 'Tanger'): 340,
-        ('Rabat', 'Tanger'): 250,
-        ('Fès', 'Meknès'): 60,
-        ('Casablanca', 'Agadir'): 490,
-    }
-    
-    key1 = (ville1, ville2)
-    key2 = (ville2, ville1)
-    
-    return distances_villes.get(key1, distances_villes.get(key2, 100))
-
-def notify_planners_new_order(commande):
-    """Notifier les planificateurs d'une nouvelle commande"""
-    planificateurs = User.objects.filter(is_staff=True, is_active=True)
-    
-    for user in planificateurs:
-        Notification.objects.create(
-            destinataire=user,
-            type='MISSION',
-            titre='Nouvelle commande à affecter',
-            message=f'Commande #{commande.id} - {commande.type_marchandise} '
-                   f'({commande.poids}kg) - {commande.adresse_enlevement.ville} → '
-                   f'{commande.adresse_livraison.ville}',
-            commande=commande,
-            priorite='HAUTE' if commande.priorite == 2 else 'NORMALE'
-        )
-
-def get_client_recent_addresses(client):
-    """Obtenir les adresses récentes d'un client"""
-    try:
-        # Adresses d'enlèvement récentes
-        enlevements = Adresse.objects.filter(
-            commandes_enlevement__client=client
-        ).distinct().order_by('-id')[:5]
-        
-        # Adresses de livraison récentes
-        livraisons = Adresse.objects.filter(
-            commandes_livraison__client=client
-        ).distinct().order_by('-id')[:5]
-        
-        return {
-            'enlevements': enlevements,
-            'livraisons': livraisons
-        }
-    except:
-        return {'enlevements': [], 'livraisons': []}
-
-def calculer_prix_estimation(poids, distance, type_marchandise):
-    """Calculer une estimation de prix pour une commande - Version améliorée"""
-    try:
-        # Récupérer les paramètres depuis la base de données
-        prix_base = get_system_parameter('prix_base_livraison', 50)
-        prix_kg = get_system_parameter('prix_par_kg', 2)
-        prix_km = get_system_parameter('prix_par_km', 1.5)
-        
-        # Multiplicateurs selon le type de marchandise
-        multiplicateurs = {
-            'standard': 1.0,
-            'fragile': 1.3,
-            'perissable': 1.5,
-            'dangereux': 2.0,
-            'urgent': 1.8,
-        }
-        
-        multiplicateur = multiplicateurs.get(type_marchandise.lower(), 1.0)
-        
-        # Calcul du prix de base
-        prix_total = prix_base + (poids * prix_kg) + (distance * prix_km)
-        
-        # Application du multiplicateur
-        prix_total *= multiplicateur
-        
-        # Arrondir à 2 décimales
-        return round(prix_total, 2)
-        
-    except Exception as e:
-        logger.error(f"Erreur calcul prix: {e}")
-        return 100.0  # Prix par défaut
-
-def get_system_parameter(nom, default_value):
-    """Récupérer un paramètre système avec valeur par défaut"""
-    try:
-        param = ParametreSysteme.objects.get(nom=nom)
-        return float(param.valeur)
-    except (ParametreSysteme.DoesNotExist, ValueError):
-        return default_value
-
-# ===========================
-# VUES API/AJAX - Améliorées
-# ===========================
+# ==========================================
+# API ET UTILITAIRES
+# ==========================================
 
 @login_required
 def api_notifications_count(request):
-    """API pour obtenir le nombre de notifications non lues"""
-    try:
-        count = Notification.objects.filter(
-            destinataire=request.user,
-            lu=False
-        ).count()
-        
-        # Ajouter les notifications récentes
-        notifications_recentes = Notification.objects.filter(
-            destinataire=request.user,
-            lu=False
-        ).order_by('-date_creation')[:5].values(
-            'id', 'titre', 'message', 'type', 'priorite', 'date_creation'
-        )
-        
-        return JsonResponse({
-            'count': count,
-            'notifications': list(notifications_recentes)
-        })
-    except Exception as e:
-        logger.error(f"Erreur API notifications: {e}")
-        return JsonResponse({'count': 0, 'notifications': []})
+    """API pour le nombre de notifications"""
+    count = Notification.objects.filter(
+        destinataire=request.user,
+        lu=False
+    ).count()
+    
+    return JsonResponse({'count': count})
 
 @login_required
 def api_marquer_notification_lue(request, notification_id):
@@ -1011,124 +567,25 @@ def api_marquer_notification_lue(request, notification_id):
                 destinataire=request.user
             )
             notification.marquer_comme_lue()
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Notification marquée comme lue'
-            })
+            return JsonResponse({'success': True})
         except Notification.DoesNotExist:
-            return JsonResponse({
-                'success': False, 
-                'error': 'Notification non trouvée'
-            })
-        except Exception as e:
-            logger.error(f"Erreur API notification lue: {e}")
-            return JsonResponse({
-                'success': False, 
-                'error': 'Erreur serveur'
-            })
+            return JsonResponse({'success': False, 'error': 'Non trouvée'})
     
     return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
 
-# ===========================
-# VUES SUPPLÉMENTAIRES
-# ===========================
+# ==========================================
+# FONCTIONS UTILITAIRES
+# ==========================================
 
-@login_required
-def notifications_list(request):
-    """Liste complète des notifications utilisateur"""
-    notifications = Notification.objects.filter(
-        destinataire=request.user
-    ).order_by('-date_creation')
-    
-    # Pagination
-    paginator = Paginator(notifications, 25)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    # Marquer les notifications comme lues quand on les consulte
-    notifications_non_lues = notifications.filter(lu=False)
-    if notifications_non_lues.exists():
-        notifications_non_lues.update(lu=True)
-    
-    context = {
-        'page_obj': page_obj,
-        'total_notifications': notifications.count(),
-    }
-    
-    return render(request, 'transport/notifications_list.html', context)
-
-@login_required
-def profile_settings(request):
-    """Paramètres de profil utilisateur"""
-    user_type = get_user_type(request.user)
-    
-    if user_type == 'client':
-        try:
-            profile = request.user.client
-        except Client.DoesNotExist:
-            messages.error(request, "Profil client non trouvé.")
-            return redirect('index')
-    elif user_type == 'transporteur':
-        try:
-            profile = request.user.transporteur
-        except Transporteur.DoesNotExist:
-            messages.error(request, "Profil transporteur non trouvé.")
-            return redirect('index')
+def get_user_type(user):
+    """Déterminer le type d'utilisateur"""
+    if user.is_superuser:
+        return 'admin'
+    elif user.is_staff:
+        return 'admin'
+    elif hasattr(user, 'client'):
+        return 'client'
+    elif hasattr(user, 'transporteur'):
+        return 'transporteur'
     else:
-        messages.info(request, "Paramètres disponibles pour les clients et transporteurs uniquement.")
-        return redirect('index')
-    
-    if request.method == 'POST':
-        # Traiter les modifications de profil
-        # ... Logique de mise à jour
-        messages.success(request, "Profil mis à jour avec succès.")
-        return redirect('profile_settings')
-    
-    context = {
-        'profile': profile,
-        'user_type': user_type,
-    }
-    
-    return render(request, 'transport/profile_settings.html', context)
-
-@login_required
-def help_center(request):
-    """Centre d'aide et FAQ"""
-    faq_items = [
-        {
-            'question': 'Comment créer une nouvelle commande?',
-            'answer': 'Rendez-vous dans "Nouvelle Commande" et remplissez les informations requises.'
-        },
-        {
-            'question': 'Comment suivre ma livraison?',
-            'answer': 'Utilisez le numéro de commande dans la section "Suivi" pour voir la progression en temps réel.'
-        },
-        {
-            'question': 'Quels sont les délais de livraison?',
-            'answer': 'Les délais varient selon la distance et le type de marchandise. En moyenne: 24-48h.'
-        },
-        {
-            'question': 'Comment annuler une commande?',
-            'answer': 'Vous pouvez annuler une commande dans les 24h suivant sa création, avant qu\'elle soit prise en charge.'
-        },
-    ]
-    
-    context = {
-        'faq_items': faq_items,
-        'user_type': get_user_type(request.user),
-    }
-    
-    return render(request, 'transport/help_center.html', context)
-
-# ===========================
-# GESTION D'ERREURS
-# ===========================
-
-def handler404(request, exception):
-    """Page d'erreur 404 personnalisée"""
-    return render(request, 'errors/404.html', status=404)
-
-def handler500(request):
-    """Page d'erreur 500 personnalisée"""
-    return render(request, 'errors/500.html', status=500)
+        return 'incomplete'

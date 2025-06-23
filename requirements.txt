@@ -1,47 +1,59 @@
+# requirements.txt - Dépendances optimisées
+
 # Core Django
 Django==5.0.1
 django-environ==0.11.2
-python-dotenv==1.0.1
+python-decouple==3.8
 
-# Database
-psycopg2-binary==2.9.9
+# Base de données
+psycopg2-binary==2.9.9  # PostgreSQL (production)
+# sqlite3 inclus avec Django (développement)
 
-# REST API
+# API REST
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.1
 django-cors-headers==4.3.1
+django-filter==23.5
 
-# WebSockets & Real-time
+# WebSockets (optionnel pour temps réel)
 channels==4.0.0
-channels-redis==4.2.0
-daphne==4.1.0
-redis==5.0.1
-django-redis==5.4.0
+channels-redis==4.2.0  # Nécessite Redis
 
-# API Integrations
+# Cache et performance
+django-redis==5.4.0  # Nécessite Redis
+redis==5.0.1
+
+# APIs externes (optionnel)
 googlemaps==4.10.0
 openrouteservice==2.3.3
 geopy==2.4.1
 requests==2.32.3
-httpx==0.26.0
 
-# File Processing
-Pillow==10.2.0
-reportlab==4.0.9
+# Traitement fichiers
+Pillow==10.2.0  # Images
+reportlab==4.0.9  # PDF
 
-# Authentication & Security
-django-allauth==0.60.1
-PyJWT==2.8.0
+# Sécurité
 cryptography==42.0.2
 
 # Production
-gunicorn==21.2.0
-whitenoise==6.6.0
+gunicorn==21.2.0  # Serveur WSGI
+whitenoise==6.6.0  # Fichiers statiques
 
-# Utils
+# Utilitaires
 pytz==2024.1
 python-dateutil==2.8.2
 
-# Development
+# Développement (optionnel)
 django-debug-toolbar==4.2.0
 django-extensions==3.2.3
+
+# Tests (optionnel)
+pytest==7.4.4
+pytest-django==4.8.0
+factory-boy==3.3.0
+
+# Linting et qualité code (optionnel)
+flake8==7.0.0
+black==23.12.1
+isort==5.13.2
