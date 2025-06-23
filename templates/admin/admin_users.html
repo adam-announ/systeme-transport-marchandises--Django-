@@ -1,0 +1,271 @@
+{% extends 'utilisateurs/base.html' %}
+{% block title %}Gestion Utilisateurs - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Admin -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-user-shield"></i> Panel Admin</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'admin_users' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-users"></i> Gérer utilisateurs
+                    </a>
+                    <a href="{% url 'admin_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Toutes les commandes
+                    </a>
+                    <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar"></i> Rapports
+                    </a>
+                    <a href="{% url 'admin_system_config' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog"></i> Configuration
+                    </a>
+                    <a href="{% url 'admin_notifications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Gestion des Utilisateurs</h1>
+                <a href="{% url 'admin_create_user' %}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Nouvel utilisateur
+                </a>
+            </div>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Recherche</label>
+                            <input type="text" class="form-control" name="search" value="{{ request.GET.search }}" placeholder="Nom, email...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Rôle</label>
+                            <select class="form-control" name="role">
+                                <option value="">Tous les rôles</option>
+                                <option value="admin" {% if request.GET.role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="client" {% if request.GET.role == 'client' %}selected{% endif %}>Client</option>
+                                <option value="transporteur" {% if request.GET.role == 'transporteur' %}selected{% endif %}>Transporteur</option>
+                                <option value="driver" {% if request.GET.role == 'driver' %}selected{% endif %}>Chauffeur</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select class="form-control" name="status">
+                                <option value="">Tous</option>
+                                <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Actifs</option>
+                                <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inactifs</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-search"></i> Filtrer
+                            </button>
+                            <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Liste des utilisateurs -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Liste des utilisateurs ({{ users.count }} résultats)</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nom complet</th>
+                                    <th>Email</th>
+                                    <th>Rôle</th>
+                                    <th>Téléphone</th>
+                                    <th>Statut</th>
+                                    <th>Inscription</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>{{ user.id }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar bg-light rounded-circle p-2 me-2">
+                                                <i class="fas fa-user text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+                                                <br><small class="text-muted">{{ user.username }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ user.email }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if user.role == 'admin' %}bg-danger
+                                            {% elif user.role == 'transporteur' %}bg-warning
+                                            {% elif user.role == 'client' %}bg-primary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ user.get_role_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.phone|default:"-" }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                            <span class="badge bg-success">Actif</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user.created_at|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'admin_edit_user' user.id %}" class="btn btn-sm btn-outline-primary" title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-warning" onclick="toggleUser({{ user.id }})" title="{% if user.is_active %}Désactiver{% else %}Activer{% endif %}">
+                                                <i class="fas fa-{% if user.is_active %}ban{% else %}check{% endif %}"></i>
+                                            </button>
+                                            {% if user.role != 'admin' %}
+                                            <button class="btn btn-sm btn-outline-danger" onclick="deleteUser({{ user.id }})" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">
+                                        <i class="fas fa-users fa-3x mb-3"></i>
+                                        <p>Aucun utilisateur trouvé</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="confirmMessage"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmAction">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleUser(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    document.getElementById('confirmMessage').textContent = 'Êtes-vous sûr de vouloir changer le statut de cet utilisateur ?';
+    document.getElementById('confirmAction').onclick = function() {
+        fetch(`/admin/users/${userId}/toggle/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+        modal.hide();
+    };
+    modal.show();
+}
+
+function deleteUser(userId) {
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    document.getElementById('confirmMessage').textContent = 'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.';
+    document.getElementById('confirmAction').onclick = function() {
+        // Implémentation de la suppression
+        console.log('Suppression utilisateur:', userId);
+        modal.hide();
+    };
+    modal.show();
+}
+</script>
+
+<style>
+.avatar {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}

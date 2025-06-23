@@ -1,0 +1,389 @@
+{% extends 'utilisateurs/base.html' %}
+{% block title %}Dashboard Transporteur - Système de Transport{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Transporteur -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Commandes disponibles
+                        {% if commandes_disponibles > 0 %}
+                        <span class="badge bg-primary float-end">{{ commandes_disponibles }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                        {% if livraisons_actives > 0 %}
+                        <span class="badge bg-success float-end">{{ livraisons_actives }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-truck-moving"></i> Mes véhicules
+                    </a>
+                    <a href="{% url 'transporteur_itineraire' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-route"></i> Optimiser itinéraire
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">Bienvenue, {{ request.session.first_name }} {{ request.session.last_name }}</h1>
+                    <p class="text-muted">Gérez vos livraisons et optimisez vos tournées</p>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i> Actualiser
+                    </button>
+                    <button class="btn btn-outline-success" onclick="toggleAvailability()">
+                        <i class="fas fa-power-off"></i> 
+                        <span id="statusText">{% if transporteur_disponible %}Disponible{% else %}Indisponible{% endif %}</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-success h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Livraisons complétées
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.livraisons_completees }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-warning h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        En cours de livraison
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.livraisons_en_cours }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-truck fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-info h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                        Revenus ce mois
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.revenus_mois }}€</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-euro-sign fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-4">
+                    <div class="card border-left-primary h-100 py-2">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Note moyenne
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                        {{ stats.note_moyenne }}/5
+                                        <small class="text-warning">
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= stats.note_moyenne %}★{% else %}☆{% endif %}
+                                            {% endfor %}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-star fa-2x text-gray-300"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Livraisons du jour -->
+            <div class="row">
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary">Livraisons du jour</h6>
+                            <a href="{% url 'transporteur_livraisons' %}" class="btn btn-sm btn-outline-primary">Voir toutes</a>
+                        </div>
+                        <div class="card-body">
+                            {% if livraisons_jour %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Commande</th>
+                                            <th>Destination</th>
+                                            <th>Heure prévue</th>
+                                            <th>Statut</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for livraison in livraisons_jour %}
+                                        <tr>
+                                            <td>#{{ livraison.commande.id }}</td>
+                                            <td>{{ livraison.commande.destination|truncatechars:40 }}</td>
+                                            <td>{{ livraison.commande.date_livraison_prevue|time:"H:i" }}</td>
+                                            <td>
+                                                <span class="badge badge-{% if livraison.statut == 'livree' %}success{% elif livraison.statut == 'en_cours' %}warning{% else %}secondary{% endif %}">
+                                                    {{ livraison.get_statut_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if livraison.statut != 'livree' %}
+                                                <button class="btn btn-sm btn-primary" onclick="updateStatus({{ livraison.id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                {% endif %}
+                                                <button class="btn btn-sm btn-info" onclick="showDetails({{ livraison.id }})">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">Aucune livraison prévue aujourd'hui</p>
+                                <a href="{% url 'transporteur_commandes' %}" class="btn btn-primary">
+                                    Voir les commandes disponibles
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 mb-4">
+                    <!-- Notifications récentes -->
+                    <div class="card mb-3">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Notifications récentes</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if notifications %}
+                                {% for notif in notifications %}
+                                <div class="alert alert-{% if notif.type_notification == 'incident' %}danger{% elif notif.type_notification == 'nouvelle_commande' %}success{% else %}info{% endif %} alert-sm">
+                                    <strong>{{ notif.titre }}</strong><br>
+                                    <small>{{ notif.message|truncatechars:80 }}</small>
+                                    <br><small class="text-muted">{{ notif.date_creation|timesince }} ago</small>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">Aucune notification récente</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Météo et infos trafic -->
+                    <div class="card">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Infos utiles</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="weather-widget mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-sun fa-2x text-warning me-2"></i>
+                                    <div>
+                                        <strong>Tangier</strong><br>
+                                        <span class="text-muted">22°C - Ensoleillé</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="traffic-info">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-road fa-2x text-info me-2"></i>
+                                    <div>
+                                        <strong>Trafic</strong><br>
+                                        <span class="text-success">Fluide sur la majorité des axes</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+                            
+                            <div class="quick-actions">
+                                <a href="{% url 'transporteur_commandes' %}" class="btn btn-primary btn-sm btn-block mb-2">
+                                    <i class="fas fa-search"></i> Nouvelles commandes
+                                </a>
+                                <a href="{% url 'transporteur_vehicules' %}" class="btn btn-info btn-sm btn-block">
+                                    <i class="fas fa-truck"></i> Gérer véhicules
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de mise à jour du statut -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mettre à jour le statut de livraison</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nouveau statut</label>
+                        <select class="form-control" id="newStatus" required>
+                            <option value="">Sélectionner un statut</option>
+                            <option value="en_cours">En cours</option>
+                            <option value="livree">Livrée</option>
+                            <option value="incident">Incident</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Position actuelle (optionnel)</label>
+                        <input type="text" class="form-control" id="currentPosition" placeholder="Ex: Rue Mohammed V, Rabat">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" rows="3" placeholder="Commentaires sur la livraison..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveStatus()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentLivraisonId = null;
+
+function refreshData() {
+    location.reload();
+}
+
+function toggleAvailability() {
+    // Implémentation du toggle de disponibilité
+    const statusText = document.getElementById('statusText');
+    const isAvailable = statusText.textContent.trim() === 'Disponible';
+    
+    fetch('/api/transporteur/toggle-availability/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    }).then(response => {
+        if (response.ok) {
+            statusText.textContent = isAvailable ? 'Indisponible' : 'Disponible';
+        }
+    });
+}
+
+function updateStatus(livraisonId) {
+    currentLivraisonId = livraisonId;
+    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    modal.show();
+}
+
+function saveStatus() {
+    const status = document.getElementById('newStatus').value;
+    const position = document.getElementById('currentPosition').value;
+    const notes = document.getElementById('notes').value;
+    
+    if (!status) {
+        alert('Veuillez sélectionner un statut');
+        return;
+    }
+    
+    fetch(`/transporteur/livraisons/${currentLivraisonId}/update/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            statut: status,
+            position_actuelle: position,
+            notes_livraison: notes
+        })
+    }).then(response => {
+        if (response.ok) {
+            location.reload();
+        }
+    });
+}
+
+function showDetails(livraisonId) {
+    // Afficher les détails de la livraison
+    window.location.href = `/transporteur/livraisons/${livraisonId}/`;
+}
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+.text-gray-300 {
+    color: #dddfeb !important;
+}
+.alert-sm {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

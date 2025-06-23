@@ -1,0 +1,376 @@
+{% extends 'utilisateurs/base.html' %}
+{% block title %}Mes Véhicules - Transporteur{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Transporteur -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Commandes disponibles
+                        {% if commandes_disponibles > 0 %}
+                        <span class="badge bg-primary float-end">{{ commandes_disponibles }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                        {% if livraisons_actives > 0 %}
+                        <span class="badge bg-success float-end">{{ livraisons_actives }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-truck-moving"></i> Mes véhicules
+                    </a>
+                    <a href="{% url 'transporteur_itineraire' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-route"></i> Optimiser itinéraire
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Mes Véhicules</h1>
+                <a href="{% url 'transporteur_add_vehicule' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Ajouter un véhicule
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <!-- Statistiques rapides -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-primary">{{ vehicules.count }}</h3>
+                            <p class="mb-0">Véhicules total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-success">{{ vehicules_disponibles }}</h3>
+                            <p class="mb-0">Disponibles</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning">{{ vehicules_en_service }}</h3>
+                            <p class="mb-0">En service</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h3 class="text-info">{{ capacite_totale }}</h3>
+                            <p class="mb-0">Capacité totale (kg)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des véhicules -->
+            {% if vehicules %}
+                <div class="row">
+                    {% for vehicule in vehicules %}
+                    <div class="col-lg-6 mb-4">
+                        <div class="card h-100 {% if not vehicule.disponible %}bg-light{% endif %}">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-truck-moving text-primary"></i> 
+                                    {{ vehicule.immatriculation }}
+                                </h6>
+                                <div class="btn-group">
+                                    <span class="badge {% if vehicule.disponible %}bg-success{% else %}bg-warning{% endif %}">
+                                        {% if vehicule.disponible %}Disponible{% else %}En service{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <small class="text-muted">Type de véhicule</small>
+                                        <p class="mb-1">
+                                            <i class="fas fa-truck"></i> {{ vehicule.get_type_vehicule_display }}
+                                        </p>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Capacité maximale</small>
+                                        <p class="mb-1">
+                                            <i class="fas fa-weight-hanging"></i> {{ vehicule.capacite_max }} kg
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Informations sur l'utilisation -->
+                                {% if not vehicule.disponible %}
+                                <div class="alert alert-warning alert-sm">
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>En cours de livraison</strong>
+                                    <br><small>Livraison #{{ vehicule.livraison_actuelle.id|default:"--" }}</small>
+                                </div>
+                                {% endif %}
+
+                                <!-- Statistiques du véhicule -->
+                                <div class="row text-center mt-3">
+                                    <div class="col-4">
+                                        <small class="text-muted">Livraisons</small>
+                                        <div class="font-weight-bold">{{ vehicule.total_livraisons|default:0 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Km parcourus</small>
+                                        <div class="font-weight-bold">{{ vehicule.km_parcourus|default:0 }}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">Note moyenne</small>
+                                        <div class="font-weight-bold">
+                                            {{ vehicule.note_moyenne|default:"-" }}
+                                            {% if vehicule.note_moyenne %}
+                                            <small class="text-warning">★</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        Ajouté le {{ vehicule.date_ajout|date:"d/m/Y"|default:"--" }}
+                                    </small>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editVehicule({{ vehicule.id }})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-info" onclick="showVehiculeDetails({{ vehicule.id }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        {% if vehicule.disponible %}
+                                        <button class="btn btn-sm btn-outline-warning" onclick="toggleDisponibilite({{ vehicule.id }})">
+                                            <i class="fas fa-pause"></i>
+                                        </button>
+                                        {% else %}
+                                        <button class="btn btn-sm btn-outline-success" onclick="toggleDisponibilite({{ vehicule.id }})">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                        <h4>Aucun véhicule enregistré</h4>
+                        <p class="text-muted">Ajoutez votre premier véhicule pour commencer à accepter des commandes.</p>
+                        <a href="{% url 'transporteur_add_vehicule' %}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Ajouter un véhicule
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'édition de véhicule -->
+<div class="modal fade" id="editVehiculeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier le véhicule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editVehiculeForm">
+                    <div class="mb-3">
+                        <label class="form-label">Immatriculation</label>
+                        <input type="text" class="form-control" id="editImmatriculation" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type de véhicule</label>
+                        <select class="form-control" id="editTypeVehicule" required>
+                            <option value="camionnette">Camionnette</option>
+                            <option value="camion">Camion</option>
+                            <option value="semi_remorque">Semi-remorque</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Capacité maximale (kg)</label>
+                        <input type="number" class="form-control" id="editCapaciteMax" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="editDisponible">
+                            <label class="form-check-label" for="editDisponible">
+                                Véhicule disponible
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="saveVehiculeChanges()">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de détails du véhicule -->
+<div class="modal fade" id="detailsVehiculeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails du véhicule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="vehiculeDetailsContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentVehiculeId = null;
+
+function editVehicule(vehiculeId) {
+    currentVehiculeId = vehiculeId;
+    
+    // Charger les données du véhicule
+    fetch(`/api/vehicules/${vehiculeId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('editImmatriculation').value = data.immatriculation;
+            document.getElementById('editTypeVehicule').value = data.type_vehicule;
+            document.getElementById('editCapaciteMax').value = data.capacite_max;
+            document.getElementById('editDisponible').checked = data.disponible;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editVehiculeModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des données du véhicule');
+        });
+}
+
+function saveVehiculeChanges() {
+    const data = {
+        immatriculation: document.getElementById('editImmatriculation').value,
+        type_vehicule: document.getElementById('editTypeVehicule').value,
+        capacite_max: parseFloat(document.getElementById('editCapaciteMax').value),
+        disponible: document.getElementById('editDisponible').checked
+    };
+    
+    fetch(`/api/vehicules/${currentVehiculeId}/update/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de la mise à jour');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la mise à jour du véhicule');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('editVehiculeModal')).hide();
+}
+
+function showVehiculeDetails(vehiculeId) {
+    fetch(`/api/vehicules/${vehiculeId}/details/`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('vehiculeDetailsContent').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('detailsVehiculeModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des détails');
+        });
+}
+
+function toggleDisponibilite(vehiculeId) {
+    fetch(`/api/vehicules/${vehiculeId}/toggle/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors du changement de statut');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors du changement de statut');
+    });
+}
+</script>
+
+<style>
+.alert-sm {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.font-weight-bold {
+    font-weight: bold !important;
+}
+</style>
+{% endblock %}
