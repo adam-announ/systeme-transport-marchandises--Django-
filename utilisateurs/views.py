@@ -8,10 +8,10 @@ from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
 from django.utils import timezone
 from datetime import datetime, timedelta
+from .services.api_service import TransportAPIService
 import json
 
 from .models import User, Commande, Vehicule, Livraison, Notification
-
 
 def accueil(request):
     return render(request, 'public/index.html')
@@ -1295,6 +1295,9 @@ def transporteur_add_vehicule(request):
     
     return render(request, 'transporteur/transporteur_add_vehicule.html')
 
+# Ajoutez cette correction à la fin de votre fichier utilisateurs/views.py
+# Remplacez la fonction transporteur_itineraire incomplète par celle-ci :
+
 @transporteur_required
 def transporteur_itineraire(request):
     user_id = request.session['user_id']
@@ -1306,4 +1309,113 @@ def transporteur_itineraire(request):
     ).select_related('commande')
     
     # Compteurs pour la sidebar
-    commandes_disponibles = Commande
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'livraisons_en_cours': livraisons_en_cours,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives
+    }
+    return render(request, 'transporteur/transporteur_itineraire.html', context)
+
+# Ajoutez aussi ces API endpoints manquants :
+
+def check_new_commandes(request):
+    """API pour vérifier s'il y a de nouvelles commandes pour les transporteurs"""
+    try:
+        # Cette fonction pourrait utiliser un cache ou une base de données
+        # pour détecter les nouvelles commandes depuis la dernière vérification
+        
+        # Pour la démo, on retourne toujours False
+        # Dans un vrai système, vous pourriez utiliser Redis ou une table de cache
+        
+        return JsonResponse({'hasNew': False})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+def check_livraisons_updates(request):
+    """API pour vérifier s'il y a des mises à jour sur les livraisons"""
+    try:
+        user_id = request.session.get('user_id')
+        role = request.session.get('role')
+        
+        if not user_id:
+            return JsonResponse({'error': 'Not authenticated'}, status=401)
+        
+        # Logique similaire à check_new_commandes
+        # Vous pourriez vérifier les timestamps de dernière modification
+        
+        return JsonResponse({'hasUpdates': False})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+# 1. Ajoutez cette vue dans utilisateurs/views.py
+
+@transporteur_required
+def transporteur_profil(request):
+    user_id = request.session['user_id']
+    user = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        try:
+            user.first_name = request.POST['first_name']
+            user.last_name = request.POST['last_name']
+            user.email = request.POST['email']
+            user.phone = request.POST.get('phone', '')
+            
+            # Vérifier si l'email n'est pas déjà utilisé par un autre utilisateur
+            if User.objects.filter(email=user.email).exclude(id=user.id).exists():
+                messages.error(request, 'Cet email est déjà utilisé par un autre utilisateur.')
+            else:
+                user.save()
+                
+                # Mettre à jour la session
+                request.session['first_name'] = user.first_name
+                request.session['last_name'] = user.last_name
+                
+                messages.success(request, 'Profil mis à jour avec succès!')
+                
+        except Exception as e:
+            messages.error(request, f'Erreur lors de la mise à jour: {str(e)}')
+    
+    # Statistiques du transporteur
+    stats = {
+        'total_livraisons': Livraison.objects.filter(
+            commande__transporteur_id=user_id,
+            statut='livree'
+        ).count(),
+        'revenus_totaux': Commande.objects.filter(
+            transporteur_id=user_id,
+            statut='livree'
+        ).aggregate(total=Sum('prix'))['total'] or 0,
+        'vehicules_actifs': Vehicule.objects.filter(
+            transporteur_id=user_id,
+            disponible=True
+        ).count(),
+        'note_moyenne': 4.2  # À calculer selon votre système de notation
+    }
+    
+    # Véhicules du transporteur
+    vehicules = Vehicule.objects.filter(transporteur_id=user_id)
+    
+    # Compteurs pour la sidebar
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'user': user,
+        'stats': stats,
+        'vehicules': vehicules,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives
+    }
+    return render(request, 'transporteur/transporteur_profil.html', context)

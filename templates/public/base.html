@@ -60,7 +60,11 @@
                                     <li><a class="dropdown-item" href="{% url 'client_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Client</a></li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
-                                {% if request.session.role == 'client' %}
+                                {% if request.session.role == 'admin' %}
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
+                                {% elif request.session.role == 'transporteur' %}
+                                    <li><a class="dropdown-item" href="{% url 'transporteur_profil' %}"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
+                                {% elif request.session.role == 'client' %}
                                     <li><a class="dropdown-item" href="{% url 'client_profil' %}"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
                                 {% else %}
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> Mon Profil</a></li>

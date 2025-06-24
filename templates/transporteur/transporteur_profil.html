@@ -1,0 +1,274 @@
+<!-- templates/transporteur/transporteur_profil.html -->
+{% extends 'public/base.html' %}
+{% block title %}Mon Profil - Transporteur{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Transporteur -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Commandes disponibles
+                        {% if commandes_disponibles > 0 %}
+                        <span class="badge bg-primary float-end">{{ commandes_disponibles }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                        {% if livraisons_actives > 0 %}
+                        <span class="badge bg-success float-end">{{ livraisons_actives }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-truck-moving"></i> Mes véhicules
+                    </a>
+                    <a href="{% url 'transporteur_itineraire' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-route"></i> Optimiser itinéraire
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Mon Profil</h1>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <!-- Informations personnelles -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-user-edit"></i> Informations personnelles</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">Nom</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">Téléphone</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}" placeholder="+33 6 12 34 56 78">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Nom d'utilisateur</label>
+                                    <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                                    <small class="text-muted">Le nom d'utilisateur ne peut pas être modifié</small>
+                                </div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Sauvegarder les modifications
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques et informations -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations du compte</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Rôle:</strong></td>
+                                    <td><span class="badge bg-warning text-dark">{{ user.get_role_display }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Membre depuis:</strong></td>
+                                    <td>{{ user.created_at|date:"F Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques de performance -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Mes performances</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-success">{{ stats.total_livraisons }}</h4>
+                                            <small>Livraisons réalisées</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-info">{{ stats.revenus_totaux }}€</h4>
+                                            <small>Revenus totaux</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-warning">{{ stats.note_moyenne }}/5</h4>
+                                            <small>Note moyenne</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body py-2">
+                                            <h4 class="text-primary">{{ stats.vehicules_actifs }}</h4>
+                                            <small>Véhicules actifs</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mes véhicules -->
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0"><i class="fas fa-truck-moving"></i> Mes véhicules</h6>
+                            <a href="{% url 'transporteur_vehicules' %}" class="btn btn-sm btn-outline-primary">Gérer</a>
+                        </div>
+                        <div class="card-body">
+                            {% if vehicules %}
+                                {% for vehicule in vehicules %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <strong>{{ vehicule.immatriculation }}</strong>
+                                        <br><small class="text-muted">{{ vehicule.get_type_vehicule_display }} - {{ vehicule.capacite_max }} kg</small>
+                                    </div>
+                                    <span class="badge {% if vehicule.disponible %}bg-success{% else %}bg-warning{% endif %}">
+                                        {% if vehicule.disponible %}Disponible{% else %}En service{% endif %}
+                                    </span>
+                                </div>
+                                {% if not forloop.last %}<hr class="my-2">{% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted text-center">Aucun véhicule enregistré</p>
+                                <a href="{% url 'transporteur_add_vehicule' %}" class="btn btn-warning btn-sm w-100">
+                                    <i class="fas fa-plus"></i> Ajouter un véhicule
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal changement de mot de passe -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Changer le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordForm">
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe actuel</label>
+                        <input type="password" class="form-control" id="currentPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="newPassword" required>
+                        <small class="text-muted">Minimum 8 caractères</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="submitPasswordChange()">
+                    <i class="fas fa-key"></i> Changer le mot de passe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function changePassword() {
+    const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+    modal.show();
+}
+
+function submitPasswordChange() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword.length < 8) {
+        alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('Les mots de passe ne correspondent pas');
+        return;
+    }
+    
+    // Simulation d'appel API
+    alert('Fonctionnalité de changement de mot de passe à implémenter');
+    bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
+    document.getElementById('passwordForm').reset();
+}
+</script>
+
+<style>
+.table-borderless td {
+    border: none;
+    padding: 0.25rem 0;
+}
+</style>
+{% endblock %}

@@ -26,6 +26,8 @@ urlpatterns = [
     path('admin/notifications/', views.admin_notifications, name='admin_notifications'),
     
     # Dashboard Transporteur
+    
+    path('transporteur/profil/', views.transporteur_profil, name='transporteur_profil'),
     path('transporteur/dashboard/', views.transporteur_dashboard, name='transporteur_dashboard'),
     path('transporteur/commandes/', views.transporteur_commandes, name='transporteur_commandes'),
     path('transporteur/commandes/<int:commande_id>/accept/', views.transporteur_accept_commande, name='transporteur_accept_commande'),
