@@ -162,7 +162,7 @@ def admin_dashboard(request):
         'stats': stats,
         'recent_commandes': recent_commandes
     }
-    return render(request, 'utilisateurs/admin_dashboard.html', context)
+    return render(request, 'admin/admin_dashboard.html', context)
 
 @admin_required
 def admin_users(request):
@@ -201,7 +201,7 @@ def admin_users(request):
         'is_paginated': paginator.num_pages > 1,
         'page_obj': users_page
     }
-    return render(request, 'utilisateurs/admin_users.html', context)
+    return render(request, 'admin/admin_users.html', context)
 
 @admin_required
 def admin_create_user(request):
@@ -213,11 +213,11 @@ def admin_create_user(request):
             
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'Ce nom d\'utilisateur existe déjà.')
-                return render(request, 'utilisateurs/admin_create_user.html')
+                return render(request, 'admin/admin_create_user.html')
             
             if User.objects.filter(email=email).exists():
                 messages.error(request, 'Cet email est déjà utilisé.')
-                return render(request, 'utilisateurs/admin_create_user.html')
+                return render(request, 'admin/admin_create_user.html')
             
             # Créer l'utilisateur
             user = User.objects.create(
@@ -237,7 +237,7 @@ def admin_create_user(request):
         except Exception as e:
             messages.error(request, f'Erreur lors de la création: {str(e)}')
     
-    return render(request, 'utilisateurs/admin_create_user.html')
+    return render(request, 'admin/admin_create_user.html')
 
 @admin_required
 def admin_edit_user(request, user_id):
@@ -264,7 +264,7 @@ def admin_edit_user(request, user_id):
         except Exception as e:
             messages.error(request, f'Erreur lors de la mise à jour: {str(e)}')
     
-    return render(request, 'utilisateurs/admin_edit_user.html', {'user': user})
+    return render(request, 'admin/admin_edit_user.html', {'user': user})
 
 @admin_required
 def admin_toggle_user(request, user_id):
@@ -298,7 +298,7 @@ def admin_commandes(request):
         'is_paginated': paginator.num_pages > 1,
         'page_obj': commandes_page
     }
-    return render(request, 'utilisateurs/admin_commandes.html', context)
+    return render(request, 'admin/admin_commandes.html', context)
 
 @admin_required
 def admin_reports(request):
@@ -354,7 +354,7 @@ def admin_reports(request):
         'top_destinations': top_destinations
     }
     
-    return render(request, 'utilisateurs/admin_reports.html', context)
+    return render(request, 'admin/admin_reports.html', context)
 
 @admin_required
 def admin_system_config(request):
@@ -363,7 +363,7 @@ def admin_system_config(request):
         # ou dans un fichier de configuration
         messages.success(request, 'Configuration mise à jour avec succès!')
     
-    return render(request, 'utilisateurs/admin_system_config.html')
+    return render(request, 'admin/admin_system_config.html')
 
 @admin_required
 def admin_notifications(request):
@@ -402,7 +402,7 @@ def admin_notifications(request):
         except Exception as e:
             messages.error(request, f'Erreur lors de l\'envoi: {str(e)}')
     
-    return render(request, 'utilisateurs/admin_notifications.html')
+    return render(request, 'admin/admin_notifications.html')
 
 # ==================== VUES TRANSPORTEUR ====================
 
@@ -440,7 +440,7 @@ def transporteur_dashboard(request):
         utilisateur_id=user_id
     ).order_by('-date_creation')[:5]
     
-    # Compteurs pour la sidebar
+    # Compteurs pour la sidebar - CORRECTION ICI
     commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
     livraisons_actives = Livraison.objects.filter(
         commande__transporteur_id=user_id,
@@ -452,255 +452,10 @@ def transporteur_dashboard(request):
         'livraisons_jour': livraisons_jour,
         'notifications': notifications,
         'commandes_disponibles': commandes_disponibles,
-        'livraisons_actives': livraisons_actives,
+        'livraisons_actives': livraisons_actives,  # VARIABLE CORRIGÉE
         'transporteur_disponible': True  # À implémenter selon votre logique
     }
-    return render(request, 'utilisateurs/transporteur_dashboard.html', context)
-
-@transporteur_required
-def transporteur_commandes(request):
-    user_id = request.session['user_id']
-    
-    # Filtres
-    ville_depart = request.GET.get('ville_depart', '')
-    ville_arrivee = request.GET.get('ville_arrivee', '')
-    poids_max = request.GET.get('poids_max', '')
-    
-    # Commandes disponibles (non affectées)
-    commandes = Commande.objects.filter(
-        statut='en_attente',
-        transporteur__isnull=True
-    ).select_related('client')
-    
-    # Application des filtres
-    if ville_depart:
-        commandes = commandes.filter(origine__icontains=ville_depart)
-    if ville_arrivee:
-        commandes = commandes.filter(destination__icontains=ville_arrivee)
-    if poids_max:
-        commandes = commandes.filter(poids__lte=float(poids_max))
-    
-    commandes = commandes.order_by('-date_creation')
-    
-    # Pagination
-    paginator = Paginator(commandes, 12)
-    page_number = request.GET.get('page')
-    commandes_page = paginator.get_page(page_number)
-    
-    # Véhicules du transporteur pour le modal d'acceptation
-    mes_vehicules = Vehicule.objects.filter(transporteur_id=user_id, disponible=True)
-    
-    # Compteurs pour la sidebar
-    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
-    livraisons_actives = Livraison.objects.filter(
-        commande__transporteur_id=user_id,
-        statut__in=['en_attente', 'en_cours']
-    ).count()
-    
-    context = {
-        'commandes': commandes_page,
-        'is_paginated': paginator.num_pages > 1,
-        'page_obj': commandes_page,
-        'mes_vehicules': mes_vehicules,
-        'commandes_disponibles': commandes_disponibles,
-        'livraisons_actives': livraisons_actives
-    }
-    return render(request, 'utilisateurs/transporteur_commandes.html', context)
-
-@transporteur_required
-def transporteur_accept_commande(request, commande_id):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            user_id = request.session['user_id']
-            
-            commande = get_object_or_404(Commande, id=commande_id, statut='en_attente')
-            vehicule = get_object_or_404(Vehicule, id=data['vehicule_id'], transporteur_id=user_id)
-            
-            # Vérifier la capacité
-            if commande.poids > vehicule.capacite_max:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Le poids de la commande dépasse la capacité du véhicule'
-                })
-            
-            # Affecter la commande au transporteur
-            commande.transporteur_id = user_id
-            commande.statut = 'affectee'
-            commande.save()
-            
-            # Créer la livraison
-            livraison = Livraison.objects.create(
-                commande=commande,
-                vehicule=vehicule,
-                statut='en_attente',
-                notes_livraison=data.get('notes', '')
-            )
-            
-            # Créer une notification pour le client
-            Notification.objects.create(
-                utilisateur=commande.client,
-                type_notification='commande_affectee',
-                titre='Commande acceptée',
-                message=f'Votre commande #{commande.id} a été acceptée par un transporteur.'
-            )
-            
-            return JsonResponse({'success': True})
-            
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': str(e)
-            })
-    
-    return JsonResponse({'success': False})
-
-@transporteur_required
-def transporteur_livraisons(request):
-    user_id = request.session['user_id']
-    
-    # Livraisons du transporteur
-    livraisons = Livraison.objects.filter(
-        commande__transporteur_id=user_id
-    ).select_related('commande', 'vehicule').order_by('-commande__date_creation')
-    
-    # Pagination
-    paginator = Paginator(livraisons, 15)
-    page_number = request.GET.get('page')
-    livraisons_page = paginator.get_page(page_number)
-    
-    # Compteurs pour la sidebar
-    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
-    livraisons_actives = Livraison.objects.filter(
-        commande__transporteur_id=user_id,
-        statut__in=['en_attente', 'en_cours']
-    ).count()
-    
-    context = {
-        'livraisons': livraisons_page,
-        'is_paginated': paginator.num_pages > 1,
-        'page_obj': livraisons_page,
-        'commandes_disponibles': commandes_disponibles,
-        'livraisons_actives': livraisons_actives
-    }
-    return render(request, 'utilisateurs/transporteur_livraisons.html', context)
-
-@transporteur_required
-def transporteur_update_livraison(request, livraison_id):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            user_id = request.session['user_id']
-            
-            livraison = get_object_or_404(
-                Livraison, 
-                id=livraison_id, 
-                commande__transporteur_id=user_id
-            )
-            
-            # Mettre à jour le statut
-            livraison.statut = data.get('statut', livraison.statut)
-            livraison.position_actuelle = data.get('position_actuelle', livraison.position_actuelle)
-            livraison.notes_livraison = data.get('notes_livraison', livraison.notes_livraison)
-            
-            if data.get('statut') == 'en_cours' and not livraison.date_debut:
-                livraison.date_debut = timezone.now()
-            elif data.get('statut') == 'livree':
-                livraison.date_fin = timezone.now()
-                livraison.commande.statut = 'livree'
-                livraison.commande.save()
-            
-            livraison.save()
-            
-            # Créer une notification pour le client
-            statut_messages = {
-                'en_cours': 'Votre commande est en cours de livraison',
-                'livree': 'Votre commande a été livrée avec succès',
-                'incident': 'Un incident est survenu sur votre commande'
-            }
-            
-            if data.get('statut') in statut_messages:
-                Notification.objects.create(
-                    utilisateur=livraison.commande.client,
-                    type_notification='statut_livraison',
-                    titre='Mise à jour de votre commande',
-                    message=statut_messages[data.get('statut')]
-                )
-            
-            return JsonResponse({'success': True})
-            
-        except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': str(e)
-            })
-    
-    return JsonResponse({'success': False})
-
-@transporteur_required
-def transporteur_vehicules(request):
-    user_id = request.session['user_id']
-    
-    # Véhicules du transporteur
-    vehicules = Vehicule.objects.filter(transporteur_id=user_id).order_by('-id')
-    
-    # Compteurs pour la sidebar
-    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
-    livraisons_actives = Livraison.objects.filter(
-        commande__transporteur_id=user_id,
-        statut__in=['en_attente', 'en_cours']
-    ).count()
-    
-    context = {
-        'vehicules': vehicules,
-        'commandes_disponibles': commandes_disponibles,
-        'livraisons_actives': livraisons_actives
-    }
-    return render(request, 'utilisateurs/transporteur_vehicules.html', context)
-
-@transporteur_required
-def transporteur_add_vehicule(request):
-    if request.method == 'POST':
-        try:
-            user_id = request.session['user_id']
-            
-            vehicule = Vehicule.objects.create(
-                transporteur_id=user_id,
-                immatriculation=request.POST['immatriculation'],
-                type_vehicule=request.POST['type_vehicule'],
-                capacite_max=float(request.POST['capacite_max']),
-                disponible=True
-            )
-            
-            messages.success(request, 'Véhicule ajouté avec succès.')
-            return redirect('transporteur_vehicules')
-            
-        except Exception as e:
-            messages.error(request, f'Erreur lors de l\'ajout du véhicule: {str(e)}')
-    
-    return render(request, 'utilisateurs/transporteur_add_vehicule.html')
-
-@transporteur_required
-def transporteur_itineraire(request):
-    user_id = request.session['user_id']
-    
-    # Livraisons en cours pour optimisation d'itinéraire
-    livraisons_en_cours = Livraison.objects.filter(
-        commande__transporteur_id=user_id,
-        statut__in=['en_attente', 'en_cours']
-    ).select_related('commande')
-    
-    # Compteurs pour la sidebar
-    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
-    livraisons_actives = len(livraisons_en_cours)
-    
-    context = {
-        'livraisons_en_cours': livraisons_en_cours,
-        'commandes_disponibles': commandes_disponibles,
-        'livraisons_actives': livraisons_actives
-    }
-    return render(request, 'utilisateurs/transporteur_itineraire.html', context)
-
+    return render(request, 'transporteur/transporteur_dashboard.html', context)
 # ==================== VUES CLIENT ====================
 
 @client_required
@@ -739,7 +494,7 @@ def client_dashboard(request):
         'commandes_recentes': commandes_recentes,
         'notifications': notifications
     }
-    return render(request, 'utilisateurs/client_dashboard.html', context)
+    return render(request, 'client/client_dashboard.html', context)
 
 @client_required
 def client_commandes(request):
@@ -771,7 +526,7 @@ def client_commandes(request):
         'is_paginated': paginator.num_pages > 1,
         'page_obj': commandes_page
     }
-    return render(request, 'utilisateurs/client_commandes.html', context)
+    return render(request, 'client/client_commandes.html', context)
 
 @client_required
 def client_nouvelle_commande(request):
@@ -807,7 +562,7 @@ def client_nouvelle_commande(request):
         except Exception as e:
             messages.error(request, f'Erreur lors de la création de la commande: {str(e)}')
     
-    return render(request, 'utilisateurs/client_nouvelle_commande.html')
+    return render(request, 'client/client_nouvelle_commande.html')
 
 @client_required
 def client_commande_detail(request, commande_id):
@@ -825,7 +580,7 @@ def client_commande_detail(request, commande_id):
         'commande': commande,
         'livraison': livraison
     }
-    return render(request, 'utilisateurs/client_commande_detail.html', context)
+    return render(request, 'client/client_commande_detail.html', context)
 
 @client_required
 def client_suivi_commande(request, commande_id):
@@ -876,7 +631,7 @@ def client_suivi_commande(request, commande_id):
         'livraison': livraison,
         'historique': historique
     }
-    return render(request, 'utilisateurs/client_suivi_commande.html', context)
+    return render(request, 'client/client_suivi_commande.html', context)
 
 @client_required
 def client_profil(request):
@@ -908,7 +663,7 @@ def client_profil(request):
     context = {
         'user': user
     }
-    return render(request, 'utilisateurs/client_profil.html', context)
+    return render(request, 'client/client_profil.html', context)
 
 @client_required
 def client_factures(request):
@@ -937,7 +692,7 @@ def client_factures(request):
         'is_paginated': paginator.num_pages > 1,
         'page_obj': factures_page
     }
-    return render(request, 'utilisateurs/client_factures.html', context)
+    return render(request, 'client/client_factures.html', context)
 
 @client_required
 def client_annuler_commande(request, commande_id):
@@ -1288,4 +1043,267 @@ def check_livraisons_updates(request):
         return JsonResponse({'hasUpdates': False})
         
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+        return JsonResponse({'error': str(e)}, status=500).objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'stats': stats,
+        'livraisons_jour': livraisons_jour,
+        'notifications': notifications,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives,
+        'transporteur_disponible': True  # À implémenter selon votre logique
+    }
+    return render(request, 'transporteur/transporteur_dashboard.html', context)
+
+@transporteur_required
+def transporteur_commandes(request):
+    user_id = request.session['user_id']
+    
+    # Filtres
+    ville_depart = request.GET.get('ville_depart', '')
+    ville_arrivee = request.GET.get('ville_arrivee', '')
+    poids_max = request.GET.get('poids_max', '')
+    
+    # Commandes disponibles (non affectées)
+    commandes = Commande.objects.filter(
+        statut='en_attente',
+        transporteur__isnull=True
+    ).select_related('client')
+    
+    # Application des filtres
+    if ville_depart:
+        commandes = commandes.filter(origine__icontains=ville_depart)
+    if ville_arrivee:
+        commandes = commandes.filter(destination__icontains=ville_arrivee)
+    if poids_max:
+        commandes = commandes.filter(poids__lte=float(poids_max))
+    
+    commandes = commandes.order_by('-date_creation')
+    
+    # Pagination
+    paginator = Paginator(commandes, 12)
+    page_number = request.GET.get('page')
+    commandes_page = paginator.get_page(page_number)
+    
+    # Véhicules du transporteur pour le modal d'acceptation
+    mes_vehicules = Vehicule.objects.filter(transporteur_id=user_id, disponible=True)
+    
+    # Compteurs pour la sidebar
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'commandes': commandes_page,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': commandes_page,
+        'mes_vehicules': mes_vehicules,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives
+    }
+    return render(request, 'transporteur/transporteur_commandes.html', context)
+
+@transporteur_required
+def transporteur_accept_commande(request, commande_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = request.session['user_id']
+            
+            commande = get_object_or_404(Commande, id=commande_id, statut='en_attente')
+            vehicule = get_object_or_404(Vehicule, id=data['vehicule_id'], transporteur_id=user_id)
+            
+            # Vérifier la capacité
+            if commande.poids > vehicule.capacite_max:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Le poids de la commande dépasse la capacité du véhicule'
+                })
+            
+            # Affecter la commande au transporteur
+            commande.transporteur_id = user_id
+            commande.statut = 'affectee'
+            commande.save()
+            
+            # Créer la livraison
+            livraison = Livraison.objects.create(
+                commande=commande,
+                vehicule=vehicule,
+                statut='en_attente',
+                notes_livraison=data.get('notes', '')
+            )
+            
+            # Créer une notification pour le client
+            Notification.objects.create(
+                utilisateur=commande.client,
+                type_notification='commande_affectee',
+                titre='Commande acceptée',
+                message=f'Votre commande #{commande.id} a été acceptée par un transporteur.'
+            )
+            
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({'success': False})
+
+@transporteur_required
+def transporteur_livraisons(request):
+    user_id = request.session['user_id']
+    
+    # Livraisons du transporteur
+    livraisons = Livraison.objects.filter(
+        commande__transporteur_id=user_id
+    ).select_related('commande', 'vehicule').order_by('-commande__date_creation')
+    
+    # Pagination
+    paginator = Paginator(livraisons, 15)
+    page_number = request.GET.get('page')
+    livraisons_page = paginator.get_page(page_number)
+    
+    # Compteurs pour la sidebar
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'livraisons': livraisons_page,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': livraisons_page,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives
+    }
+    return render(request, 'transporteur/transporteur_livraisons.html', context)
+
+@transporteur_required
+def transporteur_update_livraison(request, livraison_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_id = request.session['user_id']
+            
+            livraison = get_object_or_404(
+                Livraison, 
+                id=livraison_id, 
+                commande__transporteur_id=user_id
+            )
+            
+            # Mettre à jour le statut
+            livraison.statut = data.get('statut', livraison.statut)
+            livraison.position_actuelle = data.get('position_actuelle', livraison.position_actuelle)
+            livraison.notes_livraison = data.get('notes_livraison', livraison.notes_livraison)
+            
+            if data.get('statut') == 'en_cours' and not livraison.date_debut:
+                livraison.date_debut = timezone.now()
+            elif data.get('statut') == 'livree':
+                livraison.date_fin = timezone.now()
+                livraison.commande.statut = 'livree'
+                livraison.commande.save()
+            
+            livraison.save()
+            
+            # Créer une notification pour le client
+            statut_messages = {
+                'en_cours': 'Votre commande est en cours de livraison',
+                'livree': 'Votre commande a été livrée avec succès',
+                'incident': 'Un incident est survenu sur votre commande'
+            }
+            
+            if data.get('statut') in statut_messages:
+                Notification.objects.create(
+                    utilisateur=livraison.commande.client,
+                    type_notification='statut_livraison',
+                    titre='Mise à jour de votre commande',
+                    message=statut_messages[data.get('statut')]
+                )
+            
+            return JsonResponse({'success': True})
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': str(e)
+            })
+    
+    return JsonResponse({'success': False})
+
+@transporteur_required
+def transporteur_vehicules(request):
+    user_id = request.session['user_id']
+    
+    # Véhicules du transporteur
+    vehicules = Vehicule.objects.filter(transporteur_id=user_id).order_by('-id')
+    
+    # Statistiques rapides
+    vehicules_disponibles = vehicules.filter(disponible=True).count()
+    vehicules_en_service = vehicules.filter(disponible=False).count()
+    capacite_totale = vehicules.aggregate(total=Sum('capacite_max'))['total'] or 0
+    
+    # Compteurs pour la sidebar
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).count()
+    
+    context = {
+        'vehicules': vehicules,
+        'vehicules_disponibles': vehicules_disponibles,
+        'vehicules_en_service': vehicules_en_service,
+        'capacite_totale': int(capacite_totale),
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives
+    }
+    return render(request, 'transporteur/transporteur_vehicules.html', context)
+
+@transporteur_required
+def transporteur_add_vehicule(request):
+    if request.method == 'POST':
+        try:
+            user_id = request.session['user_id']
+            
+            vehicule = Vehicule.objects.create(
+                transporteur_id=user_id,
+                immatriculation=request.POST['immatriculation'],
+                type_vehicule=request.POST['type_vehicule'],
+                capacite_max=float(request.POST['capacite_max']),
+                marque=request.POST.get('marque', ''),
+                modele=request.POST.get('modele', ''),
+                annee=int(request.POST.get('annee', 0)) if request.POST.get('annee') else None,
+                couleur=request.POST.get('couleur', ''),
+                notes=request.POST.get('notes', ''),
+                disponible=True
+            )
+            
+            messages.success(request, 'Véhicule ajouté avec succès.')
+            return redirect('transporteur_vehicules')
+            
+        except Exception as e:
+            messages.error(request, f'Erreur lors de l\'ajout du véhicule: {str(e)}')
+    
+    return render(request, 'transporteur/transporteur_add_vehicule.html')
+
+@transporteur_required
+def transporteur_itineraire(request):
+    user_id = request.session['user_id']
+    
+    # Livraisons en cours pour optimisation d'itinéraire
+    livraisons_en_cours = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).select_related('commande')
+    
+    # Compteurs pour la sidebar
+    commandes_disponibles = Commande

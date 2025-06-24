@@ -292,8 +292,77 @@
 </div>
 
 <!-- Modals - Version améliorée -->
-{% include 'transporteur/modals/commande_details_modal.html' %}
-{% include 'transporteur/modals/accept_commande_modal.html' %}
+<!-- À la fin de votre template transporteur_commandes.html, 
+     remplacez les lignes 295-296 par ceci : -->
+
+<!-- Modals - Version corrigée -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailsModalLabel">Détails de la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Le contenu sera chargé dynamiquement via JavaScript -->
+                <div class="text-center py-4">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-2">Chargement des détails...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-success" id="acceptFromModal">
+                    <i class="fas fa-handshake me-1"></i>Accepter cette commande
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalLabel">Accepter la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="acceptForm">
+                    <div class="mb-3">
+                        <label for="vehiculeSelect" class="form-label">Choisir un véhicule *</label>
+                        <select class="form-select" id="vehiculeSelect" required>
+                            <option value="">Sélectionner un véhicule</option>
+                            {% for vehicule in mes_vehicules %}
+                            <option value="{{ vehicule.id }}" data-capacite="{{ vehicule.capacite_max }}">
+                                {{ vehicule.immatriculation }} - {{ vehicule.get_type_vehicule_display }} ({{ vehicule.capacite_max }} kg)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="heureDepart" class="form-label">Heure de départ prévue *</label>
+                        <input type="datetime-local" class="form-control" id="heureDepart" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notesAcceptation" class="form-label">Notes (optionnel)</label>
+                        <textarea class="form-control" id="notesAcceptation" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-success" onclick="confirmAcceptation()">
+                    <i class="fas fa-check me-1"></i>Confirmer l'acceptation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 // Initialisation
