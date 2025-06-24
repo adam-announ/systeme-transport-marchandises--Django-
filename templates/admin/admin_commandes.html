@@ -1,0 +1,210 @@
+<!-- templates/admin/admin_commandes.html -->
+{% extends 'public/base.html' %}
+{% block title %}Gestion Commandes - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Admin -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-user-shield"></i> Panel Admin</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'admin_users' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users"></i> Gérer utilisateurs
+                    </a>
+                    <a href="{% url 'admin_commandes' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-box"></i> Toutes les commandes
+                    </a>
+                    <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar"></i> Rapports
+                    </a>
+                    <a href="{% url 'admin_system_config' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog"></i> Configuration
+                    </a>
+                    <a href="{% url 'admin_notifications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Gestion des Commandes</h1>
+                <button class="btn btn-outline-primary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+
+            <!-- Statistiques rapides -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card text-center border-left-primary">
+                        <div class="card-body">
+                            <h4 class="text-primary">{{ commandes.count }}</h4>
+                            <p class="mb-0">Total commandes</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-left-warning">
+                        <div class="card-body">
+                            <h4 class="text-warning">{{ commandes_en_attente }}</h4>
+                            <p class="mb-0">En attente</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-left-info">
+                        <div class="card-body">
+                            <h4 class="text-info">{{ commandes_en_cours }}</h4>
+                            <p class="mb-0">En cours</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card text-center border-left-success">
+                        <div class="card-body">
+                            <h4 class="text-success">{{ commandes_livrees }}</h4>
+                            <p class="mb-0">Livrées</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des commandes -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Toutes les commandes</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Client</th>
+                                    <th>Transporteur</th>
+                                    <th>Origine → Destination</th>
+                                    <th>Poids</th>
+                                    <th>Statut</th>
+                                    <th>Date création</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for commande in commandes %}
+                                <tr>
+                                    <td>#{{ commande.id }}</td>
+                                    <td>{{ commande.client.first_name }} {{ commande.client.last_name }}</td>
+                                    <td>
+                                        {% if commande.transporteur %}
+                                            {{ commande.transporteur.first_name }} {{ commande.transporteur.last_name }}
+                                        {% else %}
+                                            <span class="text-muted">Non affecté</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ commande.origine }} → {{ commande.destination }}</td>
+                                    <td>{{ commande.poids }} kg</td>
+                                    <td>
+                                        <span class="badge badge-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'affectee' %}info{% elif commande.statut == 'annulee' %}danger{% else %}secondary{% endif %}">
+                                            {{ commande.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewCommande({{ commande.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            {% if commande.statut == 'en_attente' %}
+                                            <button class="btn btn-sm btn-outline-primary" onclick="assignCommande({{ commande.id }})">
+                                                <i class="fas fa-user-plus"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-4">Aucune commande trouvée</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshData() {
+    location.reload();
+}
+
+function viewCommande(commandeId) {
+    // Afficher les détails de la commande
+    window.open(`/admin/commandes/${commandeId}/`, '_blank');
+}
+
+function assignCommande(commandeId) {
+    // Assigner une commande à un transporteur
+    // Vous pouvez implémenter un modal pour sélectionner le transporteur
+    console.log('Assign commande:', commandeId);
+}
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+</style>
+{% endblock %}

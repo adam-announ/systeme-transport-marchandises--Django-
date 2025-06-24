@@ -1,451 +1,520 @@
-{% extends 'utilisateurs/base.html' %}
+{% extends 'public/base.html' %}
 {% block title %}Commandes Disponibles - Transporteur{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
-    <div class="row">
-        <!-- Sidebar Transporteur -->
-        <div class="col-md-3 col-lg-2">
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+    <div class="row gx-4">
+        <!-- Sidebar Transporteur - Version améliorée -->
+        <aside class="col-md-3 col-lg-2">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark d-flex align-items-center">
+                    <i class="fas fa-truck me-2"></i>
+                    <h6 class="mb-0">Panel Transporteur</h6>
                 </div>
-                <div class="list-group list-group-flush">
-                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                <nav class="list-group list-group-flush">
+                    {% url 'transporteur_dashboard' as dashboard_url %}
+                    <a href="{{ dashboard_url }}" 
+                       class="list-group-item list-group-item-action {% if request.path == dashboard_url %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
                     </a>
-                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action active">
-                        <i class="fas fa-box"></i> Commandes disponibles
+                    
+                    {% url 'transporteur_commandes' as commandes_url %}
+                    <a href="{{ commandes_url }}" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if request.path == commandes_url %}active{% endif %}">
+                        <span><i class="fas fa-box me-2"></i>Commandes disponibles</span>
                         {% if commandes_disponibles > 0 %}
-                        <span class="badge bg-primary float-end">{{ commandes_disponibles }}</span>
+                        <span class="badge bg-primary rounded-pill">{{ commandes_disponibles }}</span>
                         {% endif %}
                     </a>
-                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                    
+                    {% url 'transporteur_livraisons' as livraisons_url %}
+                    <a href="{{ livraisons_url }}" 
+                       class="list-group-item list-group-item-action {% if request.path == livraisons_url %}active{% endif %}">
+                        <i class="fas fa-shipping-fast me-2"></i>Mes livraisons
                     </a>
-                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-truck-moving"></i> Mes véhicules
+                    
+                    {% url 'transporteur_vehicules' as vehicules_url %}
+                    <a href="{{ vehicules_url }}" 
+                       class="list-group-item list-group-item-action {% if request.path == vehicules_url %}active{% endif %}">
+                        <i class="fas fa-truck-moving me-2"></i>Mes véhicules
                     </a>
-                    <a href="{% url 'transporteur_itineraire' %}" class="list-group-item list-group-item-action">
-                        <i class="fas fa-route"></i> Optimiser itinéraire
+                    
+                    {% url 'transporteur_itineraire' as itineraire_url %}
+                    <a href="{{ itineraire_url }}" 
+                       class="list-group-item list-group-item-action {% if request.path == itineraire_url %}active{% endif %}">
+                        <i class="fas fa-route me-2"></i>Optimiser itinéraire
                     </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Contenu principal - Réorganisation -->
+        <main class="col-md-9 col-lg-10">
+            <header class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">Commandes Disponibles</h1>
+                    <small class="text-muted">Gérez les commandes disponibles pour livraison</small>
                 </div>
-            </div>
-        </div>
-
-        <!-- Contenu principal -->
-        <div class="col-md-9 col-lg-10">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3">Commandes Disponibles</h1>
-                <button class="btn btn-outline-primary" onclick="refreshCommandes()">
-                    <i class="fas fa-sync-alt"></i> Actualiser
+                <button class="btn btn-primary" id="refresh-btn">
+                    <i class="fas fa-sync-alt me-2"></i>Actualiser
                 </button>
-            </div>
+            </header>
 
-            <!-- Filtres -->
-            <div class="card mb-4">
+            <!-- Section Filtres - Version améliorée -->
+            <section class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtres</h6>
+                </div>
                 <div class="card-body">
-                    <form method="GET" class="row g-3">
+                    <form method="GET" id="filter-form" class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Ville de départ</label>
-                            <select class="form-control" name="ville_depart">
+                            <select class="form-select" name="ville_depart">
                                 <option value="">Toutes les villes</option>
-                                <option value="tangier" {% if request.GET.ville_depart == 'tangier' %}selected{% endif %}>Tanger</option>
-                                <option value="casablanca" {% if request.GET.ville_depart == 'casablanca' %}selected{% endif %}>Casablanca</option>
-                                <option value="rabat" {% if request.GET.ville_depart == 'rabat' %}selected{% endif %}>Rabat</option>
-                                <option value="fes" {% if request.GET.ville_depart == 'fes' %}selected{% endif %}>Fès</option>
-                                <option value="marrakech" {% if request.GET.ville_depart == 'marrakech' %}selected{% endif %}>Marrakech</option>
+                                {% for ville in villes_depart %}
+                                <option value="{{ ville.value }}" {% if ville.value == request.GET.ville_depart %}selected{% endif %}>
+                                    {{ ville.nom }}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Ville d'arrivée</label>
-                            <select class="form-control" name="ville_arrivee">
+                            <select class="form-select" name="ville_arrivee">
                                 <option value="">Toutes les villes</option>
-                                <option value="tangier" {% if request.GET.ville_arrivee == 'tangier' %}selected{% endif %}>Tanger</option>
-                                <option value="casablanca" {% if request.GET.ville_arrivee == 'casablanca' %}selected{% endif %}>Casablanca</option>
-                                <option value="rabat" {% if request.GET.ville_arrivee == 'rabat' %}selected{% endif %}>Rabat</option>
-                                <option value="fes" {% if request.GET.ville_arrivee == 'fes' %}selected{% endif %}>Fès</option>
-                                <option value="marrakech" {% if request.GET.ville_arrivee == 'marrakech' %}selected{% endif %}>Marrakech</option>
+                                {% for ville in villes_arrivee %}
+                                <option value="{{ ville.value }}" {% if ville.value == request.GET.ville_arrivee %}selected{% endif %}>
+                                    {{ ville.nom }}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Poids maximum (kg)</label>
-                            <select class="form-control" name="poids_max">
+                            <label class="form-label">Poids maximum</label>
+                            <select class="form-select" name="poids_max">
                                 <option value="">Tous poids</option>
-                                <option value="100" {% if request.GET.poids_max == '100' %}selected{% endif %}>≤ 100 kg</option>
-                                <option value="500" {% if request.GET.poids_max == '500' %}selected{% endif %}>≤ 500 kg</option>
-                                <option value="1000" {% if request.GET.poids_max == '1000' %}selected{% endif %}>≤ 1000 kg</option>
-                                <option value="5000" {% if request.GET.poids_max == '5000' %}selected{% endif %}>≤ 5000 kg</option>
+                                {% for poids in poids_options %}
+                                <option value="{{ poids.value }}" {% if poids.value == request.GET.poids_max %}selected{% endif %}>
+                                    {{ poids.label }}
+                                </option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary me-2">
-                                <i class="fas fa-filter"></i> Filtrer
+                                <i class="fas fa-filter me-2"></i>Filtrer
                             </button>
                             <a href="{% url 'transporteur_commandes' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times"></i> Reset
+                                <i class="fas fa-times me-2"></i>Reset
                             </a>
                         </div>
                     </form>
                 </div>
-            </div>
+            </section>
 
-            <!-- Messages -->
+            <!-- Messages système -->
             {% if messages %}
+            <div class="mb-4">
                 {% for message in messages %}
-                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
                 {% endfor %}
+            </div>
             {% endif %}
 
-            <!-- Liste des commandes -->
-            {% if commandes %}
-                <div class="row">
+            <!-- Liste des commandes - Version améliorée -->
+            <section>
+                {% if commandes %}
+                <div class="row row-cols-1 row-cols-lg-2 g-4">
                     {% for commande in commandes %}
-                    <div class="col-lg-6 mb-4">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 text-primary">
-                                    <i class="fas fa-box"></i> Commande #{{ commande.id }}
-                                </h6>
-                                <span class="badge bg-success">{{ commande.prix }}€</span>
+                    <div class="col">
+                        <article class="card h-100 shadow-sm">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                                <h3 class="h6 mb-0">
+                                    <i class="fas fa-box text-primary me-2"></i>
+                                    <span>Commande #{{ commande.id }}</span>
+                                </h3>
+                                <span class="badge bg-success rounded-pill">{{ commande.prix }}€</span>
                             </div>
+                            
                             <div class="card-body">
                                 <div class="row mb-3">
-                                    <div class="col-6">
-                                        <small class="text-muted">Départ</small>
-                                        <p class="mb-1"><i class="fas fa-map-marker-alt text-success"></i> {{ commande.origine }}</p>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="fas fa-map-marker-alt text-success mt-1 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Départ</small>
+                                                <strong>{{ commande.origine }}</strong>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <small class="text-muted">Arrivée</small>
-                                        <p class="mb-1"><i class="fas fa-map-marker-alt text-danger"></i> {{ commande.destination }}</p>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="fas fa-map-marker-alt text-danger mt-1 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Arrivée</small>
+                                                <strong>{{ commande.destination }}</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
                                 <div class="row mb-3">
-                                    <div class="col-6">
-                                        <small class="text-muted">Poids</small>
-                                        <p class="mb-1"><i class="fas fa-weight-hanging"></i> {{ commande.poids }} kg</p>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start">
+                                            <i class="fas fa-weight-hanging text-secondary mt-1 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Poids</small>
+                                                <strong>{{ commande.poids }} kg</strong>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-6">
-                                        <small class="text-muted">Livraison prévue</small>
-                                        <p class="mb-1"><i class="fas fa-calendar"></i> {{ commande.date_livraison_prevue|date:"d/m/Y H:i" }}</p>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start">
+                                            <i class="fas fa-calendar text-secondary mt-1 me-2"></i>
+                                            <div>
+                                                <small class="text-muted d-block">Livraison prévue</small>
+                                                <strong>{{ commande.date_livraison_prevue|date:"d/m/Y H:i" }}</strong>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <small class="text-muted">Description</small>
-                                    <p class="text-truncate">{{ commande.description_marchandise }}</p>
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas fa-info-circle text-secondary mt-1 me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Description</small>
+                                            <p class="mb-0 text-truncate">{{ commande.description_marchandise }}</p>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="mb-3">
-                                    <small class="text-muted">Client</small>
-                                    <p class="mb-0">
-                                        <i class="fas fa-user"></i> {{ commande.client.first_name }} {{ commande.client.last_name }}
-                                        <br><small class="text-muted">{{ commande.client.email }}</small>
-                                    </p>
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas fa-user text-secondary mt-1 me-2"></i>
+                                        <div>
+                                            <small class="text-muted d-block">Client</small>
+                                            <strong>{{ commande.client.get_full_name }}</strong>
+                                            <small class="text-muted d-block">{{ commande.client.email }}</small>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <!-- Distance estimée -->
                                 <div class="mb-3">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span><i class="fas fa-route text-info"></i> Distance estimée</span>
-                                        <span class="badge bg-info">{{ commande.distance_estimee|default:"--" }} km</span>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-route text-info me-2"></i>
+                                            <span>Distance estimée</span>
+                                        </div>
+                                        <span class="badge bg-info rounded-pill">{{ commande.distance_estimee|default:"--" }} km</span>
                                     </div>
                                 </div>
                             </div>
+                            
                             <div class="card-footer bg-white">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">
-                                        Publiée {{ commande.date_creation|timesince }} ago
+                                        <i class="fas fa-clock me-1"></i>
+                                        Publiée {{ commande.date_creation|timesince }}
                                     </small>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-info" onclick="showDetails({{ commande.id }})">
-                                            <i class="fas fa-eye"></i> Détails
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="showDetails({{ commande.id }})">
+                                            <i class="fas fa-eye me-1"></i>Détails
                                         </button>
-                                        <button class="btn btn-sm btn-success" onclick="acceptCommande({{ commande.id }})">
-                                            <i class="fas fa-handshake"></i> Accepter
+                                        <button class="btn btn-sm btn-success" 
+                                                onclick="acceptCommande({{ commande.id }})">
+                                            <i class="fas fa-handshake me-1"></i>Accepter
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     </div>
                     {% endfor %}
                 </div>
 
-                <!-- Pagination -->
+                <!-- Pagination - Version améliorée -->
                 {% if is_paginated %}
-                <nav aria-label="Pagination" class="mt-4">
+                <nav aria-label="Pagination" class="mt-5">
                     <ul class="pagination justify-content-center">
                         {% if page_obj.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
-                            </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Précédent">
+                                <span aria-hidden="true">&laquo;</span>
+                            </a>
+                        </li>
                         {% endif %}
                         
                         {% for num in page_obj.paginator.page_range %}
                             {% if page_obj.number == num %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ num }}</span>
-                                </li>
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
                             {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                                </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
                             {% endif %}
                         {% endfor %}
                         
                         {% if page_obj.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
-                            </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Suivant">
+                                <span aria-hidden="true">&raquo;</span>
+                            </a>
+                        </li>
                         {% endif %}
                     </ul>
                 </nav>
                 {% endif %}
 
-            {% else %}
+                {% else %}
                 <div class="card">
                     <div class="card-body text-center py-5">
-                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                        <h4>Aucune commande disponible</h4>
-                        <p class="text-muted">Il n'y a actuellement aucune commande correspondant à vos critères.</p>
-                        <button class="btn btn-primary" onclick="refreshCommandes()">
-                            <i class="fas fa-sync-alt"></i> Actualiser la liste
-                        </button>
+                        <div class="py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-4"></i>
+                            <h4 class="mb-3">Aucune commande disponible</h4>
+                            <p class="text-muted mb-4">Il n'y a actuellement aucune commande correspondant à vos critères.</p>
+                            <button class="btn btn-primary px-4" id="refresh-empty-btn">
+                                <i class="fas fa-sync-alt me-2"></i>Actualiser la liste
+                            </button>
+                        </div>
                     </div>
                 </div>
-            {% endif %}
-        </div>
+                {% endif %}
+            </section>
+        </main>
     </div>
 </div>
 
-<!-- Modal de détails de commande -->
-<div class="modal fade" id="detailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Détails de la commande</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="modalContent">
-                <!-- Contenu chargé dynamiquement -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
-                <button type="button" class="btn btn-success" id="acceptFromModal">
-                    <i class="fas fa-handshake"></i> Accepter cette commande
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal de confirmation d'acceptation -->
-<div class="modal fade" id="confirmModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Confirmer l'acceptation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir accepter cette commande ?</p>
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Information :</strong> En acceptant cette commande, vous vous engagez à effectuer la livraison dans les délais impartis.
-                </div>
-                <form id="acceptForm">
-                    <div class="mb-3">
-                        <label class="form-label">Véhicule à utiliser</label>
-                        <select class="form-control" id="vehiculeSelect" required>
-                            <option value="">Sélectionnez un véhicule</option>
-                            {% for vehicule in mes_vehicules %}
-                            <option value="{{ vehicule.id }}">{{ vehicule.immatriculation }} - {{ vehicule.get_type_vehicule_display }} ({{ vehicule.capacite_max }} kg)</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Heure de départ prévue</label>
-                        <input type="datetime-local" class="form-control" id="heureDepart" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notes (optionnel)</label>
-                        <textarea class="form-control" id="notesAcceptation" rows="3" placeholder="Commentaires sur la prise en charge..."></textarea>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-success" onclick="confirmAcceptation()">
-                    <i class="fas fa-check"></i> Confirmer l'acceptation
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Modals - Version améliorée -->
+{% include 'transporteur/modals/commande_details_modal.html' %}
+{% include 'transporteur/modals/accept_commande_modal.html' %}
 
 <script>
-let currentCommandeId = null;
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Éléments
+    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshEmptyBtn = document.getElementById('refresh-empty-btn');
+    const filterForm = document.getElementById('filter-form');
+    
+    // Événements
+    refreshBtn.addEventListener('click', refreshCommandes);
+    refreshEmptyBtn.addEventListener('click', refreshCommandes);
+    
+    // Auto-refresh
+    initAutoRefresh();
+});
 
+// Fonctions principales
 function refreshCommandes() {
+    const btn = event.currentTarget;
+    const originalContent = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement...';
+    
     location.reload();
 }
 
 function showDetails(commandeId) {
     fetch(`/api/commandes/${commandeId}/details/`)
-        .then(response => response.text())
+        .then(handleResponse)
         .then(html => {
-            document.getElementById('modalContent').innerHTML = html;
-            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            const modalContent = document.getElementById('modalContent');
+            modalContent.innerHTML = html;
             
-            // Mettre à jour le bouton d'acceptation
+            const modal = new bootstrap.Modal('#detailsModal');
+            modal.show();
+            
+            // Lier l'acceptation depuis le modal
             document.getElementById('acceptFromModal').onclick = () => {
                 modal.hide();
                 acceptCommande(commandeId);
             };
-            
-            modal.show();
         })
-        .catch(error => {
-            console.error('Erreur:', error);
-            alert('Erreur lors du chargement des détails');
-        });
+        .catch(handleError('détails'));
 }
 
 function acceptCommande(commandeId) {
     currentCommandeId = commandeId;
     
-    // Vérifier que le transporteur a des véhicules
+    // Vérifier les véhicules
     const vehiculeSelect = document.getElementById('vehiculeSelect');
     if (vehiculeSelect.options.length <= 1) {
-        alert('Vous devez d\'abord ajouter au moins un véhicule dans votre profil.');
-        window.location.href = '{% url "transporteur_vehicules" %}';
+        showAlert('Vous devez d\'abord ajouter au moins un véhicule dans votre profil.', 'warning');
+        setTimeout(() => {
+            window.location.href = '{% url "transporteur_vehicules" %}';
+        }, 2000);
         return;
     }
     
-    // Définir l'heure par défaut (maintenant + 1 heure)
+    // Configurer le modal d'acceptation
     const now = new Date();
     now.setHours(now.getHours() + 1);
     document.getElementById('heureDepart').value = now.toISOString().slice(0, 16);
     
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const modal = new bootstrap.Modal('#confirmModal');
     modal.show();
 }
 
 function confirmAcceptation() {
-    const vehiculeId = document.getElementById('vehiculeSelect').value;
-    const heureDepart = document.getElementById('heureDepart').value;
-    const notes = document.getElementById('notesAcceptation').value;
+    const formData = {
+        vehicule_id: document.getElementById('vehiculeSelect').value,
+        heure_depart: document.getElementById('heureDepart').value,
+        notes: document.getElementById('notesAcceptation').value
+    };
     
-    if (!vehiculeId || !heureDepart) {
-        alert('Veuillez remplir tous les champs obligatoires');
+    if (!formData.vehicule_id || !formData.heure_depart) {
+        showAlert('Veuillez remplir tous les champs obligatoires', 'warning');
         return;
     }
-    
-    const data = {
-        vehicule_id: vehiculeId,
-        heure_depart: heureDepart,
-        notes: notes
-    };
     
     fetch(`/transporteur/commandes/${currentCommandeId}/accept/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': '{{ csrf_token }}',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify(data)
+        body: JSON.stringify(formData)
     })
-    .then(response => {
-        if (response.ok) {
-            return response.json();
-        }
-        throw new Error('Erreur lors de l\'acceptation');
-    })
+    .then(handleResponse)
     .then(data => {
         if (data.success) {
-            alert('Commande acceptée avec succès !');
-            location.reload();
+            showAlert('Commande acceptée avec succès !', 'success');
+            setTimeout(() => location.reload(), 1500);
         } else {
-            alert(data.message || 'Erreur lors de l\'acceptation');
+            showAlert(data.message || 'Erreur lors de l\'acceptation', 'danger');
         }
     })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de l\'acceptation de la commande');
-    });
-    
-    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+    .catch(handleError('acceptation'));
 }
 
-// Auto-refresh toutes les 30 secondes pour voir les nouvelles commandes
-setInterval(function() {
-    // Vérifier s'il y a de nouvelles commandes sans recharger la page
-    fetch('/api/commandes/check-new/')
-        .then(response => response.json())
-        .then(data => {
-            if (data.hasNew) {
-                // Afficher une notification qu'il y a de nouvelles commandes
-                showNewCommandesNotification();
-            }
-        })
-        .catch(error => console.log('Erreur check nouvelles commandes:', error));
-}, 30000);
+// Fonctions utilitaires
+function initAutoRefresh() {
+    setInterval(() => {
+        fetch('/api/commandes/check-new/')
+            .then(handleResponse)
+            .then(data => {
+                if (data.hasNew) {
+                    showNewCommandesNotification();
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    }, 30000);
+}
+
+function handleResponse(response) {
+    if (!response.ok) throw new Error('Erreur réseau');
+    return response.json().then(data => data.html ? data.html : data);
+}
+
+function handleError(context) {
+    return error => {
+        console.error(`Erreur ${context}:`, error);
+        showAlert(`Erreur lors du chargement des ${context}`, 'danger');
+    };
+}
+
+function showAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.classList.remove('show');
+        setTimeout(() => alert.remove(), 150);
+    }, 5000);
+}
 
 function showNewCommandesNotification() {
-    // Créer une notification toast
     const toast = document.createElement('div');
     toast.className = 'toast show position-fixed top-0 end-0 m-3';
-    toast.style.zIndex = '9999';
+    toast.style.zIndex = '9998';
     toast.innerHTML = `
-        <div class="toast-header bg-success text-white">
+        <div class="toast-header bg-primary text-white">
             <i class="fas fa-bell me-2"></i>
             <strong class="me-auto">Nouvelles commandes</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body">
-            De nouvelles commandes sont disponibles !
-            <br><button class="btn btn-sm btn-primary mt-2" onclick="refreshCommandes()">Actualiser</button>
+            <p>De nouvelles commandes sont disponibles !</p>
+            <button class="btn btn-sm btn-primary w-100" onclick="refreshCommandes()">
+                <i class="fas fa-sync-alt me-2"></i>Actualiser
+            </button>
         </div>
     `;
     document.body.appendChild(toast);
     
-    // Supprimer automatiquement après 5 secondes
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.parentNode.removeChild(toast);
-        }
-    }, 5000);
+    setTimeout(() => toast.remove(), 10000);
 }
 </script>
 
 <style>
+/* Styles améliorés */
 .card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.075);
 }
 
 .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
-.border-0 {
-    border: none !important;
-}
-
-.text-truncate {
-    max-width: 100%;
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .badge {
-    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-outline-primary {
+    color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.text-truncate {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 
 .toast {
     min-width: 300px;
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+}
+
+@media (max-width: 768px) {
+    .card-body .row > div {
+        margin-bottom: 1rem;
+    }
 }
 </style>
 {% endblock %}

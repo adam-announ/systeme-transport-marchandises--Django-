@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     {% load static %}
-    <link rel="stylesheet" href="{% static 'utilisateurs/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body>
     <!-- Navigation -->
@@ -47,10 +47,24 @@
                                 {% else %}
                                     {{ request.session.username }}
                                 {% endif %}
-                                <span class="badge bg-primary ms-1">{{ request.session.role|capfirst }}</span>
+                                <span class="badge bg-{% if request.session.role == 'admin' %}danger{% elif request.session.role == 'transporteur' %}warning{% elif request.session.role == 'client' %}success{% else %}primary{% endif %} ms-1">
+                                    {{ request.session.role|capfirst }}
+                                </span>
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
+                                {% if request.session.role == 'admin' %}
+                                    <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Admin</a></li>
+                                {% elif request.session.role == 'transporteur' %}
+                                    <li><a class="dropdown-item" href="{% url 'transporteur_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Transporteur</a></li>
+                                {% elif request.session.role == 'client' %}
+                                    <li><a class="dropdown-item" href="{% url 'client_dashboard' %}"><i class="fas fa-tachometer-alt"></i> Dashboard Client</a></li>
+                                {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% if request.session.role == 'client' %}
+                                    <li><a class="dropdown-item" href="{% url 'client_profil' %}"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
+                                {% else %}
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog"></i> Mon Profil</a></li>
+                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
                             </ul>
@@ -85,6 +99,12 @@
                 <div class="col-md-4">
                     <h5>Transport System</h5>
                     <p>Solution complète de gestion et d'optimisation du transport de marchandises.</p>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-linkedin-in"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-instagram"></i></a>
+                    </div>
                 </div>
                 <div class="col-md-4">
                     <h5>Services</h5>
@@ -98,17 +118,142 @@
                     <h5>Contact</h5>
                     <p class="text-white-50">
                         <i class="fas fa-envelope"></i> contact@transportsystem.com<br>
-                        <i class="fas fa-phone"></i> +33 1 23 45 67 89
+                        <i class="fas fa-phone"></i> +33 1 23 45 67 89<br>
+                        <i class="fas fa-map-marker-alt"></i> 123 Rue du Transport, 75001 Paris
                     </p>
                 </div>
             </div>
             <hr class="my-4">
-            <div class="text-center">
-                <p>&copy; 2025 Transport System. Tous droits réservés.</p>
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <p class="mb-0">&copy; 2025 Transport System. Tous droits réservés.</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <small class="text-white-50">Développé avec Django & Bootstrap</small>
+                </div>
             </div>
         </div>
     </footer>
 
+    <!-- CSRF Token pour les requêtes AJAX -->
+    {% csrf_token %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script global pour les requêtes AJAX -->
+    <script>
+    // Configuration globale CSRF pour toutes les requêtes AJAX
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Configuration automatique du token CSRF pour fetch
+    const csrftoken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    // Fonction utilitaire pour les requêtes POST avec CSRF
+    function postWithCSRF(url, data = {}) {
+        return fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken,
+            },
+            body: JSON.stringify(data)
+        });
+    }
+
+    // Notifications toast globales
+    function showToast(message, type = 'info') {
+        const toastContainer = document.getElementById('toast-container') || (() => {
+            const container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+            return container;
+        })();
+
+        const toast = document.createElement('div');
+        toast.className = `toast show`;
+        toast.innerHTML = `
+            <div class="toast-header bg-${type} text-white">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+                <strong class="me-auto">Notification</strong>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 5000);
+    }
+
+    // Auto-hide Django messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.5s';
+                    setTimeout(() => {
+                        if (alert.parentNode) {
+                            alert.parentNode.removeChild(alert);
+                        }
+                    }, 500);
+                }
+            }, 5000);
+        });
+    });
+
+    // Confirmation globale pour les actions dangereuses
+    function confirmAction(message, callback) {
+        if (confirm(message)) {
+            callback();
+        }
+    }
+
+    // Format currency
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(amount);
+    }
+
+    // Format date
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>

@@ -1,0 +1,203 @@
+<!-- templates/client/client_factures.html -->
+{% extends 'public/base.html' %}
+{% block title %}Mes Factures - Client{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Client -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-user"></i> Panel Client</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'client_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'client_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Mes commandes
+                    </a>
+                    <a href="{% url 'client_nouvelle_commande' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus"></i> Nouvelle commande
+                    </a>
+                    <a href="{% url 'client_factures' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-file-invoice"></i> Mes factures
+                    </a>
+                    <a href="{% url 'client_profil' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-cog"></i> Mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Mes Factures</h1>
+                <button class="btn btn-outline-primary" onclick="exportFactures()">
+                    <i class="fas fa-download"></i> Exporter (PDF)
+                </button>
+            </div>
+
+            <!-- Résumé financier -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card text-center border-left-success">
+                        <div class="card-body">
+                            <h4 class="text-success">{{ total_factures }}</h4>
+                            <p class="mb-0">Factures totales</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center border-left-info">
+                        <div class="card-body">
+                            <h4 class="text-info">{{ montant_total }}€</h4>
+                            <p class="mb-0">Montant total</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center border-left-warning">
+                        <div class="card-body">
+                            <h4 class="text-warning">{{ montant_total|floatformat:0|length|add:"-3"|slice:":-3"|add:"€" }}</h4>
+                            <p class="mb-0">Montant moyen</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des factures -->
+            {% if factures %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Historique des factures</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Facture</th>
+                                    <th>Commande</th>
+                                    <th>Trajet</th>
+                                    <th>Date livraison</th>
+                                    <th>Montant</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for facture in factures %}
+                                <tr>
+                                    <td>
+                                        <strong>F-{{ facture.id|stringformat:"04d" }}</strong>
+                                        <br><small class="text-muted">{{ facture.date_creation|date:"d/m/Y" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>#{{ facture.id }}</strong>
+                                        <br><small class="text-muted">{{ facture.poids }} kg</small>
+                                    </td>
+                                    <td>
+                                        <small>
+                                            <i class="fas fa-map-marker-alt text-success"></i> {{ facture.origine|truncatechars:20 }}
+                                            <br><i class="fas fa-map-marker-alt text-danger"></i> {{ facture.destination|truncatechars:20 }}
+                                        </small>
+                                    </td>
+                                    <td>{{ facture.date_livraison_prevue|date:"d/m/Y H:i" }}</td>
+                                    <td>
+                                        <span class="badge bg-success">{{ facture.prix }}€</span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewFacture({{ facture.id }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="downloadFacture({{ facture.id }})">
+                                                <i class="fas fa-download"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                    <h4>Aucune facture trouvée</h4>
+                    <p class="text-muted">Vous n'avez pas encore de factures de transport.</p>
+                    <a href="{% url 'client_nouvelle_commande' %}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Créer une commande
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function viewFacture(factureId) {
+    // Ouvrir les détails de la facture
+    window.open(`/client/factures/${factureId}/`, '_blank');
+}
+
+function downloadFacture(factureId) {
+    // Télécharger la facture en PDF
+    window.open(`/client/factures/${factureId}/pdf/`, '_blank');
+}
+
+function exportFactures() {
+    // Exporter toutes les factures
+    window.open('/client/factures/export/', '_blank');
+}
+</script>
+
+<style>
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc !important;
+}
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+</style>
+{% endblock %}

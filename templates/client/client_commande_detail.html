@@ -1,0 +1,472 @@
+<!-- templates/client/client_commande_detail.html -->
+{% extends 'public/base.html' %}
+{% block title %}Détails Commande #{{ commande.id }} - Client{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Client -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-user"></i> Panel Client</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'client_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'client_commandes' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-box"></i> Mes commandes
+                    </a>
+                    <a href="{% url 'client_nouvelle_commande' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-plus"></i> Nouvelle commande
+                    </a>
+                    <a href="{% url 'client_factures' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-file-invoice"></i> Mes factures
+                    </a>
+                    <a href="{% url 'client_profil' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-cog"></i> Mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Commande #{{ commande.id }}</h1>
+                <div class="btn-group">
+                    <a href="{% url 'client_commandes' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    {% if commande.statut != 'annulee' and commande.statut != 'livree' %}
+                    <a href="{% url 'client_suivi_commande' commande.id %}" class="btn btn-primary">
+                        <i class="fas fa-truck"></i> Suivi en temps réel
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statut principal -->
+            <div class="alert alert-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'affectee' %}info{% elif commande.statut == 'annulee' %}danger{% else %}secondary{% endif %} mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-{% if commande.statut == 'livree' %}check-circle{% elif commande.statut == 'en_cours' %}truck{% elif commande.statut == 'affectee' %}user-check{% elif commande.statut == 'annulee' %}times-circle{% else %}clock{% endif %} fa-2x me-3"></i>
+                    <div>
+                        <h5 class="mb-1">{{ commande.get_statut_display }}</h5>
+                        <p class="mb-0">
+                            {% if commande.statut == 'en_attente' %}
+                                Votre commande est en attente d'affectation à un transporteur.
+                            {% elif commande.statut == 'affectee' %}
+                                Votre commande a été affectée à un transporteur. La livraison va bientôt commencer.
+                            {% elif commande.statut == 'en_cours' %}
+                                Votre commande est actuellement en cours de livraison.
+                            {% elif commande.statut == 'livree' %}
+                                Votre commande a été livrée avec succès !
+                            {% elif commande.statut == 'annulee' %}
+                                Cette commande a été annulée.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Informations principales -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Détails de la commande</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Informations de transport</h6>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><i class="fas fa-map-marker-alt text-success"></i> <strong>Origine:</strong></td>
+                                            <td>{{ commande.origine }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-map-marker-alt text-danger"></i> <strong>Destination:</strong></td>
+                                            <td>{{ commande.destination }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-calendar"></i> <strong>Livraison prévue:</strong></td>
+                                            <td>{{ commande.date_livraison_prevue|date:"d/m/Y à H:i" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fas fa-clock"></i> <strong>Créée le:</strong></td>
+                                            <td>{{ commande.date_creation|date:"d/m/Y à H:i" }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Marchandise</h6>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td><i class="fas fa-weight-hanging"></i> <strong>Poids:</strong></td>
+                                            <td>{{ commande.poids }} kg</td>
+                                        </tr>
+                                        {% if commande.prix %}
+                                        <tr>
+                                            <td><i class="fas fa-euro-sign"></i> <strong>Prix:</strong></td>
+                                            <td><span class="badge bg-success">{{ commande.prix }}€</span></td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="text-primary">Description de la marchandise</h6>
+                                <div class="bg-light p-3 rounded">
+                                    {{ commande.description_marchandise|linebreaks }}
+                                </div>
+                            </div>
+
+                            {% if commande.notes %}
+                            <div class="mb-4">
+                                <h6 class="text-primary">Notes complémentaires</h6>
+                                <div class="bg-light p-3 rounded">
+                                    {{ commande.notes|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Informations de livraison -->
+                    {% if livraison %}
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-shipping-fast"></i> Informations de livraison</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-borderless">
+                                        {% if livraison.date_debut %}
+                                        <tr>
+                                            <td><i class="fas fa-play text-success"></i> <strong>Début:</strong></td>
+                                            <td>{{ livraison.date_debut|date:"d/m/Y à H:i" }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if livraison.date_fin %}
+                                        <tr>
+                                            <td><i class="fas fa-stop text-danger"></i> <strong>Fin:</strong></td>
+                                            <td>{{ livraison.date_fin|date:"d/m/Y à H:i" }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% if livraison.position_actuelle %}
+                                        <tr>
+                                            <td><i class="fas fa-location-arrow text-warning"></i> <strong>Position:</strong></td>
+                                            <td>{{ livraison.position_actuelle }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary">Véhicule utilisé</h6>
+                                    <p>
+                                        <i class="fas fa-truck"></i> {{ livraison.vehicule.immatriculation }}<br>
+                                        <small class="text-muted">{{ livraison.vehicule.get_type_vehicule_display }} - {{ livraison.vehicule.capacite_max }} kg</small>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if livraison.notes_livraison %}
+                            <div class="mt-3">
+                                <h6 class="text-primary">Notes du transporteur</h6>
+                                <div class="bg-light p-3 rounded">
+                                    {{ livraison.notes_livraison|linebreaks }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar avec informations transporteur -->
+                <div class="col-lg-4 mb-4">
+                    {% if commande.transporteur %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-truck"></i> Transporteur</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="avatar bg-warning rounded-circle p-3 mx-auto mb-3" style="width: 60px; height: 60px;">
+                                <i class="fas fa-user fa-2x text-white"></i>
+                            </div>
+                            <h6>{{ commande.transporteur.first_name }} {{ commande.transporteur.last_name }}</h6>
+                            <p class="text-muted mb-2">{{ commande.transporteur.email }}</p>
+                            {% if commande.transporteur.phone %}
+                            <p class="mb-3">
+                                <i class="fas fa-phone text-success"></i> 
+                                <a href="tel:{{ commande.transporteur.phone }}" class="text-decoration-none">{{ commande.transporteur.phone }}</a>
+                            </p>
+                            {% endif %}
+                            
+                            <!-- Boutons de contact -->
+                            <div class="btn-group-vertical w-100">
+                                {% if commande.transporteur.phone %}
+                                <a href="tel:{{ commande.transporteur.phone }}" class="btn btn-success btn-sm mb-2">
+                                    <i class="fas fa-phone"></i> Appeler
+                                </a>
+                                {% endif %}
+                                <a href="mailto:{{ commande.transporteur.email }}?subject=Commande #{{ commande.id }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-envelope"></i> Envoyer un email
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card mb-4">
+                        <div class="card-body text-center">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h6>Recherche en cours</h6>
+                            <p class="text-muted">Nous recherchons un transporteur pour votre commande.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-cogs"></i> Actions</h6>
+                        </div>
+                        <div class="card-body">
+                            {% if commande.statut != 'annulee' and commande.statut != 'livree' %}
+                            <a href="{% url 'client_suivi_commande' commande.id %}" class="btn btn-primary btn-block mb-2">
+                                <i class="fas fa-truck"></i> Suivi temps réel
+                            </a>
+                            {% endif %}
+                            
+                            {% if commande.statut == 'en_attente' or commande.statut == 'affectee' %}
+                            <button class="btn btn-outline-danger btn-block mb-2" onclick="annulerCommande()">
+                                <i class="fas fa-times"></i> Annuler la commande
+                            </button>
+                            {% endif %}
+                            
+                            {% if commande.statut == 'livree' %}
+                            <button class="btn btn-outline-warning btn-block mb-2" onclick="rateTransporter()">
+                                <i class="fas fa-star"></i> Évaluer le service
+                            </button>
+                            {% endif %}
+                            
+                            <a href="{% url 'client_commandes' %}" class="btn btn-outline-secondary btn-block">
+                                <i class="fas fa-list"></i> Toutes mes commandes
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Aide -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-question-circle"></i> Besoin d'aide ?</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="small text-muted">
+                                Pour toute question concernant votre commande, n'hésitez pas à nous contacter.
+                            </p>
+                            <a href="{% url 'contact' %}" class="btn btn-outline-info btn-sm">
+                                <i class="fas fa-envelope"></i> Nous contacter
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'annulation -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Annuler la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir annuler cette commande ?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> Cette action est irréversible.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Non, garder</button>
+                <button type="button" class="btn btn-danger" onclick="confirmCancellation()">
+                    <i class="fas fa-check"></i> Oui, annuler
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'évaluation -->
+<div class="modal fade" id="ratingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Évaluer le service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ratingForm">
+                    <div class="mb-3">
+                        <label class="form-label">Note globale</label>
+                        <div class="rating-stars">
+                            <i class="fas fa-star" data-rating="1"></i>
+                            <i class="fas fa-star" data-rating="2"></i>
+                            <i class="fas fa-star" data-rating="3"></i>
+                            <i class="fas fa-star" data-rating="4"></i>
+                            <i class="fas fa-star" data-rating="5"></i>
+                        </div>
+                        <input type="hidden" id="rating" name="rating" value="5">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Commentaire (optionnel)</label>
+                        <textarea class="form-control" name="comment" rows="3" placeholder="Partagez votre expérience..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="submitRating()">
+                    <i class="fas fa-star"></i> Envoyer l'évaluation
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function annulerCommande() {
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    modal.show();
+}
+
+function confirmCancellation() {
+    fetch(`/client/commandes/{{ commande.id }}/annuler/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de l\'annulation');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'annulation de la commande');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('cancelModal')).hide();
+}
+
+function rateTransporter() {
+    const modal = new bootstrap.Modal(document.getElementById('ratingModal'));
+    modal.show();
+}
+
+// Gestion des étoiles de notation
+document.querySelectorAll('.rating-stars i').forEach(star => {
+    star.addEventListener('click', function() {
+        const rating = parseInt(this.dataset.rating);
+        document.getElementById('rating').value = rating;
+        
+        // Mettre à jour l'affichage des étoiles
+        document.querySelectorAll('.rating-stars i').forEach((s, index) => {
+            if (index < rating) {
+                s.classList.add('text-warning');
+                s.classList.remove('text-muted');
+            } else {
+                s.classList.add('text-muted');
+                s.classList.remove('text-warning');
+            }
+        });
+    });
+    
+    star.addEventListener('mouseover', function() {
+        const rating = parseInt(this.dataset.rating);
+        document.querySelectorAll('.rating-stars i').forEach((s, index) => {
+            if (index < rating) {
+                s.classList.add('text-warning');
+                s.classList.remove('text-muted');
+            } else {
+                s.classList.add('text-muted');
+                s.classList.remove('text-warning');
+            }
+        });
+    });
+});
+
+// Initialiser les étoiles à 5
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.rating-stars i').forEach(star => {
+        star.classList.add('text-warning');
+        star.style.cursor = 'pointer';
+    });
+});
+
+function submitRating() {
+    const formData = new FormData(document.getElementById('ratingForm'));
+    
+    fetch(`/client/commandes/{{ commande.id }}/rate/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Merci pour votre évaluation !');
+            bootstrap.Modal.getInstance(document.getElementById('ratingModal')).hide();
+        } else {
+            alert('Erreur lors de l\'envoi de l\'évaluation');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'envoi de l\'évaluation');
+    });
+}
+</script>
+
+<style>
+.avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.table-borderless td {
+    border: none;
+    padding: 0.25rem 0;
+}
+
+.rating-stars i {
+    font-size: 1.5rem;
+    margin-right: 0.25rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-stars i:hover {
+    transform: scale(1.1);
+}
+
+.btn-block {
+    width: 100%;
+}
+</style>
+{% endblock %}

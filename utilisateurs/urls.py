@@ -35,8 +35,26 @@ urlpatterns = [
     path('transporteur/vehicules/add/', views.transporteur_add_vehicule, name='transporteur_add_vehicule'),
     path('transporteur/itineraire/', views.transporteur_itineraire, name='transporteur_itineraire'),
     
+    # Dashboard Client
+    path('client/dashboard/', views.client_dashboard, name='client_dashboard'),
+    path('client/commandes/', views.client_commandes, name='client_commandes'),
+    path('client/commandes/nouvelle/', views.client_nouvelle_commande, name='client_nouvelle_commande'),
+    path('client/commandes/<int:commande_id>/', views.client_commande_detail, name='client_commande_detail'),
+    path('client/commandes/<int:commande_id>/suivi/', views.client_suivi_commande, name='client_suivi_commande'),
+    path('client/commandes/<int:commande_id>/annuler/', views.client_annuler_commande, name='client_annuler_commande'),
+    path('client/profil/', views.client_profil, name='client_profil'),
+    path('client/factures/', views.client_factures, name='client_factures'),
+    
     # API AJAX
     path('api/commandes/<int:commande_id>/assign/', views.assign_commande, name='assign_commande'),
     path('api/livraisons/<int:livraison_id>/status/', views.update_livraison_status, name='update_livraison_status'),
     path('api/notifications/mark-read/', views.mark_notifications_read, name='mark_notifications_read'),
+    
+    # API supplémentaires pour les fonctionnalités avancées
+    path('api/commandes/<int:commande_id>/details/', views.commande_details_api, name='commande_details_api'),
+    path('api/vehicules/<int:vehicule_id>/', views.vehicule_details_api, name='vehicule_details_api'),
+    path('api/vehicules/<int:vehicule_id>/update/', views.vehicule_update_api, name='vehicule_update_api'),
+    path('api/vehicules/<int:vehicule_id>/toggle/', views.vehicule_toggle_api, name='vehicule_toggle_api'),
+    path('api/commandes/check-new/', views.check_new_commandes, name='check_new_commandes'),
+    path('api/livraisons/check-updates/', views.check_livraisons_updates, name='check_livraisons_updates'),
 ]

@@ -1,0 +1,211 @@
+<!-- templates/admin/admin_system_config.html -->
+{% extends 'public/base.html' %}
+{% block title %}Configuration Système - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Admin -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-user-shield"></i> Panel Admin</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'admin_users' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users"></i> Gérer utilisateurs
+                    </a>
+                    <a href="{% url 'admin_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Toutes les commandes
+                    </a>
+                    <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar"></i> Rapports
+                    </a>
+                    <a href="{% url 'admin_system_config' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-cog"></i> Configuration
+                    </a>
+                    <a href="{% url 'admin_notifications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Configuration du Système</h1>
+                <button class="btn btn-outline-primary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+
+            <!-- Paramètres généraux -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Paramètres généraux</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nom de l'entreprise</label>
+                                <input type="text" class="form-control" name="company_name" value="Transport System">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email de contact</label>
+                                <input type="email" class="form-control" name="contact_email" value="contact@transportsystem.com">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Téléphone</label>
+                                <input type="tel" class="form-control" name="phone" value="+33 1 23 45 67 89">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Devise par défaut</label>
+                                <select class="form-control" name="default_currency">
+                                    <option value="EUR" selected>Euro (€)</option>
+                                    <option value="MAD">Dirham Marocain (MAD)</option>
+                                    <option value="USD">Dollar US ($)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Paramètres de transport -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Paramètres de transport</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Prix minimum par kg (€)</label>
+                                <input type="number" class="form-control" name="min_price_per_kg" value="0.50" step="0.01">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Prix maximum par kg (€)</label>
+                                <input type="number" class="form-control" name="max_price_per_kg" value="5.00" step="0.01">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Délai minimum (heures)</label>
+                                <input type="number" class="form-control" name="min_delivery_time" value="2" min="1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Commission système (%)</label>
+                                <input type="number" class="form-control" name="system_commission" value="5" step="0.1" min="0" max="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    <input class="form-check-input" type="checkbox" id="auto_assignment" name="auto_assignment" checked>
+                                    <label class="form-check-label" for="auto_assignment">
+                                        Affectation automatique des commandes
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Paramètres de notification -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Paramètres de notification</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" checked>
+                                    <label class="form-check-label" for="email_notifications">
+                                        Notifications par email
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications">
+                                    <label class="form-check-label" for="sms_notifications">
+                                        Notifications par SMS
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Statistiques système -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Statistiques système</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body">
+                                    <h4>1.2 GB</h4>
+                                    <p class="mb-0">Espace disque utilisé</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h4>99.9%</h4>
+                                    <p class="mb-0">Disponibilité</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body">
+                                    <h4>15 ms</h4>
+                                    <p class="mb-0">Temps de réponse</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h4>v2.1.0</h4>
+                                    <p class="mb-0">Version système</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function refreshData() {
+    location.reload();
+}
+</script>
+{% endblock %}
