@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
+import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -146,5 +146,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Configuration des APIs
-OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default='')
-OPENROUTE_API_KEY = config('OPENROUTE_API_KEY', default='')
+OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')
+OPENROUTE_API_KEY = os.environ.get('OPENROUTE_API_KEY', '')

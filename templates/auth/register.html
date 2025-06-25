@@ -672,12 +672,12 @@
                                 </div>
                             </div>
                             
-                            <div class="role-option" onclick="selectRole('driver')">
-                                <input type="radio" name="role" value="driver" id="roleDriver">
+                            <div class="role-option" onclick="selectRole('transporteur')">
+                                <input type="radio" name="role" value="transporteur" id="roleTransporteur">
                                 <div class="role-icon">
                                     <i class="fas fa-truck"></i>
                                 </div>
-                                <div class="role-title">Chauffeur</div>
+                                <div class="role-title">Transporteur</div>
                                 <div class="role-description">
                                     Je souhaite transporter des marchandises
                                 </div>
@@ -852,7 +852,8 @@
             
             // Sélectionner le nouveau rôle
             document.querySelector(`[onclick="selectRole('${role}')"]`).classList.add('selected');
-            document.getElementById(`role${role.charAt(0).toUpperCase() + role.slice(1)}`).checked = true;
+            const roleId = role === 'transporteur' ? 'roleTransporteur' : `role${role.charAt(0).toUpperCase() + role.slice(1)}`;
+            document.getElementById(roleId).checked = true;
         }
 
         // Vérification de la force du mot de passe
