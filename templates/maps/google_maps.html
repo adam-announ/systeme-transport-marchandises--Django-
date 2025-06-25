@@ -1,0 +1,185 @@
+<!-- templates/maps/google_maps.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Système de Transport - Cartes</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Planification des Tournées</h1>
+        
+        <div class="controls">
+            <input type="text" id="depot" placeholder="Adresse du dépôt" style="width: 300px; padding: 8px;">
+            <button class="btn" onclick="addDepot()">Définir Dépôt</button>
+            
+            <input type="text" id="delivery" placeholder="Adresse de livraison" style="width: 300px; padding: 8px;">
+            <button class="btn" onclick="addDelivery()">Ajouter Livraison</button>
+            
+            <button class="btn" onclick="optimizeRoute()">Optimiser Tournée</button>
+            <button class="btn" onclick="clearMap()">Effacer</button>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div id="results" style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; display: none;">
+            <h3>Résultats de l'optimisation</h3>
+            <div id="route-info"></div>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+        let geocoder;
+        let depotMarker;
+        let deliveryMarkers = [];
+        let deliveryAddresses = [];
+
+        function initMap() {
+            const casablanca = { lat: 33.5731, lng: -7.5898 };
+            
+            map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 11,
+                center: casablanca,
+            });
+            
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer({
+                draggable: true,
+                suppressMarkers: false
+            });
+            directionsRenderer.setMap(map);
+            
+            geocoder = new google.maps.Geocoder();
+        }
+
+        function addDepot() {
+            const address = document.getElementById('depot').value;
+            if (!address) return;
+            
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    if (depotMarker) depotMarker.setMap(null);
+                    
+                    depotMarker = new google.maps.Marker({
+                        position: results[0].geometry.location,
+                        map: map,
+                        title: 'Dépôt',
+                        icon: 'https://maps.google.com/mapfiles/ms/icons/green-dot.png'
+                    });
+                    
+                    map.setCenter(results[0].geometry.location);
+                }
+            });
+        }
+
+        function addDelivery() {
+            const address = document.getElementById('delivery').value;
+            if (!address) return;
+            
+            geocoder.geocode({ address: address }, (results, status) => {
+                if (status === 'OK') {
+                    const marker = new google.maps.Marker({
+                        position: results[0].geometry.location,
+                        map: map,
+                        title: `Livraison ${deliveryMarkers.length + 1}`,
+                        label: (deliveryMarkers.length + 1).toString()
+                    });
+                    
+                    deliveryMarkers.push(marker);
+                    deliveryAddresses.push(address);
+                    document.getElementById('delivery').value = '';
+                }
+            });
+        }
+
+        function optimizeRoute() {
+            if (!depotMarker || deliveryAddresses.length === 0) {
+                alert('Veuillez définir un dépôt et au moins une livraison');
+                return;
+            }
+            
+            const depot = document.getElementById('depot').value;
+            const waypoints = deliveryAddresses.map(addr => ({
+                location: addr,
+                stopover: true
+            }));
+            
+            directionsService.route({
+                origin: depot,
+                destination: depot,
+                waypoints: waypoints,
+                optimizeWaypoints: true,
+                travelMode: google.maps.TravelMode.DRIVING
+            }, (response, status) => {
+                if (status === 'OK') {
+                    directionsRenderer.setDirections(response);
+                    
+                    const route = response.routes[0];
+                    let totalDistance = 0;
+                    let totalDuration = 0;
+                    
+                    route.legs.forEach(leg => {
+                        totalDistance += leg.distance.value;
+                        totalDuration += leg.duration.value;
+                    });
+                    
+                    document.getElementById('results').style.display = 'block';
+                    document.getElementById('route-info').innerHTML = `
+                        <p><strong>Distance totale:</strong> ${(totalDistance / 1000).toFixed(2)} km</p>
+                        <p><strong>Durée totale:</strong> ${Math.round(totalDuration / 60)} minutes</p>
+                        <p><strong>Ordre optimisé:</strong> ${route.waypoint_order.map(i => i + 1).join(' → ')}</p>
+                    `;
+                }
+            });
+        }
+
+        function clearMap() {
+            if (depotMarker) depotMarker.setMap(null);
+            deliveryMarkers.forEach(marker => marker.setMap(null));
+            directionsRenderer.setDirections({routes: []});
+            
+            depotMarker = null;
+            deliveryMarkers = [];
+            deliveryAddresses = [];
+            
+            document.getElementById('depot').value = '';
+            document.getElementById('delivery').value = '';
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+    
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap&libraries=geometry,places">
+    </script>
+</body>
+</html>

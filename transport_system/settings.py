@@ -149,3 +149,195 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configuration des APIs
 OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default='')
 OPENROUTE_API_KEY = config('OPENROUTE_API_KEY', default='')
+GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
+
+# transport_system/settings_maps.py
+"""
+Configuration des APIs cartographiques pour le système de transport
+"""
+
+import os
+from decouple import config
+
+# Configuration Google Maps API
+GOOGLE_MAPS_CONFIG = {
+    'API_KEY': config('GOOGLE_MAPS_API_KEY', default=''),
+    'LIBRARIES': ['geometry', 'places', 'directions'],
+    'REGION': 'MA',  # Maroc
+    'LANGUAGE': 'fr',
+    'DEFAULT_CENTER': {
+        'lat': 33.5731,
+        'lng': -7.5898  # Casablanca
+    },
+    'DEFAULT_ZOOM': 11
+}
+
+# Configuration OpenRoute Service (alternative)
+OPENROUTE_CONFIG = {
+    'API_KEY': config('OPENROUTE_API_KEY', default=''),
+    'BASE_URL': 'https://api.openrouteservice.org',
+    'PROFILE': 'driving-car',
+    'OPTIMIZATION': True
+}
+
+# Configuration Mapbox (alternative)
+MAPBOX_CONFIG = {
+    'ACCESS_TOKEN': config('MAPBOX_ACCESS_TOKEN', default=''),
+    'STYLE': 'mapbox://styles/mapbox/streets-v11',
+    'OPTIMIZATION_API': 'https://api.mapbox.com/optimized-trips/v1/mapbox'
+}
+
+# Configuration HERE Maps (alternative)
+HERE_CONFIG = {
+    'API_KEY': config('HERE_API_KEY', default=''),
+    'BASE_URL': 'https://api.here.com',
+    'REGION': 'MAR'  # Maroc
+}
+
+# Priorité des fournisseurs de cartes
+MAP_PROVIDERS_PRIORITY = [
+    'google',      # Google Maps (meilleur pour l'optimisation)
+    'openroute',   # OpenRoute Service (gratuit)
+    'mapbox',      # Mapbox (bon équilibre)
+    'here',        # HERE Maps
+    'leaflet'      # OpenStreetMap (fallback gratuit)
+]
+
+# Configuration des limites d'utilisation
+API_LIMITS = {
+    'google': {
+        'requests_per_day': 25000,
+        'requests_per_minute': 50
+    },
+    'openroute': {
+        'requests_per_day': 2000,
+        'requests_per_minute': 40
+    },
+    'mapbox': {
+        'requests_per_day': 100000,
+        'requests_per_minute': 300
+    }
+}
+
+# Coordonnées des principales villes du Maroc
+MOROCCO_CITIES = {
+    'casablanca': {'lat': 33.5731, 'lng': -7.5898},
+    'casa': {'lat': 33.5731, 'lng': -7.5898},
+    'rabat': {'lat': 34.0209, 'lng': -6.8416},
+    'marrakech': {'lat': 31.6295, 'lng': -7.9811},
+    'marrakesh': {'lat': 31.6295, 'lng': -7.9811},
+    'fes': {'lat': 34.0331, 'lng': -5.0003},
+    'fez': {'lat': 34.0331, 'lng': -5.0003},
+    'tanger': {'lat': 35.7595, 'lng': -5.8340},
+    'tangier': {'lat': 35.7595, 'lng': -5.8340},
+    'agadir': {'lat': 30.4278, 'lng': -9.5981},
+    'meknes': {'lat': 33.8935, 'lng': -5.5473},
+    'oujda': {'lat': 34.6814, 'lng': -1.9086},
+    'kenitra': {'lat': 34.2610, 'lng': -6.5802},
+    'tetouan': {'lat': 35.5889, 'lng': -5.3626},
+    'safi': {'lat': 32.2994, 'lng': -9.2372},
+    'mohammedia': {'lat': 33.6864, 'lng': -7.3822},
+    'khouribga': {'lat': 32.8811, 'lng': -6.9063},
+    'beni_mellal': {'lat': 32.3373, 'lng': -6.3498},
+    'el_jadida': {'lat': 33.2316, 'lng': -8.5007},
+    'nador': {'lat': 35.1740, 'lng': -2.9287}
+}
+
+# Configuration des zones de livraison
+DELIVERY_ZONES = {
+    'grand_casablanca': {
+        'center': {'lat': 33.5731, 'lng': -7.5898},
+        'radius': 50,  # km
+        'cities': ['casablanca', 'mohammedia', 'benslimane', 'berrechid']
+    },
+    'rabat_sale': {
+        'center': {'lat': 34.0209, 'lng': -6.8416},
+        'radius': 40,
+        'cities': ['rabat', 'sale', 'temara', 'skhirat', 'kenitra']
+    },
+    'marrakech_region': {
+        'center': {'lat': 31.6295, 'lng': -7.9811},
+        'radius': 60,
+        'cities': ['marrakech', 'essaouira', 'safi']
+    },
+    'fes_meknes': {
+        'center': {'lat': 34.0331, 'lng': -5.0003},
+        'radius': 45,
+        'cities': ['fes', 'meknes', 'ifrane']
+    },
+    'nord': {
+        'center': {'lat': 35.7595, 'lng': -5.8340},
+        'radius': 55,
+        'cities': ['tanger', 'tetouan', 'larache', 'chefchaouen']
+    },
+    'oriental': {
+        'center': {'lat': 34.6814, 'lng': -1.9086},
+        'radius': 50,
+        'cities': ['oujda', 'nador', 'berkane']
+    }
+}
+
+# Configuration des styles de carte
+MAP_STYLES = {
+    'google': {
+        'default': [],
+        'minimal': [
+            {
+                'featureType': 'poi',
+                'elementType': 'labels',
+                'stylers': [{'visibility': 'off'}]
+            },
+            {
+                'featureType': 'transit',
+                'elementType': 'labels',
+                'stylers': [{'visibility': 'off'}]
+            }
+        ],
+        'dark': [
+            {'elementType': 'geometry', 'stylers': [{'color': '#242f3e'}]},
+            {'elementType': 'labels.text.stroke', 'stylers': [{'color': '#242f3e'}]},
+            {'elementType': 'labels.text.fill', 'stylers': [{'color': '#746855'}]}
+        ]
+    },
+    'leaflet': {
+        'openstreetmap': 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        'cartodb': 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        'dark': 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    }
+}
+
+# Configuration des icônes personnalisées
+CUSTOM_ICONS = {
+    'depot': {
+        'google': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzEwYjk4MSIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj4KICA8cGF0aCBkPSJNMTIgMkwyIDdMMTIgMTJMMjIgN0wxMiAyWiIvPgogIDxwYXRoIGQ9Ik0yIDE3TDEyIDIyTDIyIDE3Ii8+CiAgPHBhdGggZD0iTTIgMTJMMTIgMTdMMjIgMTIiLz4KPC9zdmc+',
+        'leaflet': '<i class="fas fa-warehouse" style="color: #10b981; font-size: 20px;"></i>'
+    },
+    'delivery': {
+        'google': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzRmNDZlNSIgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0Ij4KICA8cGF0aCBkPSJNMjAgOEg0VjZDNCA0LjkgNC45IDQgNiA0SDE4QzE5LjEgNCAyMCA0LjkgMjAgNlY4WiIvPgogIDxwYXRoIGQ9Ik00IDhWMThDNCAxOS4xIDQuOSAyMCA2IDIwSDE4QzE5LjEgMjAgMjAgMTkuMSAyMCAxOFY4SDRaIi8+CiAgPGNpcmNsZSBjeD0iMTIiIGN5PSIxNCIgcj0iMiIvPgo8L3N2Zz4=',
+        'leaflet': '<div style="background: #4f46e5; color: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold;">📦</div>'
+    },
+    'vehicle': {
+        'google': 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2Y1OWUwYiIgd2lkdGg9IjI4IiBoZWlnaHQ9IjI4Ij4KICA8cGF0aCBkPSJNMTggOGwtMS0zSDdMNiA4SDNWMTJINFYxOEg2VjEySDhWMThaIi8+CiAgPGNpcmNsZSBjeD0iNy41IiBjeT0iMTQuNSIgcj0iMS41Ii8+CiAgPGNpcmNsZSBjeD0iMTYuNSIgY3k9IjE0LjUiIHI9IjEuNSIvPgo8L3N2Zz4=',
+        'leaflet': '<i class="fas fa-truck" style="color: #f59e0b; font-size: 18px;"></i>'
+    }
+}
+
+# Configuration des alertes et notifications
+GEOFENCING_CONFIG = {
+    'enable': True,
+    'depot_radius': 0.5,  # km
+    'delivery_radius': 0.2,  # km
+    'notifications': {
+        'on_departure': True,
+        'on_arrival': True,
+        'on_delay': True
+    }
+}
+
+# Configuration du tracking en temps réel
+REALTIME_TRACKING = {
+    'enable': True,
+    'update_interval': 30,  # secondes
+    'accuracy_threshold': 50,  # mètres
+    'speed_threshold': 120  # km/h (alerte si dépassé)
+}
