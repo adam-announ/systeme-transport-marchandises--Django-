@@ -53,7 +53,7 @@
                                     <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                         Utilisateurs Total
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.total_users|default:0 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-users fa-2x text-gray-300"></i>
@@ -71,7 +71,7 @@
                                     <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                         Commandes ce mois
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.commandes_mois }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.commandes_mois|default:0 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-box fa-2x text-gray-300"></i>
@@ -89,7 +89,7 @@
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         Livraisons en cours
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.livraisons_cours }}</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.livraisons_cours|default:0 }}</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-truck fa-2x text-gray-300"></i>
@@ -107,7 +107,7 @@
                                     <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                         Revenus du mois
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.revenus_mois }}€</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.revenus_mois|default:0 }}€</div>
                                 </div>
                                 <div class="col-auto">
                                     <i class="fas fa-euro-sign fa-2x text-gray-300"></i>
@@ -142,10 +142,10 @@
                                         {% for commande in recent_commandes %}
                                         <tr>
                                             <td>#{{ commande.id }}</td>
-                                            <td>{{ commande.client.first_name }} {{ commande.client.last_name }}</td>
+                                            <td>{{ commande.client.first_name|default:"" }} {{ commande.client.last_name|default:"" }}</td>
                                             <td>{{ commande.destination|truncatechars:30 }}</td>
                                             <td>
-                                                <span class="badge badge-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% else %}secondary{% endif %}">
+                                                <span class="badge {% if commande.statut == 'livree' %}badge-success{% elif commande.statut == 'en_cours' %}badge-warning{% else %}badge-secondary{% endif %}">
                                                     {{ commande.get_statut_display }}
                                                 </span>
                                             </td>
@@ -171,15 +171,11 @@
                         <div class="card-body">
                             <div class="alert alert-warning alert-dismissible fade show" role="alert">
                                 <strong>Maintenance!</strong> Maintenance programmée le 30/06/2025.
-                                <button type="button" class="close" data-dismiss="alert">
-                                    <span>&times;</span>
-                                </button>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                             <div class="alert alert-info alert-dismissible fade show" role="alert">
-                                <strong>Info!</strong> {{ stats.nouveaux_users }} nouveaux utilisateurs cette semaine.
-                                <button type="button" class="close" data-dismiss="alert">
-                                    <span>&times;</span>
-                                </button>
+                                <strong>Info!</strong> {{ stats.nouveaux_users|default:0 }} nouveaux utilisateurs cette semaine.
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         </div>
                     </div>
@@ -189,13 +185,13 @@
                             <h6 class="m-0 font-weight-bold text-primary">Actions rapides</h6>
                         </div>
                         <div class="card-body">
-                            <a href="{% url 'admin_create_user' %}" class="btn btn-primary btn-block mb-2">
+                            <a href="{% url 'admin_create_user' %}" class="btn btn-primary w-100 mb-2">
                                 <i class="fas fa-user-plus"></i> Nouvel utilisateur
                             </a>
-                            <a href="{% url 'admin_reports' %}" class="btn btn-info btn-block mb-2">
+                            <a href="{% url 'admin_reports' %}" class="btn btn-info w-100 mb-2">
                                 <i class="fas fa-file-alt"></i> Générer rapport
                             </a>
-                            <a href="{% url 'admin_notifications' %}" class="btn btn-warning btn-block">
+                            <a href="{% url 'admin_notifications' %}" class="btn btn-warning w-100">
                                 <i class="fas fa-bullhorn"></i> Envoyer notification
                             </a>
                         </div>

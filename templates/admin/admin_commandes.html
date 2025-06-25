@@ -1,4 +1,3 @@
-<!-- templates/admin/admin_commandes.html -->
 {% extends 'public/base.html' %}
 {% block title %}Gestion Commandes - Admin{% endblock %}
 {% block content %}
@@ -47,7 +46,7 @@
                 <div class="col-md-3">
                     <div class="card text-center border-left-primary">
                         <div class="card-body">
-                            <h4 class="text-primary">{{ commandes.count }}</h4>
+                            <h4 class="text-primary">{{ commandes.paginator.count|default:0 }}</h4>
                             <p class="mb-0">Total commandes</p>
                         </div>
                     </div>
@@ -55,7 +54,7 @@
                 <div class="col-md-3">
                     <div class="card text-center border-left-warning">
                         <div class="card-body">
-                            <h4 class="text-warning">{{ commandes_en_attente }}</h4>
+                            <h4 class="text-warning">{{ commandes_en_attente|default:0 }}</h4>
                             <p class="mb-0">En attente</p>
                         </div>
                     </div>
@@ -63,7 +62,7 @@
                 <div class="col-md-3">
                     <div class="card text-center border-left-info">
                         <div class="card-body">
-                            <h4 class="text-info">{{ commandes_en_cours }}</h4>
+                            <h4 class="text-info">{{ commandes_en_cours|default:0 }}</h4>
                             <p class="mb-0">En cours</p>
                         </div>
                     </div>
@@ -71,12 +70,65 @@
                 <div class="col-md-3">
                     <div class="card text-center border-left-success">
                         <div class="card-body">
-                            <h4 class="text-success">{{ commandes_livrees }}</h4>
+                            <h4 class="text-success">{{ commandes_livrees|default:0 }}</h4>
                             <p class="mb-0">Livrées</p>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select class="form-control" name="statut">
+                                <option value="">Tous les statuts</option>
+                                <option value="en_attente" {% if request.GET.statut == 'en_attente' %}selected{% endif %}>En attente</option>
+                                <option value="affectee" {% if request.GET.statut == 'affectee' %}selected{% endif %}>Affectée</option>
+                                <option value="planifiee" {% if request.GET.statut == 'planifiee' %}selected{% endif %}>Planifiée</option>
+                                <option value="en_cours" {% if request.GET.statut == 'en_cours' %}selected{% endif %}>En cours</option>
+                                <option value="livree" {% if request.GET.statut == 'livree' %}selected{% endif %}>Livrée</option>
+                                <option value="annulee" {% if request.GET.statut == 'annulee' %}selected{% endif %}>Annulée</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Transporteur</label>
+                            <select class="form-control" name="transporteur">
+                                <option value="">Tous les transporteurs</option>
+                                {% for transporteur in transporteurs %}
+                                <option value="{{ transporteur.id }}" {% if request.GET.transporteur == transporteur.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ transporteur.first_name }} {{ transporteur.last_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Date</label>
+                            <input type="date" class="form-control" name="date" value="{{ request.GET.date|default:"" }}">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-search"></i> Filtrer
+                            </button>
+                            <a href="{% url 'admin_commandes' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i> Reset
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
 
             <!-- Liste des commandes -->
             <div class="card">
@@ -102,10 +154,10 @@
                                 {% for commande in commandes %}
                                 <tr>
                                     <td>#{{ commande.id }}</td>
-                                    <td>{{ commande.client.first_name }} {{ commande.client.last_name }}</td>
+                                    <td>{{ commande.client.first_name|default:"" }} {{ commande.client.last_name|default:"" }}</td>
                                     <td>
                                         {% if commande.transporteur %}
-                                            {{ commande.transporteur.first_name }} {{ commande.transporteur.last_name }}
+                                            {{ commande.transporteur.first_name|default:"" }} {{ commande.transporteur.last_name|default:"" }}
                                         {% else %}
                                             <span class="text-muted">Non affecté</span>
                                         {% endif %}
@@ -113,18 +165,18 @@
                                     <td>{{ commande.origine }} → {{ commande.destination }}</td>
                                     <td>{{ commande.poids }} kg</td>
                                     <td>
-                                        <span class="badge badge-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'affectee' %}info{% elif commande.statut == 'annulee' %}danger{% else %}secondary{% endif %}">
-                                            {{ commande.get_statut_display }}
+                                        <span class="badge {% if commande.statut == 'livree' %}bg-success{% elif commande.statut == 'en_cours' %}bg-warning{% elif commande.statut == 'affectee' %}bg-info{% elif commande.statut == 'annulee' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                            {{ commande.get_statut_display|default:commande.statut }}
                                         </span>
                                     </td>
                                     <td>{{ commande.date_creation|date:"d/m/Y H:i" }}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <button class="btn btn-sm btn-outline-info" onclick="viewCommande({{ commande.id }})">
+                                            <button class="btn btn-sm btn-outline-info" onclick="viewCommande({{ commande.id }})" title="Voir détails">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             {% if commande.statut == 'en_attente' %}
-                                            <button class="btn btn-sm btn-outline-primary" onclick="assignCommande({{ commande.id }})">
+                                            <button class="btn btn-sm btn-outline-primary" onclick="assignCommande({{ commande.id }})" title="Assigner">
                                                 <i class="fas fa-user-plus"></i>
                                             </button>
                                             {% endif %}
@@ -143,30 +195,30 @@
             </div>
 
             <!-- Pagination -->
-            {% if is_paginated %}
+            {% if commandes.has_other_pages %}
             <nav aria-label="Pagination" class="mt-4">
                 <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
+                    {% if commandes.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+                            <a class="page-link" href="?{% if request.GET.statut %}statut={{ request.GET.statut }}&{% endif %}{% if request.GET.transporteur %}transporteur={{ request.GET.transporteur }}&{% endif %}{% if request.GET.date %}date={{ request.GET.date }}&{% endif %}page={{ commandes.previous_page_number }}">Précédent</a>
                         </li>
                     {% endif %}
                     
-                    {% for num in page_obj.paginator.page_range %}
-                        {% if page_obj.number == num %}
+                    {% for num in commandes.paginator.page_range %}
+                        {% if commandes.number == num %}
                             <li class="page-item active">
                                 <span class="page-link">{{ num }}</span>
                             </li>
-                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        {% elif num > commandes.number|add:'-3' and num < commandes.number|add:'3' %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                <a class="page-link" href="?{% if request.GET.statut %}statut={{ request.GET.statut }}&{% endif %}{% if request.GET.transporteur %}transporteur={{ request.GET.transporteur }}&{% endif %}{% if request.GET.date %}date={{ request.GET.date }}&{% endif %}page={{ num }}">{{ num }}</a>
                             </li>
                         {% endif %}
                     {% endfor %}
                     
-                    {% if page_obj.has_next %}
+                    {% if commandes.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+                            <a class="page-link" href="?{% if request.GET.statut %}statut={{ request.GET.statut }}&{% endif %}{% if request.GET.transporteur %}transporteur={{ request.GET.transporteur }}&{% endif %}{% if request.GET.date %}date={{ request.GET.date }}&{% endif %}page={{ commandes.next_page_number }}">Suivant</a>
                         </li>
                     {% endif %}
                 </ul>
@@ -176,21 +228,174 @@
     </div>
 </div>
 
+<!-- Modal de détails de commande -->
+<div class="modal fade" id="commandeDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="commandeDetailContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'assignation -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assigner la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="assignForm">
+                    <div class="mb-3">
+                        <label class="form-label">Transporteur</label>
+                        <select class="form-control" id="assignTransporteur" required>
+                            <option value="">Sélectionner un transporteur</option>
+                            {% for transporteur in transporteurs %}
+                            <option value="{{ transporteur.id }}">{{ transporteur.first_name }} {{ transporteur.last_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Véhicule (optionnel)</label>
+                        <select class="form-control" id="assignVehicule">
+                            <option value="">Aucun véhicule spécifique</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmAssign">Assigner</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let currentCommandeId = null;
+
 function refreshData() {
     location.reload();
 }
 
 function viewCommande(commandeId) {
-    // Afficher les détails de la commande
-    window.open(`/admin/commandes/${commandeId}/`, '_blank');
+    // Charger les détails de la commande via AJAX
+    fetch(`{% url 'commande_details_api' 0 %}`.replace('0', commandeId))
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('commandeDetailContent').innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informations générales</h6>
+                            <p><strong>ID:</strong> #${data.commande.id}</p>
+                            <p><strong>Client:</strong> ${data.commande.client}</p>
+                            <p><strong>Statut:</strong> <span class="badge bg-primary">${data.commande.statut_display}</span></p>
+                            <p><strong>Priorité:</strong> ${data.commande.priorite_display}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Transport</h6>
+                            <p><strong>Origine:</strong> ${data.commande.origine}</p>
+                            <p><strong>Destination:</strong> ${data.commande.destination}</p>
+                            <p><strong>Poids:</strong> ${data.commande.poids} kg</p>
+                            <p><strong>Distance estimée:</strong> ${data.commande.distance_estimee || 'N/A'} km</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>Description</h6>
+                            <p>${data.commande.description_marchandise}</p>
+                            ${data.commande.notes ? `<h6>Notes</h6><p>${data.commande.notes}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                new bootstrap.Modal(document.getElementById('commandeDetailModal')).show();
+            } else {
+                alert('Erreur lors du chargement des détails');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement des détails');
+        });
 }
 
 function assignCommande(commandeId) {
-    // Assigner une commande à un transporteur
-    // Vous pouvez implémenter un modal pour sélectionner le transporteur
-    console.log('Assign commande:', commandeId);
+    currentCommandeId = commandeId;
+    new bootstrap.Modal(document.getElementById('assignModal')).show();
 }
+
+// Gestion du changement de transporteur pour charger ses véhicules
+document.getElementById('assignTransporteur').addEventListener('change', function() {
+    const transporteurId = this.value;
+    const vehiculeSelect = document.getElementById('assignVehicule');
+    
+    // Réinitialiser la liste des véhicules
+    vehiculeSelect.innerHTML = '<option value="">Aucun véhicule spécifique</option>';
+    
+    if (transporteurId) {
+        // Charger les véhicules du transporteur
+        fetch(`{% url 'get_vehicules_transporteur' 0 %}`.replace('0', transporteurId))
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    data.vehicules.forEach(vehicule => {
+                        const option = document.createElement('option');
+                        option.value = vehicule.id;
+                        option.textContent = `${vehicule.immatriculation} (${vehicule.type_vehicule})`;
+                        vehiculeSelect.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => console.error('Erreur:', error));
+    }
+});
+
+// Confirmation d'assignation
+document.getElementById('confirmAssign').addEventListener('click', function() {
+    const transporteurId = document.getElementById('assignTransporteur').value;
+    const vehiculeId = document.getElementById('assignVehicule').value;
+    
+    if (!transporteurId) {
+        alert('Veuillez sélectionner un transporteur');
+        return;
+    }
+    
+    fetch(`{% url 'assign_commande' 0 %}`.replace('0', currentCommandeId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            transporteur_id: transporteurId,
+            vehicule_id: vehiculeId || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de l\'assignation');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'assignation');
+    });
+});
 </script>
 
 <style>
