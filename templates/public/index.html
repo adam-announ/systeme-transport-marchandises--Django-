@@ -1,633 +1,1067 @@
-{% extends 'public/base.html' %}
-{% block title %}TransportSystem - Solution de Transport Intelligente{% endblock %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TransportSystem - Révolutionnez votre Transport</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --success-color: #4facfe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-light: #f7fafc;
+        }
 
-{% block extra_head %}
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-<style>
-    /* Styles spécifiques à la page d'accueil */
-    .hero-particles {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        pointer-events: none;
-    }
-    
-    .particle {
-        position: absolute;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        animation: float 6s ease-in-out infinite;
-    }
-    
-    .particle:nth-child(1) { top: 20%; left: 20%; width: 10px; height: 10px; animation-delay: 0s; }
-    .particle:nth-child(2) { top: 60%; left: 80%; width: 15px; height: 15px; animation-delay: 2s; }
-    .particle:nth-child(3) { top: 80%; left: 40%; width: 8px; height: 8px; animation-delay: 4s; }
-    .particle:nth-child(4) { top: 30%; left: 70%; width: 12px; height: 12px; animation-delay: 1s; }
-    .particle:nth-child(5) { top: 70%; left: 15%; width: 6px; height: 6px; animation-delay: 3s; }
-    
-    .feature-icon-wrapper {
-        width: 100px;
-        height: 100px;
-        background: var(--gradient-primary);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 2rem;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .feature-icon-wrapper::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.2) 50%, transparent 70%);
-        transform: translateX(-100%);
-        transition: transform 0.6s;
-    }
-    
-    .service-card:hover .feature-icon-wrapper::before {
-        transform: translateX(100%);
-    }
-    
-    .feature-icon {
-        font-size: 2.5rem;
-        color: white;
-        z-index: 2;
-        position: relative;
-    }
-    
-    .stats-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .stats-section::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="1" fill="rgba(255,255,255,0.05)"/><circle cx="20" cy="80" r="1" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-        opacity: 0.3;
-    }
-    
-    .stat-item {
-        text-align: center;
-        padding: 2rem;
-        position: relative;
-        z-index: 2;
-    }
-    
-    .stat-number {
-        font-size: 3rem;
-        font-weight: 800;
-        margin-bottom: 0.5rem;
-        background: linear-gradient(45deg, #fff, #f0f0f0);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .stat-label {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        font-weight: 500;
-    }
-    
-    .cta-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .cta-section::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-        animation: rotate 20s linear infinite;
-    }
-    
-    @keyframes rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-    
-    .about-image {
-        border-radius: 2rem;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-    
-    .about-image:hover {
-        transform: scale(1.05);
-    }
-</style>
-{% endblock %}
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-{% block content %}
-<!-- Hero Section -->
-<section class="hero">
-    <div class="hero-particles">
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-        <div class="particle"></div>
-    </div>
-    
-    <div class="container">
-        <div class="hero-content" data-aos="fade-up" data-aos-duration="1000">
-            <h1 class="mb-4">
-                Révolutionnez votre 
-                <span class="text-gradient">Transport</span>
-            </h1>
-            <p class="lead mb-5">
-                Solution intelligente de gestion et d'optimisation du transport de marchandises. 
-                Connectez expéditeurs et transporteurs en temps réel.
-            </p>
-            <div class="d-flex flex-wrap justify-content-center gap-3">
-                <a href="#services" class="btn btn-primary-modern btn-modern">
-                    <i class="fas fa-rocket me-2"></i>
-                    Découvrir nos services
-                </a>
-                <a href="{% url 'register' %}" class="btn btn-outline-modern btn-modern">
-                    <i class="fas fa-user-plus me-2"></i>
-                    Commencer gratuitement
-                </a>
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            color: var(--text-dark) !important;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, 
+                rgba(102, 126, 234, 0.9) 0%, 
+                rgba(118, 75, 162, 0.8) 50%, 
+                rgba(240, 147, 251, 0.9) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 5vw, 4.5rem);
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero .lead {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            margin-bottom: 2.5rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .floating-elements {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) { top: 20%; left: 10%; width: 60px; height: 60px; animation-delay: 0s; }
+        .floating-element:nth-child(2) { top: 70%; right: 10%; width: 40px; height: 40px; animation-delay: 2s; }
+        .floating-element:nth-child(3) { bottom: 30%; left: 30%; width: 80px; height: 80px; animation-delay: 4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        /* Statistics Section */
+        .stats-section {
+            background: var(--bg-light);
+            padding: 5rem 0;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.5rem 1.5rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Services Section */
+        .services-section {
+            padding: 6rem 0;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-title h2 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .section-title p {
+            font-size: 1.2rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 25px;
+            padding: 3rem 2rem;
+            text-align: center;
+            height: 100%;
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .service-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: var(--primary-color);
+        }
+
+        .service-card:hover::before {
+            opacity: 1;
+        }
+
+        .service-card:hover .service-content {
+            color: white;
+        }
+
+        .service-content {
+            position: relative;
+            z-index: 2;
+            transition: color 0.3s ease;
+        }
+
+        .service-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            font-size: 2rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .service-card:hover .service-icon {
+            background: white;
+            color: var(--primary-color);
+            transform: scale(1.1);
+        }
+
+        .service-card h4 {
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-dark);
+        }
+
+        .service-card p {
+            color: var(--text-light);
+            line-height: 1.8;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 6rem 0;
+            background: var(--bg-light);
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon-box {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .feature-icon-box i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .feature-content h6 {
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .feature-content p {
+            color: var(--text-light);
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 6rem 0;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .btn-outline-light-modern {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline-light-modern:hover {
+            background: white;
+            color: var(--primary-color);
+            border-color: white;
+            transform: translateY(-3px);
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a202c;
+            color: white;
+            padding: 4rem 0 2rem;
+        }
+
+        .footer-content {
+            border-bottom: 1px solid #2d3748;
+            padding-bottom: 3rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer h5 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links a {
+            color: #a0aec0;
+            text-decoration: none;
+            transition: color 0.3s ease;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 1rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            background: var(--primary-color);
+            transform: translateY(-3px);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero {
+                padding: 2rem 0;
+            }
+            
+            .stat-card {
+                margin-bottom: 2rem;
+            }
+            
+            .service-card {
+                margin-bottom: 2rem;
+            }
+            
+            .feature-item {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .feature-icon-box {
+                margin-right: 0;
+                margin-bottom: 1rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-truck me-2"></i>TransportSystem
+            </a>
+            
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#accueil">Accueil</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#services">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#fonctionnalites">Fonctionnalités</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                </ul>
+                
+                <div class="d-flex">
+                    <a href="#" class="btn btn-outline-primary me-2">Connexion</a>
+                    <a href="#" class="btn btn-primary-modern">Inscription</a>
+                </div>
             </div>
         </div>
-    </div>
-</section>
+    </nav>
 
-<!-- Statistics Section -->
-<section class="stats-section section-padding">
-    <div class="container">
-        <div class="row" data-aos="fade-up" data-aos-duration="800">
-            <div class="col-md-3 col-6">
-                <div class="stat-item">
-                    <div class="stat-number" data-count="500">0</div>
-                    <div class="stat-label">Transporteurs Actifs</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="stat-item">
-                    <div class="stat-number" data-count="10000">0</div>
-                    <div class="stat-label">Livraisons Réussies</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="stat-item">
-                    <div class="stat-number" data-count="50">0</div>
-                    <div class="stat-label">Villes Couvertes</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6">
-                <div class="stat-item">
-                    <div class="stat-number" data-count="98">0</div>
-                    <div class="stat-label">% Satisfaction Client</div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Services Section -->
-<section id="services" class="section-padding bg-light">
-    <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <h2>Nos Services Innovants</h2>
-            <p>Des solutions adaptées à tous vos besoins logistiques avec une technologie de pointe</p>
+    <!-- Hero Section -->
+    <section id="accueil" class="hero">
+        <div class="floating-elements">
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
         </div>
         
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                <a href="{% url 'gestion_commandes' %}" class="text-decoration-none">
-                    <div class="service-card hover-lift">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-clipboard-list feature-icon"></i>
-                        </div>
-                        <h4 class="mb-3">Gestion Intelligente des Commandes</h4>
-                        <p class="text-muted mb-4">
-                            Gérez toutes vos commandes de transport en temps réel avec notre interface intuitive. 
-                            Suivez chaque étape de la livraison et optimisez vos processus.
-                        </p>
-                        <div class="d-flex align-items-center justify-content-center">
-                            <span class="btn btn-outline-primary btn-sm">
-                                En savoir plus <i class="fas fa-arrow-right ms-2"></i>
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                <a href="{% url 'optimisation_tournees' %}" class="text-decoration-none">
-                    <div class="service-card hover-lift">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-route feature-icon"></i>
-                        </div>
-                        <h4 class="mb-3">Optimisation des Tournées</h4>
-                        <p class="text-muted mb-4">
-                            Algorithmes avancés pour optimiser vos itinéraires, réduire les coûts de carburant 
-                            et maximiser l'efficacité de vos livraisons.
-                        </p>
-                        <div class="d-flex align-items-center justify-content-center">
-                            <span class="btn btn-outline-primary btn-sm">
-                                En savoir plus <i class="fas fa-arrow-right ms-2"></i>
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                <a href="{% url 'suivi_temps_reel' %}" class="text-decoration-none">
-                    <div class="service-card hover-lift">
-                        <div class="feature-icon-wrapper">
-                            <i class="fas fa-satellite-dish feature-icon"></i>
-                        </div>
-                        <h4 class="mb-3">Suivi en Temps Réel</h4>
-                        <p class="text-muted mb-4">
-                            Visualisez en direct la position de vos véhicules et marchandises. 
-                            Recevez des alertes instantanées et améliorez la transparence client.
-                        </p>
-                        <div class="d-flex align-items-center justify-content-center">
-                            <span class="btn btn-outline-primary btn-sm">
-                                En savoir plus <i class="fas fa-arrow-right ms-2"></i>
-                            </span>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- About Section -->
-<section class="section-padding">
-    <div class="container">
-        <div class="row align-items-center">
-            <div class="col-lg-6 mb-5 mb-lg-0" data-aos="fade-right">
-                <img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
-                     alt="Transport moderne" class="img-fluid about-image">
-            </div>
-            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="200">
-                <div class="ps-lg-5">
-                    <h2 class="mb-4">L'avenir du Transport Intelligent</h2>
-                    <p class="lead text-muted mb-4">
-                        Notre plateforme révolutionne la logistique en connectant intelligemment 
-                        expéditeurs et transporteurs grâce à des technologies avancées.
-                    </p>
-                    
-                    <div class="row g-4 mb-4">
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-gradient-primary rounded-circle p-3">
-                                        <i class="fas fa-check text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">IA & Machine Learning</h6>
-                                    <small class="text-muted">Optimisation automatique des routes</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-gradient-success rounded-circle p-3">
-                                        <i class="fas fa-shield-alt text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">Sécurisé & Fiable</h6>
-                                    <small class="text-muted">Protection des données garantie</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-gradient-warning rounded-circle p-3">
-                                        <i class="fas fa-clock text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">24/7 Disponible</h6>
-                                    <small class="text-muted">Support client permanent</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-sm-6">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="bg-gradient-primary rounded-circle p-3">
-                                        <i class="fas fa-mobile-alt text-white"></i>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-1">Application Mobile</h6>
-                                    <small class="text-muted">Gérez depuis n'importe où</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <a href="{% url 'register' %}" class="btn btn-primary-modern btn-modern">
-                        <i class="fas fa-rocket me-2"></i>
-                        Démarrer maintenant
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Features Section -->
-<section class="section-padding bg-light">
-    <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <h2>Pourquoi Choisir TransportSystem ?</h2>
-            <p>Des fonctionnalités avancées pour une gestion optimale de votre logistique</p>
-        </div>
-        
-        <div class="row g-4">
-            <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="100">
-                <div class="text-center p-4">
-                    <div class="bg-gradient-primary rounded-circle p-4 d-inline-flex mb-3">
-                        <i class="fas fa-brain fa-2x text-white"></i>
-                    </div>
-                    <h5>Intelligence Artificielle</h5>
-                    <p class="text-muted small">
-                        Algorithmes avancés pour l'optimisation automatique des routes et la prédiction des délais
-                    </p>
-                </div>
-            </div>
-            
-            <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-                <div class="text-center p-4">
-                    <div class="bg-gradient-success rounded-circle p-4 d-inline-flex mb-3">
-                        <i class="fas fa-chart-line fa-2x text-white"></i>
-                    </div>
-                    <h5>Analyses Avancées</h5>
-                    <p class="text-muted small">
-                        Tableaux de bord détaillés avec KPIs en temps réel pour optimiser vos performances
-                    </p>
-                </div>
-            </div>
-            
-            <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="300">
-                <div class="text-center p-4">
-                    <div class="bg-gradient-warning rounded-circle p-4 d-inline-flex mb-3">
-                        <i class="fas fa-users fa-2x text-white"></i>
-                    </div>
-                    <h5>Collaboration</h5>
-                    <p class="text-muted small">
-                        Plateforme collaborative permettant une communication fluide entre tous les acteurs
-                    </p>
-                </div>
-            </div>
-            
-            <div class="col-lg-3 col-md-6" data-aos="zoom-in" data-aos-delay="400">
-                <div class="text-center p-4">
-                    <div class="bg-gradient-primary rounded-circle p-4 d-inline-flex mb-3">
-                        <i class="fas fa-leaf fa-2x text-white"></i>
-                    </div>
-                    <h5>Éco-responsable</h5>
-                    <p class="text-muted small">
-                        Réduction de l'empreinte carbone grâce à l'optimisation des trajets et du taux de remplissage
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Testimonials Section -->
-<section class="section-padding">
-    <div class="container">
-        <div class="section-title" data-aos="fade-up">
-            <h2>Ce que Disent Nos Clients</h2>
-            <p>Découvrez les témoignages de nos utilisateurs satisfaits</p>
-        </div>
-        
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
-                <div class="testimonial-card">
-                    <div class="testimonial-text">
-                        "TransportSystem a révolutionné notre logistique. Nous avons réduit nos coûts de transport de 30% 
-                        tout en améliorant la satisfaction client."
-                    </div>
-                    <div class="testimonial-author">
-                        <div class="testimonial-avatar">AM</div>
-                        <div class="testimonial-info">
-                            <h6>Ahmed Mansouri</h6>
-                            <p>Directeur Logistique, MarocExport</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
-                <div class="testimonial-card">
-                    <div class="testimonial-text">
-                        "L'interface est intuitive et les fonctionnalités de suivi en temps réel nous permettent 
-                        d'offrir un service exceptionnel à nos clients."
-                    </div>
-                    <div class="testimonial-author">
-                        <div class="testimonial-avatar">SF</div>
-                        <div class="testimonial-info">
-                            <h6>Sara Fassi</h6>
-                            <p>CEO, TransLog Solutions</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
-                <div class="testimonial-card">
-                    <div class="testimonial-text">
-                        "Grâce à l'optimisation des tournées, nous économisons 4 heures par jour et réduisons 
-                        considérablement notre consommation de carburant."
-                    </div>
-                    <div class="testimonial-author">
-                        <div class="testimonial-avatar">YB</div>
-                        <div class="testimonial-info">
-                            <h6>Youssef Benali</h6>
-                            <p>Responsable Transport, FastDelivery</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- CTA Section -->
-<section class="cta-section section-padding text-center">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8" data-aos="fade-up">
-                <h2 class="mb-4">Prêt à Transformer Votre Logistique ?</h2>
-                <p class="lead mb-5 opacity-90">
-                    Rejoignez plus de 500 entreprises qui font déjà confiance à TransportSystem 
-                    pour optimiser leur chaîne logistique.
+        <div class="container">
+            <div class="hero-content fade-in-up">
+                <h1>Révolutionnez votre <span style="background: linear-gradient(45deg, #f093fb, #f5576c); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Transport</span></h1>
+                <p class="lead">
+                    Solution intelligente de gestion et d'optimisation du transport de marchandises. 
+                    Connectez expéditeurs et transporteurs en temps réel avec notre technologie avancée.
                 </p>
                 <div class="d-flex flex-wrap justify-content-center gap-3">
-                    <a href="{% url 'register' %}" class="btn btn-light btn-modern text-primary">
-                        <i class="fas fa-user-plus me-2"></i>
-                        Créer un compte gratuit
+                    <a href="#services" class="btn btn-primary-modern btn-lg">
+                        <i class="fas fa-rocket me-2"></i>Découvrir nos services
                     </a>
-                    <a href="{% url 'contact' %}" class="btn btn-outline-modern btn-modern">
-                        <i class="fas fa-phone me-2"></i>
-                        Demander une démo
+                    <a href="#" class="btn btn-outline-light-modern btn-lg">
+                        <i class="fas fa-play me-2"></i>Voir la démo
                     </a>
-                </div>
-                <div class="mt-4">
-                    <small class="opacity-75">
-                        <i class="fas fa-shield-alt me-2"></i>
-                        Inscription gratuite • Aucune carte bancaire requise • Support 24/7
-                    </small>
                 </div>
             </div>
         </div>
-    </div>
-</section>
-{% endblock %}
+    </section>
 
-{% block extra_js %}
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
-<script>
-    // Initialisation AOS (Animate On Scroll)
-    AOS.init({
-        duration: 800,
-        easing: 'ease-in-out',
-        once: true,
-        offset: 100
-    });
+    <!-- Statistics Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card fade-in-up">
+                        <div class="stat-number" data-count="500">0</div>
+                        <div class="stat-label">Transporteurs Actifs</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card fade-in-up">
+                        <div class="stat-number" data-count="10000">0</div>
+                        <div class="stat-label">Livraisons Réussies</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card fade-in-up">
+                        <div class="stat-number" data-count="50">0</div>
+                        <div class="stat-label">Villes Couvertes</div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card fade-in-up">
+                        <div class="stat-number" data-count="98">0</div>
+                        <div class="stat-label">% Satisfaction Client</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    // Animation des compteurs
-    function animateCounters() {
-        const counters = document.querySelectorAll('[data-count]');
-        
-        counters.forEach(counter => {
-            const target = parseInt(counter.getAttribute('data-count'));
-            const duration = 2000; // 2 secondes
-            const increment = target / (duration / 16); // 60fps
-            let current = 0;
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <div class="section-title fade-in-up">
+                <h2>Nos Services Innovants</h2>
+                <p>Des solutions adaptées à tous vos besoins logistiques avec une technologie de pointe</p>
+            </div>
             
-            const timer = setInterval(() => {
-                current += increment;
-                if (current >= target) {
-                    current = target;
-                    clearInterval(timer);
-                }
-                counter.textContent = Math.floor(current);
-            }, 16);
-        });
-    }
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="service-card fade-in-up">
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <h4>Gestion Intelligente des Commandes</h4>
+                            <p>
+                                Gérez toutes vos commandes de transport en temps réel avec notre interface intuitive. 
+                                Suivez chaque étape de la livraison et optimisez vos processus logistiques.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="service-card fade-in-up">
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-route"></i>
+                            </div>
+                            <h4>Optimisation des Tournées</h4>
+                            <p>
+                                Algorithmes avancés pour optimiser vos itinéraires, réduire les coûts de carburant 
+                                et maximiser l'efficacité de vos livraisons grâce à l'intelligence artificielle.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="service-card fade-in-up">
+                        <div class="service-content">
+                            <div class="service-icon">
+                                <i class="fas fa-satellite-dish"></i>
+                            </div>
+                            <h4>Suivi en Temps Réel</h4>
+                            <p>
+                                Visualisez en direct la position de vos véhicules et marchandises. 
+                                Recevez des alertes instantanées et améliorez la transparence client.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
-    // Intersection Observer pour déclencher l'animation des compteurs
-    const statsSection = document.querySelector('.stats-section');
-    if (statsSection) {
+    <!-- Features Section -->
+    <section id="fonctionnalites" class="features-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="section-title text-start mb-4">
+                        <h2>Pourquoi Choisir TransportSystem ?</h2>
+                        <p>Des fonctionnalités avancées pour une gestion optimale de votre logistique</p>
+                    </div>
+                    
+                    <div class="feature-item fade-in-up">
+                        <div class="feature-icon-box">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h6>Intelligence Artificielle</h6>
+                            <p>Algorithmes d'optimisation automatique des routes et prédiction des délais</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item fade-in-up">
+                        <div class="feature-icon-box">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h6>Analyses Avancées</h6>
+                            <p>Tableaux de bord détaillés avec KPIs en temps réel pour optimiser vos performances</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item fade-in-up">
+                        <div class="feature-icon-box">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h6>Sécurité Renforcée</h6>
+                            <p>Protection des données avec chiffrement bout en bout et conformité RGPD</p>
+                        </div>
+                    </div>
+                    
+                    <div class="feature-item fade-in-up">
+                        <div class="feature-icon-box">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="feature-content">
+                            <h6>Application Mobile</h6>
+                            <p>Gérez vos transports depuis n'importe où avec notre app iOS et Android</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="text-center">
+                        <img src="https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+                             alt="Transport moderne" class="img-fluid rounded-3 shadow-lg">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-content">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8 text-center">
+                        <h2 class="mb-4">Prêt à Transformer Votre Logistique ?</h2>
+                        <p class="lead mb-5 opacity-90">
+                            Rejoignez plus de 500 entreprises qui font déjà confiance à TransportSystem 
+                            pour optimiser leur chaîne logistique et réduire leurs coûts.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-3">
+                            <a href="#" class="btn btn-light btn-lg px-4">
+                                <i class="fas fa-user-plus me-2"></i>Essai gratuit 30 jours
+                            </a>
+                            <a href="#" class="btn btn-outline-light-modern btn-lg px-4">
+                                <i class="fas fa-phone me-2"></i>Demander une démo
+                            </a>
+                        </div>
+                        <div class="mt-4">
+                            <small class="opacity-75">
+                                <i class="fas fa-shield-alt me-2"></i>
+                                Sans engagement • Support 24/7 • Conformité RGPD
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="row">
+                    <div class="col-lg-4 mb-4">
+                        <h5><i class="fas fa-truck me-2"></i>TransportSystem</h5>
+                        <p class="mb-4 text-muted">
+                            Solution complète de gestion et d'optimisation du transport de marchandises. 
+                            Connectez votre entreprise à l'avenir de la logistique.
+                        </p>
+                        <div class="social-links">
+                            <a href="#"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                            <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="#"><i class="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5>Services</h5>
+                        <div class="footer-links">
+                            <a href="#">Gestion commandes</a>
+                            <a href="#">Optimisation tournées</a>
+                            <a href="#">Suivi temps réel</a>
+                            <a href="#">API & Intégrations</a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5>Support</h5>
+                        <div class="footer-links">
+                            <a href="#">Centre d'aide</a>
+                            <a href="#">Documentation</a>
+                            <a href="#">Tutoriels</a>
+                            <a href="#">FAQ</a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5>Entreprise</h5>
+                        <div class="footer-links">
+                            <a href="#">À propos</a>
+                            <a href="#">Carrières</a>
+                            <a href="#">Presse</a>
+                            <a href="#">Partenaires</a>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-2 col-md-6 mb-4">
+                        <h5 id="contact">Contact</h5>
+                        <div class="footer-links">
+                            <a href="mailto:contact@transportsystem.com">
+                                <i class="fas fa-envelope me-2"></i>Contact
+                            </a>
+                            <a href="tel:+33123456789">
+                                <i class="fas fa-phone me-2"></i>+33 1 23 45 67 89
+                            </a>
+                            <a href="#">
+                                <i class="fas fa-map-marker-alt me-2"></i>Casablanca, Maroc
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center text-muted">
+                <p>&copy; 2024 TransportSystem. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Animation des compteurs
+        function animateCounters() {
+            const counters = document.querySelectorAll('[data-count]');
+            
+            counters.forEach(counter => {
+                const target = parseInt(counter.getAttribute('data-count'));
+                const duration = 2000;
+                const increment = target / (duration / 16);
+                let current = 0;
+                
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
+                    }
+                    counter.textContent = Math.floor(current);
+                }, 16);
+            });
+        }
+
+        // Observer pour les animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
-                    animateCounters();
-                    observer.unobserve(entry.target);
+                    entry.target.classList.add('visible');
+                    
+                    // Animer les compteurs quand la section stats est visible
+                    if (entry.target.closest('.stats-section')) {
+                        animateCounters();
+                        observer.unobserve(entry.target);
+                    }
                 }
             });
-        }, { threshold: 0.5 });
-        
-        observer.observe(statsSection);
-    }
+        }, observerOptions);
 
-    // Effet de navigation au scroll
-    window.addEventListener('scroll', () => {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 100) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
-    });
+        // Observer tous les éléments avec la classe fade-in-up
+        document.addEventListener('DOMContentLoaded', () => {
+            const fadeElements = document.querySelectorAll('.fade-in-up');
+            fadeElements.forEach(el => observer.observe(el));
+        });
 
-    // Smooth scroll pour les liens d'ancrage
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
+        // Smooth scroll pour les liens d'ancrage
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 100;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Effet navbar au scroll
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 100) {
+                navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.15)';
+            } else {
+                navbar.style.background = 'rgba(255, 255, 255, 0.95)';
+                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
             }
         });
-    });
 
-    // Effet parallax léger pour le hero
-    window.addEventListener('scroll', () => {
-        const scrolled = window.pageYOffset;
-        const hero = document.querySelector('.hero');
-        if (hero) {
+        // Effet parallax léger
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero');
             const rate = scrolled * -0.5;
             hero.style.transform = `translateY(${rate}px)`;
-        }
-    });
-
-    // Animation des particules
-    function createParticle() {
-        const particle = document.createElement('div');
-        particle.classList.add('particle');
-        
-        // Position aléatoire
-        particle.style.left = Math.random() * 100 + '%';
-        particle.style.top = Math.random() * 100 + '%';
-        
-        // Taille aléatoire
-        const size = Math.random() * 10 + 5;
-        particle.style.width = size + 'px';
-        particle.style.height = size + 'px';
-        
-        // Durée d'animation aléatoire
-        particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
-        particle.style.animationDelay = Math.random() * 2 + 's';
-        
-        return particle;
-    }
-
-    // Ajouter des particules supplémentaires
-    const heroParticles = document.querySelector('.hero-particles');
-    if (heroParticles) {
-        for (let i = 0; i < 10; i++) {
-            heroParticles.appendChild(createParticle());
-        }
-    }
-
-    // Gestion du loading des images
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-        img.addEventListener('load', function() {
-            this.classList.add('loaded');
         });
-    });
-</script>
-{% endblock %}
+
+        // Animation des cartes de service au hover
+        document.querySelectorAll('.service-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-15px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Fonction pour créer des particules dynamiques
+        function createParticles() {
+            const hero = document.querySelector('.hero');
+            const particlesContainer = hero.querySelector('.floating-elements');
+            
+            setInterval(() => {
+                const particle = document.createElement('div');
+                particle.classList.add('floating-element');
+                
+                // Position aléatoire
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                
+                // Taille aléatoire
+                const size = Math.random() * 50 + 20;
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                
+                // Durée d'animation aléatoire
+                particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+                
+                particlesContainer.appendChild(particle);
+                
+                // Supprimer après animation
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.remove();
+                    }
+                }, 8000);
+            }, 2000);
+        }
+
+        // Initialiser les particules
+        createParticles();
+
+        // Gestion responsive de la navigation
+        const navbarToggler = document.querySelector('.navbar-toggler');
+        const navbarCollapse = document.querySelector('.navbar-collapse');
+
+        if (navbarToggler) {
+            navbarToggler.addEventListener('click', () => {
+                navbarToggler.classList.toggle('active');
+            });
+        }
+
+        // Fermer le menu mobile au clic sur un lien
+        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navbarCollapse.classList.contains('show')) {
+                    navbarToggler.click();
+                }
+            });
+        });
+
+        // Loading animation pour les boutons
+        document.querySelectorAll('.btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Créer un effet ripple
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    border-radius: 50%;
+                    background: rgba(255, 255, 255, 0.6);
+                    transform: scale(0);
+                    animation: ripple 0.6s linear;
+                    left: ${x}px;
+                    top: ${y}px;
+                    width: ${size}px;
+                    height: ${size}px;
+                    pointer-events: none;
+                `;
+                
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+
+        // CSS pour l'animation ripple
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Amélioration de l'accessibilité
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                document.body.classList.add('keyboard-navigation');
+            }
+        });
+
+        document.addEventListener('mousedown', () => {
+            document.body.classList.remove('keyboard-navigation');
+        });
+
+        // Performance monitoring
+        window.addEventListener('load', () => {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            console.log(`Page chargée en ${loadTime}ms`);
+        });
+    </script>
+
+    <style>
+        /* Styles additionnels pour les animations */
+        .keyboard-navigation *:focus {
+            outline: 2px solid var(--primary-color) !important;
+            outline-offset: 2px;
+        }
+
+        .navbar-toggler {
+            border: none;
+            padding: 0.5rem;
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        .navbar-toggler.active .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M6 18L18 6M6 6l12 12'/%3e%3c/svg%3e");
+        }
+
+        /* Améliorations pour l'accessibilité */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Optimisations pour les écrans haute résolution */
+        @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+            .service-icon,
+            .feature-icon-box {
+                transform: translateZ(0);
+            }
+        }
+
+        /* Styles pour l'impression */
+        @media print {
+            .navbar,
+            .floating-elements,
+            .cta-section,
+            .footer {
+                display: none !important;
+            }
+            
+            .hero {
+                background: white !important;
+                color: black !important;
+                padding: 2rem 0;
+            }
+            
+            .section-title h2 {
+                color: black !important;
+            }
+        }
+    </style>
+</body>
+</html>
