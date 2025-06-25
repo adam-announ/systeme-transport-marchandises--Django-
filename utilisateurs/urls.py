@@ -25,8 +25,18 @@ urlpatterns = [
     path('admin/system-config/', views.admin_system_config, name='admin_system_config'),
     path('admin/notifications/', views.admin_notifications, name='admin_notifications'),
     
-    # Dashboard Transporteur
+    # Dashboard Planificateur
+    path('planificateur/dashboard/', views.planificateur_dashboard, name='planificateur_dashboard'),
+    path('planificateur/commandes/', views.planificateur_commandes, name='planificateur_commandes'),
+    path('planificateur/tournees/', views.planificateur_tournees, name='planificateur_tournees'),
+    path('planificateur/tournees/nouvelle/', views.planificateur_create_tournee, name='planificateur_create_tournee'),
+    path('planificateur/tournees/<int:tournee_id>/', views.planificateur_tournee_detail, name='planificateur_tournee_detail'),
+    path('planificateur/tournees/<int:tournee_id>/optimiser/', views.planificateur_optimiser_tournee, name='planificateur_optimiser_tournee'),
+    path('planificateur/affecter-commande/', views.planificateur_affecter_commande, name='planificateur_affecter_commande'),
+    path('planificateur/analytics/', views.planificateur_analytics, name='planificateur_analytics'),
+    path('planificateur/profil/', views.planificateur_profil, name='planificateur_profil'),
     
+    # Dashboard Transporteur
     path('transporteur/profil/', views.transporteur_profil, name='transporteur_profil'),
     path('transporteur/dashboard/', views.transporteur_dashboard, name='transporteur_dashboard'),
     path('transporteur/commandes/', views.transporteur_commandes, name='transporteur_commandes'),
@@ -36,6 +46,12 @@ urlpatterns = [
     path('transporteur/vehicules/', views.transporteur_vehicules, name='transporteur_vehicules'),
     path('transporteur/vehicules/add/', views.transporteur_add_vehicule, name='transporteur_add_vehicule'),
     path('transporteur/itineraire/', views.transporteur_itineraire, name='transporteur_itineraire'),
+    
+    # Dashboard Planificateur
+    path('planificateur/dashboard/', views.planificateur_dashboard, name='planificateur_dashboard'),
+    path('planificateur/commandes/', views.planificateur_commandes, name='planificateur_commandes'),
+    path('planificateur/tournees/', views.planificateur_tournees, name='planificateur_tournees'),
+    path('planificateur/tournees/create/', views.planificateur_create_tournee, name='planificateur_create_tournee'),
     
     # Dashboard Client
     path('client/dashboard/', views.client_dashboard, name='client_dashboard'),
@@ -59,4 +75,8 @@ urlpatterns = [
     path('api/vehicules/<int:vehicule_id>/toggle/', views.vehicule_toggle_api, name='vehicule_toggle_api'),
     path('api/commandes/check-new/', views.check_new_commandes, name='check_new_commandes'),
     path('api/livraisons/check-updates/', views.check_livraisons_updates, name='check_livraisons_updates'),
+    
+    # API Planificateur
+    path('api/transporteur/<int:transporteur_id>/vehicules/', views.get_vehicules_transporteur, name='get_vehicules_transporteur'),
+    path('api/calculer-distance/', views.calculer_distance_api, name='calculer_distance_api'),
 ]

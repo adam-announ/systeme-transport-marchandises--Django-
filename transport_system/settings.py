@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,10 +21,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-zo)d%fa39)3(ct-s0ug#j8nh4s-xek&63$k-pq&!cbfv5cg(-y'
+SECRET_KEY = config('SECRET_KEY', default='django-insecure-zo)d%fa39)3(ct-s0ug#j8nh4s-xek&63$k-pq&!cbfv5cg(-y')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = []
 
@@ -146,5 +147,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Configuration des APIs
-OPENWEATHER_API_KEY = os.environ.get('OPENWEATHER_API_KEY', '')
-OPENROUTE_API_KEY = os.environ.get('OPENROUTE_API_KEY', '')
+OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default='')
+OPENROUTE_API_KEY = config('OPENROUTE_API_KEY', default='')
