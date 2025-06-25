@@ -20,7 +20,366 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <!-- CSS Variables et Styles de base -->
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --accent-color: #f093fb;
+            --success-color: #4facfe;
+            --text-dark: #2d3748;
+            --text-light: #718096;
+            --bg-light: #f7fafc;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Navigation Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            padding: 1rem 0;
+        }
+
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            color: var(--text-dark) !important;
+            transition: all 0.3s ease;
+            position: relative;
+            text-decoration: none;
+        }
+
+        .nav-link:hover {
+            color: var(--primary-color) !important;
+            transform: translateY(-2px);
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 15px;
+            padding: 1rem 0;
+        }
+
+        .dropdown-item {
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+            border-radius: 10px;
+            margin: 0 0.5rem;
+        }
+
+        .dropdown-item:hover {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            transform: translateX(5px);
+        }
+
+        /* Button Styles */
+        .btn-primary-modern {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            text-decoration: none;
+        }
+
+        .btn-primary-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-outline-primary {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            background: transparent;
+            text-decoration: none;
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Avatar and Badge Styles */
+        .avatar {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 50px;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner-modern {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Footer Styles */
+        footer {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            margin-top: 4rem;
+            padding: 4rem 0 2rem;
+        }
+
+        footer h5 {
+            color: white;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        footer h5::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--primary-color);
+            border-radius: 2px;
+        }
+
+        footer a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-block;
+        }
+
+        footer a:hover {
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .social-links a {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            text-decoration: none;
+        }
+
+        .social-links a:hover {
+            background: var(--primary-color);
+            transform: translateY(-3px);
+            color: white;
+        }
+
+        /* Utility Classes */
+        .min-vh-70 {
+            min-height: 70vh;
+        }
+
+        .img-service {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .img-contact {
+            width: 100%;
+            height: 350px;
+            object-fit: cover;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Form Styles */
+        .form-control {
+            border: 2px solid var(--border-color);
+            border-radius: 15px;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        /* Back to Top Button */
+        #backToTopBtn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        #backToTopBtn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Navbar Toggler */
+        .navbar-toggler {
+            border: none;
+            padding: 0.5rem;
+        }
+
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* Toast Notifications */
+        .toast {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar-brand {
+                font-size: 1.3rem;
+            }
+            
+            .btn-primary-modern,
+            .btn-outline-primary {
+                padding: 0.6rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .img-service,
+            .img-contact {
+                height: 250px;
+                margin-bottom: 2rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Content Spacing */
+        .content-section {
+            padding: 4rem 0;
+        }
+
+        .content-section h1 {
+            font-weight: 800;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+        }
+
+        .content-section p {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .content-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .content-section ul li {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+
+        .content-section ul li::before {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: var(--primary-color);
+        }
+    </style>
     
     {% block extra_head %}{% endblock %}
 </head>
@@ -29,7 +388,7 @@
     <nav class="navbar navbar-expand-lg fixed-top" id="mainNavbar">
         <div class="container">
             <a class="navbar-brand" href="{% url 'accueil' %}">
-                <i class="fas fa-truck"></i> 
+                <i class="fas fa-truck me-2"></i> 
                 TransportSystem
             </a>
             
@@ -118,7 +477,7 @@
                                         {{ request.session.username }}
                                     {% endif %}
                                 </span>
-                                <span class="badge bg-{% if request.session.role == 'admin' %}danger{% elif request.session.role == 'transporteur' %}warning{% elif request.session.role == 'client' %}success{% else %}primary{% endif %} ms-2">
+                                <span class="badge bg-{% if request.session.role == 'admin' %}danger{% elif request.session.role == 'transporteur' %}warning{% elif request.session.role == 'client' %}success{% elif request.session.role == 'planificateur' %}info{% else %}primary{% endif %} ms-2">
                                     {{ request.session.role|capfirst }}
                                 </span>
                             </a>
@@ -141,14 +500,20 @@
                                             <i class="fas fa-tachometer-alt me-2"></i>Dashboard Client
                                         </a>
                                     </li>
+                                {% elif request.session.role == 'planificateur' %}
+                                    <li>
+                                        <a class="dropdown-item" href="{% url 'planificateur_dashboard' %}">
+                                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard Planificateur
+                                        </a>
+                                    </li>
                                 {% endif %}
                                 <li><hr class="dropdown-divider"></li>
-                                {% if request.session.role == 'admin' %}
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
-                                {% elif request.session.role == 'transporteur' %}
+                                {% if request.session.role == 'transporteur' %}
                                     <li><a class="dropdown-item" href="{% url 'transporteur_profil' %}"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
                                 {% elif request.session.role == 'client' %}
                                     <li><a class="dropdown-item" href="{% url 'client_profil' %}"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
+                                {% elif request.session.role == 'planificateur' %}
+                                    <li><a class="dropdown-item" href="{% url 'planificateur_profil' %}"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
                                 {% else %}
                                     <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
                                 {% endif %}
@@ -175,7 +540,20 @@
     </nav>
 
     <!-- Main Content -->
-    <main>
+    <main style="padding-top: 100px;">
+        <!-- Messages Django -->
+        {% if messages %}
+            <div class="container mt-3">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% elif message.tags == 'warning' %}exclamation-circle{% else %}info-circle{% endif %} me-2"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
         {% block content %}
         {% endblock %}
     </main>
@@ -192,7 +570,7 @@
     </div>
 
     <!-- Footer -->
-    <footer class="text-white">
+    <footer>
         <div class="container">
             <div class="row">
                 <div class="col-lg-4 col-md-6 mb-4 mb-lg-0">
@@ -259,7 +637,7 @@
                         </p>
                         <p class="mb-2">
                             <i class="fas fa-phone me-2"></i>
-                            <a href="tel:+33123456789">+33 1 23 45 67 89</a>
+                            <a href="tel:+212522123456">+212 522 12 34 56</a>
                         </p>
                         <p class="mb-2">
                             <i class="fas fa-map-marker-alt me-2"></i>
@@ -280,7 +658,7 @@
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <p class="mb-2 mb-md-0">
-                        &copy; {{ "now"|date:"Y" }} TransportSystem. Tous droits réservés.
+                        &copy; {% now "Y" %} TransportSystem. Tous droits réservés.
                     </p>
                     <div class="d-flex flex-wrap gap-3 mt-2">
                         <a href="#" class="text-white-50 small">Politique de confidentialité</a>
@@ -307,7 +685,7 @@
     </footer>
 
     <!-- Back to Top Button -->
-    <button class="btn btn-primary-modern position-fixed bottom-0 end-0 m-4 rounded-circle d-none" 
+    <button class="btn position-fixed bottom-0 end-0 m-4 rounded-circle d-none" 
             id="backToTopBtn" 
             style="width: 50px; height: 50px; z-index: 1000;"
             title="Retour en haut">
@@ -340,6 +718,18 @@
         }
 
         const csrftoken = getCookie('csrftoken') || document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+        // Configuration globale pour les requêtes AJAX
+        if (window.fetch) {
+            const originalFetch = window.fetch;
+            window.fetch = function(...args) {
+                if (args[1] && (args[1].method === 'POST' || args[1].method === 'PUT' || args[1].method === 'DELETE')) {
+                    args[1].headers = args[1].headers || {};
+                    args[1].headers['X-CSRFToken'] = csrftoken;
+                }
+                return originalFetch.apply(this, args);
+            };
+        }
 
         // Effet de navigation au scroll
         let lastScrollY = window.scrollY;
@@ -402,133 +792,176 @@
             popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl);
             });
+
+            // Animation fade-in pour les éléments
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, observerOptions);
+
+            // Observer tous les éléments avec la classe fade-in
+            document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+        });
+
+        // Fonctions utilitaires globales
+        window.TransportSystem = {
+            // Afficher un toast de notification
+            showToast: function(message, type = 'info', duration = 5000) {
+                const toastContainer = document.getElementById('toastContainer');
+                const toastId = 'toast_' + Date.now();
+                
+                const toastHtml = `
+                    <div class="toast" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header">
+                            <i class="fas fa-${type === 'success' ? 'check-circle text-success' : type === 'error' ? 'exclamation-triangle text-danger' : type === 'warning' ? 'exclamation-circle text-warning' : 'info-circle text-info'} me-2"></i>
+                            <strong class="me-auto">TransportSystem</strong>
+                            <small>maintenant</small>
+                            <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                        </div>
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                    </div>
+                `;
+                
+                toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+                const toast = new bootstrap.Toast(document.getElementById(toastId), {
+                    delay: duration
+                });
+                toast.show();
+                
+                // Supprimer le toast après fermeture
+                document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
+                    this.remove();
+                });
+            },
+
+            // Afficher/masquer le loading
+            showLoading: function() {
+                document.getElementById('loadingOverlay').classList.remove('d-none');
+            },
+
+            hideLoading: function() {
+                document.getElementById('loadingOverlay').classList.add('d-none');
+            },
+
+            // Faire une requête AJAX sécurisée
+            ajax: function(url, options = {}) {
+                const defaultOptions = {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken
+                    }
+                };
+
+                const mergedOptions = { ...defaultOptions, ...options };
+                
+                if (mergedOptions.headers) {
+                    mergedOptions.headers = { ...defaultOptions.headers, ...mergedOptions.headers };
+                }
+
+                return fetch(url, mergedOptions)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .catch(error => {
+                        console.error('Erreur AJAX:', error);
+                        this.showToast('Une erreur est survenue lors de la requête', 'error');
+                        throw error;
+                    });
+            },
+
+            // Mettre à jour le badge de notifications
+            updateNotificationBadge: function(count) {
+                const badge = document.getElementById('notificationBadge');
+                if (badge) {
+                    if (count > 0) {
+                        badge.textContent = count > 99 ? '99+' : count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            },
+
+            // Formater les dates
+            formatDate: function(dateString, format = 'dd/mm/yyyy') {
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+
+                switch (format) {
+                    case 'dd/mm/yyyy':
+                        return `${day}/${month}/${year}`;
+                    case 'dd/mm/yyyy hh:mm':
+                        return `${day}/${month}/${year} ${hours}:${minutes}`;
+                    case 'yyyy-mm-dd':
+                        return `${year}-${month}-${day}`;
+                    default:
+                        return date.toLocaleDateString('fr-FR');
+                }
+            }
+        };
+
+        // Vérifier les nouvelles notifications toutes les 30 secondes (si connecté)
+        {% if request.session.user_id %}
+        setInterval(() => {
+            TransportSystem.ajax('{% url "get_notifications_count" %}')
+                .then(data => {
+                    if (data.success) {
+                        TransportSystem.updateNotificationBadge(data.count);
+                    }
+                })
+                .catch(error => {
+                    // Erreur silencieuse pour les notifications
+                });
+        }, 30000);
+        {% endif %}
+
+        // Smooth scroll pour les liens d'ancrage
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('a[href^="#"]')) {
+                e.preventDefault();
+                const target = document.querySelector(e.target.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 100;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            }
+        });
+
+        // Fermer les dropdowns sur clic extérieur
+        document.addEventListener('click', function(e) {
+            const dropdowns = document.querySelectorAll('.dropdown-menu.show');
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(e.target) && !dropdown.previousElementSibling.contains(e.target)) {
+                    const bsDropdown = bootstrap.Dropdown.getInstance(dropdown.previousElementSibling);
+                    if (bsDropdown) {
+                        bsDropdown.hide();
+                    }
+                }
+            });
         });
     </script>
 
     {% block extra_js %}{% endblock %}
-
-    <!-- Style pour le loading overlay -->
-    <style>
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(5px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-
-        .spinner-modern {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Custom navbar toggler */
-        .navbar-toggler {
-            padding: 0.5rem;
-            border: none;
-            background: transparent;
-        }
-
-        .navbar-toggler:focus {
-            box-shadow: none;
-        }
-
-        .navbar-toggler-icon {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%2833, 37, 41, 0.75%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
-        }
-
-        /* Amélioration des transitions */
-        .nav-link, .dropdown-item, .btn {
-            transition: all 0.3s ease;
-        }
-
-        /* Footer styles */
-        footer {
-            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-            margin-top: 4rem;
-        }
-
-        footer h5 {
-            color: white;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        footer h5::after {
-            content: '';
-            position: absolute;
-            bottom: -5px;
-            left: 0;
-            width: 50px;
-            height: 2px;
-            background: #667eea;
-            border-radius: 2px;
-        }
-
-        footer a {
-            color: rgba(255, 255, 255, 0.7);
-            text-decoration: none;
-            transition: all 0.3s ease;
-            display: inline-block;
-        }
-
-        footer a:hover {
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .social-links a {
-            width: 50px;
-            height: 50px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 1rem;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-
-        .social-links a:hover {
-            background: #667eea;
-            transform: translateY(-3px);
-        }
-
-        .btn-primary-modern {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border: none;
-            border-radius: 50px;
-            padding: 0.5rem 1.5rem;
-            font-weight: 600;
-            color: white;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-    </style>
 </body>
 </html>
