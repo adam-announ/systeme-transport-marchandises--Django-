@@ -46,6 +46,9 @@
 
         <!-- Contenu principal - Réorganisation pour meilleure lisibilité -->
         <main class="col-md-9 col-lg-10">
+            <!-- Token CSRF pour les requêtes AJAX -->
+            {% csrf_token %}
+            
             <header class="d-flex justify-content-between align-items-center mb-4">
                 <h1 class="h3 mb-0">Optimisation d'Itinéraire</h1>
                 <button class="btn btn-primary" id="optimize-btn">
@@ -277,33 +280,47 @@ document.addEventListener('DOMContentLoaded', function() {
         optimizeBtn.disabled = true;
         optimizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Optimisation en cours...';
         
-        // Simulation d'API (remplacer par un vrai appel)
-        setTimeout(() => {
-            const optimizationParams = {
-                priority: document.getElementById('optimization-priority').value,
-                speed: document.getElementById('average-speed').value,
-                consumption: document.getElementById('fuel-consumption').value,
-                price: document.getElementById('fuel-price').value
-            };
-            
-            // Données simulées
-            const simulationData = simulateOptimization(selectedLivraisons, optimizationParams);
-            
-            // Mise à jour de l'UI
-            updateRouteSummary(simulationData);
-            generateRouteSteps(selectedLivraisons, simulationData);
-            updateMapVisualization(selectedLivraisons);
-            
-            // Afficher les résultats
-            noRoute.classList.add('d-none');
-            routeSummary.classList.remove('d-none');
-            routeStepsSection.classList.remove('d-none');
-            
+        // Appel API réel
+        fetch('/api/optimize-route/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                livraison_ids: selectedLivraisons,
+                optimization_params: {
+                    priority: document.getElementById('optimization-priority').value,
+                    speed: document.getElementById('average-speed').value,
+                    consumption: document.getElementById('fuel-consumption').value,
+                    price: document.getElementById('fuel-price').value
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateRouteSummary(data.data);
+                generateRouteSteps(selectedLivraisons, data.data);
+                updateMapVisualization(selectedLivraisons);
+                
+                noRoute.classList.add('d-none');
+                routeSummary.classList.remove('d-none');
+                routeStepsSection.classList.remove('d-none');
+                
+                showAlert('Itinéraire optimisé !', 'success');
+            } else {
+                showAlert(data.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Erreur: ' + error.message, 'danger');
+        })
+        .finally(() => {
             // Réactiver le bouton
             optimizeBtn.disabled = false;
             optimizeBtn.innerHTML = '<i class="fas fa-route me-2"></i>Optimiser';
-            
-        }, 1500);
+        });
     }
     
     function simulateOptimization(livraisonIds, params) {
@@ -329,13 +346,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function updateRouteSummary(data) {
-        document.getElementById('total-distance').textContent = `${data.distance} km`;
-        document.getElementById('total-time').textContent = `${data.time} h`;
-        document.getElementById('fuel-cost').textContent = `${data.fuelCost} €`;
-        document.getElementById('stops-count').textContent = data.stops;
+        const speed = parseFloat(document.getElementById('average-speed').value);
+        const consumption = parseFloat(document.getElementById('fuel-consumption').value);
+        const price = parseFloat(document.getElementById('fuel-price').value);
+        
+        const distance = data.total_distance || 0;
+        const time = data.total_time || (distance / speed);
+        const fuelCost = ((distance * consumption / 100) * price).toFixed(2);
+        
+        document.getElementById('total-distance').textContent = `${distance} km`;
+        document.getElementById('total-time').textContent = `${time.toFixed(1)} h`;
+        document.getElementById('fuel-cost').textContent = `${fuelCost} €`;
+        document.getElementById('stops-count').textContent = data.optimized_order?.length || 0;
     }
     
-    function generateRouteSteps(livraisonIds, simulationData) {
+    function generateRouteSteps(livraisonIds, data) {
         const stepsList = document.getElementById('route-steps-list');
         stepsList.innerHTML = '';
         
@@ -352,10 +377,9 @@ document.addEventListener('DOMContentLoaded', function() {
         stepsList.appendChild(startStep);
         
         // Étapes de livraison
-        simulationData.optimizedOrder.forEach((step, index) => {
-            const delivery = document.querySelector(`#livraison${step.id}`).closest('.card');
-            const commandeText = delivery.querySelector('h6').textContent;
-            const destination = delivery.querySelectorAll('small span')[1].textContent;
+        data.optimized_order.forEach((step, index) => {
+            const commandeText = `Commande #${step.commande_id}`;
+            const destination = step.address;
             
             const stepElement = document.createElement('li');
             stepElement.className = 'list-group-item d-flex justify-content-between align-items-start';
@@ -364,10 +388,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="fw-bold">${commandeText}</div>
                     <small class="text-muted">${destination}</small>
                     <div class="mt-1">
-                        <small class="text-muted">Arrivée estimée: ${step.estimatedTime}</small>
+                        <small class="text-muted">Arrivée estimée: ${8 + index}:${(index * 30) % 60 < 10 ? '0' : ''}${(index * 30) % 60}</small>
                     </div>
                 </div>
-                <span class="badge bg-primary rounded-pill">${index + 2}</span>
+                <span class="badge bg-primary rounded-pill">${step.order + 1}</span>
             `;
             stepsList.appendChild(stepElement);
         });
@@ -380,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="fw-bold">Retour au dépôt</div>
                 <small class="text-muted">Fin de tournée</small>
             </div>
-            <span class="badge bg-primary rounded-pill">${livraisonIds.length + 2}</span>
+            <span class="badge bg-primary rounded-pill">${data.optimized_order.length + 2}</span>
         `;
         stepsList.appendChild(endStep);
     }

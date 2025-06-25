@@ -111,6 +111,9 @@
                 </div>
             </section>
 
+            <!-- Token CSRF pour les requêtes AJAX -->
+            {% csrf_token %}
+            
             <!-- Messages système -->
             {% if messages %}
             <div class="mb-4">
@@ -447,13 +450,17 @@ function confirmAcceptation() {
     fetch(`/transporteur/commandes/${currentCommandeId}/accept/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'Content-Type': 'application/json'
         },
         body: JSON.stringify(formData)
     })
     .then(handleResponse)
     .then(data => {
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmModal'));
+        if (modal) modal.hide();
+        
         if (data.success) {
             showAlert('Commande acceptée avec succès !', 'success');
             setTimeout(() => location.reload(), 1500);

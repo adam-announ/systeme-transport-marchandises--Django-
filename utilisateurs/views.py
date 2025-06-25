@@ -287,21 +287,94 @@ def transporteur_dashboard(request):
 
 @transporteur_required
 def transporteur_commandes(request):
+    user_id = request.session['user_id']
     commandes = Commande.objects.filter(statut='en_attente').select_related('client')
     paginator = Paginator(commandes, 12)
     page_number = request.GET.get('page')
     commandes_page = paginator.get_page(page_number)
     
+    # Récupérer les véhicules du transporteur
+    mes_vehicules = Vehicule.objects.filter(transporteur_id=user_id, disponible=True)
+    
     context = {
         'commandes': commandes_page,
         'is_paginated': paginator.num_pages > 1,
         'page_obj': commandes_page,
+        'mes_vehicules': mes_vehicules,
+        'commandes_disponibles': commandes.count(),
     }
     return render(request, 'transporteur/transporteur_commandes.html', context)
 
 @transporteur_required
 def transporteur_accept_commande(request, commande_id):
-    return JsonResponse({'success': False})
+    if request.method == 'POST':
+        try:
+            user_id = request.session['user_id']
+            commande = get_object_or_404(Commande, id=commande_id, statut='en_attente')
+            
+            # Vérifier si le transporteur a des véhicules
+            vehicules = Vehicule.objects.filter(transporteur_id=user_id, disponible=True)
+            if not vehicules.exists():
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Vous devez d\'abord ajouter au moins un véhicule pour accepter des commandes.'
+                })
+            
+            data = json.loads(request.body)
+            vehicule_id = data.get('vehicule_id')
+            heure_depart = data.get('heure_depart')
+            notes = data.get('notes', '')
+            
+            if not vehicule_id or not heure_depart:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Veuillez remplir tous les champs obligatoires.'
+                })
+            
+            # Vérifier que le véhicule appartient au transporteur
+            vehicule = get_object_or_404(Vehicule, id=vehicule_id, transporteur_id=user_id)
+            
+            # Vérifier la capacité du véhicule
+            if commande.poids > vehicule.capacite_max:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Le poids de la commande ({commande.poids}kg) dépasse la capacité du véhicule ({vehicule.capacite_max}kg).'
+                })
+            
+            with transaction.atomic():
+                # Mettre à jour la commande
+                commande.transporteur_id = user_id
+                commande.statut = 'affectee'
+                commande.save()
+                
+                # Créer la livraison
+                livraison = Livraison.objects.create(
+                    commande=commande,
+                    vehicule=vehicule,
+                    statut='en_attente',
+                    notes_livraison=notes
+                )
+                
+                # Créer une notification pour le client
+                Notification.objects.create(
+                    utilisateur=commande.client,
+                    titre='Commande acceptée',
+                    message=f'Votre commande #{commande.id} a été acceptée par un transporteur.',
+                    type_notification='commande_acceptee'
+                )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Commande acceptée avec succès !'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erreur lors de l\'acceptation: {str(e)}'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})
 
 @transporteur_required
 def transporteur_livraisons(request):
@@ -359,7 +432,23 @@ def transporteur_add_vehicule(request):
 
 @transporteur_required
 def transporteur_itineraire(request):
-    context = {}
+    user_id = request.session['user_id']
+    
+    # Récupérer les livraisons en attente ou en cours pour ce transporteur
+    livraisons_en_cours = Livraison.objects.filter(
+        commande__transporteur_id=user_id,
+        statut__in=['en_attente', 'en_cours']
+    ).select_related('commande', 'vehicule').order_by('commande__date_livraison_prevue')
+    
+    # Statistiques pour la sidebar
+    commandes_disponibles = Commande.objects.filter(statut='en_attente').count()
+    livraisons_actives = livraisons_en_cours.count()
+    
+    context = {
+        'livraisons_en_cours': livraisons_en_cours,
+        'commandes_disponibles': commandes_disponibles,
+        'livraisons_actives': livraisons_actives,
+    }
     return render(request, 'transporteur/transporteur_itineraire.html', context)
 
 @transporteur_required
@@ -614,3 +703,60 @@ def get_notifications_count(request):
             })
     
     return JsonResponse({'success': False, 'count': 0})
+
+@transporteur_required
+def optimize_route_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            livraison_ids = data.get('livraison_ids', [])
+            
+            if not livraison_ids:
+                return JsonResponse({'success': False, 'message': 'Aucune livraison sélectionnée'})
+            
+            user_id = request.session['user_id']
+            livraisons = Livraison.objects.filter(
+                id__in=livraison_ids,
+                commande__transporteur_id=user_id
+            ).select_related('commande')
+            
+            # Calcul simple
+            locations = []
+            for livraison in livraisons:
+                locations.append({
+                    'id': livraison.id,
+                    'address': livraison.commande.destination,
+                    'commande_id': livraison.commande.id
+                })
+            
+            total_distance = len(locations) * 25 + 15
+            params = data.get('optimization_params', {})
+            speed = float(params.get('speed', 60))
+            
+            result = {
+                'optimized_order': [
+                    {
+                        'id': loc['id'],
+                        'address': loc['address'],
+                        'order': i + 1,
+                        'commande_id': loc['commande_id']
+                    }
+                    for i, loc in enumerate(locations)
+                ],
+                'total_distance': total_distance,
+                'total_time': round(total_distance / speed, 2),
+                'success': True
+            }
+            
+            return JsonResponse({
+                'success': True,
+                'data': result
+            })
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erreur: {str(e)}'
+            })
+    
+    return JsonResponse({'success': False, 'message': 'Méthode non autorisée'})

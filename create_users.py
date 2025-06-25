@@ -57,6 +57,16 @@ users_data = [
         'phone': '+212600000004',
         'is_active': True
     },
+    {
+        'username': 'planificateur3',
+        'email': 'planif3@transport.com',
+        'password': 'planif123',
+        'role': 'planificateur',
+        'first_name': 'Karim',
+        'last_name': 'Mansouri',
+        'phone': '+212600000013',
+        'is_active': True
+    },
     
     # Transporteurs
     {
@@ -148,28 +158,29 @@ created_users = []
 for user_data in users_data:
     user = User.objects.create(**user_data)
     created_users.append(user)
-    print(f"✓ Utilisateur créé: {user.username} ({user.role}) - {user.email}")
+    print(f"[OK] Utilisateur cree: {user.username} ({user.role}) - {user.email}")
 
-print(f"\n🎉 {len(created_users)} utilisateurs créés avec succès!")
+print(f"\n[SUCCESS] {len(created_users)} utilisateurs crees avec succes!")
 
 print("\n" + "="*60)
 print("COMPTES DE CONNEXION DISPONIBLES")
 print("="*60)
 
-print("\n🔧 ADMINISTRATEURS:")
+print("\n[ADMIN] ADMINISTRATEURS:")
 print("Username: admin | Password: admin123 | Email: admin@transport.com")
 print("Username: superadmin | Password: super123 | Email: superadmin@transport.com")
 
-print("\n📋 PLANIFICATEURS:")
+print("\n[PLANIF] PLANIFICATEURS:")
 print("Username: planificateur1 | Password: planif123 | Email: planif1@transport.com")
 print("Username: planificateur2 | Password: planif123 | Email: planif2@transport.com")
+print("Username: planificateur3 | Password: planif123 | Email: planif3@transport.com")
 
-print("\n🚛 TRANSPORTEURS:")
+print("\n[TRANSPORT] TRANSPORTEURS:")
 print("Username: transporteur1 | Password: trans123 | Email: transport1@transport.com")
 print("Username: transporteur2 | Password: trans123 | Email: transport2@transport.com")
 print("Username: transporteur3 | Password: trans123 | Email: transport3@transport.com")
 
-print("\n👥 CLIENTS:")
+print("\n[CLIENT] CLIENTS:")
 print("Username: client1 | Password: client123 | Email: client1@transport.com")
 print("Username: client2 | Password: client123 | Email: client2@transport.com")
 print("Username: client3 | Password: client123 | Email: client3@transport.com")
@@ -177,7 +188,7 @@ print("Username: client4 | Password: client123 | Email: client4@transport.com")
 print("Username: client5 | Password: client123 | Email: client5@transport.com")
 
 print("\n" + "="*60)
-print("🌐 ACCÈS AU SYSTÈME:")
+print("[WEB] ACCES AU SYSTEME:")
 print("URL: http://127.0.0.1:8000/")
 print("Connexion: http://127.0.0.1:8000/login/")
 print("Inscription: http://127.0.0.1:8000/register/")

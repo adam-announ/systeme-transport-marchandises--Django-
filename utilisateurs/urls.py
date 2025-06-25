@@ -64,4 +64,5 @@ urlpatterns = [
     path('api/livraisons/check-updates/', views.check_livraisons_updates, name='check_livraisons_updates'),
     path('api/transporteur/<int:transporteur_id>/vehicules/', views.get_vehicules_transporteur, name='get_vehicules_transporteur'),
     path('api/notifications/count/', views.get_notifications_count, name='get_notifications_count'),
+    path('api/optimize-route/', views.optimize_route_api, name='optimize_route_api'),
 ]
