@@ -3,91 +3,1083 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription - Système de Transport</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Inscription - TransportSystem</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
     {% load static %}
-    <link rel="stylesheet" href="{% static 'utilisateurs/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <style>
+        .register-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .register-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .register-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            z-index: 2;
+            animation: slideUp 0.8s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .register-header {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .register-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+
+        .register-logo {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .register-logo i {
+            font-size: 2rem;
+            color: white;
+        }
+
+        .register-body {
+            padding: 3rem 2rem;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 0.5rem;
+            color: #6c757d;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .step.completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .step.completed i {
+            font-size: 1rem;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 20px;
+            height: 2px;
+            background: #e9ecef;
+            transform: translateY(-50%);
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        .step.completed::after {
+            background: #28a745;
+        }
+
+        .form-step {
+            display: none;
+        }
+
+        .form-step.active {
+            display: block;
+            animation: fadeInSlide 0.5s ease-out;
+        }
+
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-floating-modern {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-control-modern {
+            background: rgba(248, 249, 250, 0.8);
+            border: 2px solid #e9ecef;
+            border-radius: 1rem;
+            padding: 1.25rem 1rem 0.75rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .form-control-modern:focus {
+            background: white;
+            border-color: #11998e;
+            box-shadow: 0 0 0 4px rgba(17, 153, 142, 0.1);
+            outline: none;
+        }
+
+        .form-floating-modern label {
+            position: absolute;
+            top: 50%;
+            left: 1rem;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            background: transparent;
+            padding: 0 0.25rem;
+        }
+
+        .form-control-modern:focus + label,
+        .form-control-modern:not(:placeholder-shown) + label {
+            top: 0.5rem;
+            font-size: 0.85rem;
+            color: #11998e;
+            font-weight: 500;
+        }
+
+        .form-control-modern.is-invalid {
+            border-color: #dc3545;
+        }
+
+        .form-control-modern.is-valid {
+            border-color: #28a745;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-option {
+            border: 2px solid #e9ecef;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            position: relative;
+        }
+
+        .role-option:hover {
+            border-color: #11998e;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .role-option.selected {
+            border-color: #11998e;
+            background: linear-gradient(135deg, rgba(17, 153, 142, 0.1), rgba(56, 239, 125, 0.1));
+        }
+
+        .role-option input[type="radio"] {
+            display: none;
+        }
+
+        .role-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .role-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .role-description {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+
+        .btn-modern {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            border-radius: 1rem;
+            color: white;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(17, 153, 142, 0.3);
+            color: white;
+        }
+
+        .btn-modern::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-modern:hover::before {
+            left: 100%;
+        }
+
+        .btn-outline-modern {
+            background: transparent;
+            border: 2px solid #11998e;
+            color: #11998e;
+        }
+
+        .btn-outline-modern:hover {
+            background: #11998e;
+            color: white;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+        }
+
+        .strength-meter {
+            height: 4px;
+            background: #e9ecef;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .strength-fill {
+            height: 100%;
+            width: 0%;
+            transition: all 0.3s ease;
+            border-radius: 2px;
+        }
+
+        .strength-weak { background: #dc3545; width: 25%; }
+        .strength-fair { background: #ffc107; width: 50%; }
+        .strength-good { background: #fd7e14; width: 75%; }
+        .strength-strong { background: #28a745; width: 100%; }
+
+        .strength-text {
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            margin-right: 0.75rem;
+            margin-top: 0.25rem;
+            width: 18px;
+            height: 18px;
+            accent-color: #11998e;
+        }
+
+        .terms-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        .terms-text a {
+            color: #11998e;
+            text-decoration: none;
+        }
+
+        .terms-text a:hover {
+            text-decoration: underline;
+        }
+
+        .register-footer {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(248, 249, 250, 0.5);
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .register-footer a {
+            color: #11998e;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .register-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .floating-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: floatElement 8s ease-in-out infinite;
+        }
+
+        .floating-element:nth-child(1) { top: 10%; left: 10%; width: 60px; height: 60px; animation-delay: 0s; }
+        .floating-element:nth-child(2) { top: 70%; right: 10%; width: 40px; height: 40px; animation-delay: 2s; }
+        .floating-element:nth-child(3) { bottom: 30%; left: 30%; width: 80px; height: 80px; animation-delay: 4s; }
+        .floating-element:nth-child(4) { top: 40%; right: 20%; width: 30px; height: 30px; animation-delay: 1s; }
+
+        @keyframes floatElement {
+            0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.3; }
+            50% { transform: translateY(-30px) rotate(180deg); opacity: 0.7; }
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .register-container {
+                padding: 2rem 0.5rem;
+            }
+            
+            .register-card {
+                margin: 0;
+                border-radius: 1.5rem;
+            }
+            
+            .register-header {
+                padding: 2rem 1.5rem 1.5rem;
+            }
+            
+            .register-body {
+                padding: 2rem 1.5rem;
+            }
+            
+            .role-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .step-indicator {
+                margin-bottom: 2rem;
+            }
+            
+            .step {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .register-logo {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .register-logo i {
+                font-size: 1.5rem;
+            }
+            
+            .role-option {
+                padding: 1rem;
+            }
+            
+            .role-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
-<body class="register-page">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-10 col-lg-9">
-                <div class="register-card">
-                    <div class="register-header">
-                        <h2 class="mb-0">Créer un compte</h2>
-                        <p class="mb-0 mt-2">Système de Transport de Marchandises</p>
-                    </div>
-                    <div class="register-body">
-                        {% if messages %}
-                            {% for message in messages %}
-                                <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} d-flex align-items-center">
-                                    {% if message.tags == 'success' %}
-                                        <i class="fas fa-check-circle me-2"></i>
-                                    {% else %}
-                                        <i class="fas fa-exclamation-circle me-2"></i>
-                                    {% endif %}
-                                    {{ message }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                        
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label for="first_name" class="form-label">Prénom *</label>
-                                    <input type="text" class="form-control form-control-lg" id="first_name" name="first_name" required>
-                                </div>
-                                <div class="col-md-6 mb-4">
-                                    <label for="last_name" class="form-label">Nom *</label>
-                                    <input type="text" class="form-control form-control-lg" id="last_name" name="last_name" required>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label for="username" class="form-label">Nom d'utilisateur *</label>
-                                    <input type="text" class="form-control form-control-lg" id="username" name="username" required>
-                                </div>
-                                <div class="col-md-6 mb-4">
-                                    <label for="email" class="form-label">Email *</label>
-                                    <input type="email" class="form-control form-control-lg" id="email" name="email" required>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-4">
-                                    <label for="password" class="form-label">Mot de passe *</label>
-                                    <input type="password" class="form-control form-control-lg" id="password" name="password" required>
-                                </div>
-                                <div class="col-md-6 mb-4">
-                                    <label for="phone" class="form-label">Téléphone</label>
-                                    <input type="tel" class="form-control form-control-lg" id="phone" name="phone" placeholder="+33 6 12 34 56 78">
-                                </div>
-                            </div>
-                            <div class="mb-4">
-                                <label for="role" class="form-label">Type de compte *</label>
-                                <select class="form-select form-select-lg" id="role" name="role" required>
-                                    <option value="">Choisissez votre rôle</option>
-                                    <option value="client">Client</option>
-                                    <option value="driver">Chauffeur</option>
-                                </select>
-                            </div>
-                            <button type="submit" class="btn btn-success btn-lg w-100 mb-3">Créer mon compte</button>
-                        </form>
-                        
-                        <div class="text-center">
-                            <p class="mb-2">Déjà un compte ?</p>
-                            <a href="{% url 'login' %}" class="btn btn-outline-primary">Se connecter</a>
+<body>
+    <div class="register-container">
+        <!-- Éléments flottants de décoration -->
+        <div class="floating-elements">
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+            <div class="floating-element"></div>
+        </div>
+
+        <div class="register-card">
+            <div class="register-header">
+                <div class="register-logo">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h2 class="mb-0">Créer votre compte</h2>
+                <p class="mb-0 mt-2 opacity-90">Rejoignez TransportSystem et optimisez vos transports</p>
+            </div>
+            
+            <div class="register-body">
+                <!-- Messages d'alerte -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-modern d-flex align-items-center mb-3">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle me-2"></i>
+                            {% else %}
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                            {% endif %}
+                            {{ message }}
                         </div>
+                    {% endfor %}
+                {% endif %}
+
+                <!-- Indicateur d'étapes -->
+                <div class="step-indicator">
+                    <div class="step active" id="step1">1</div>
+                    <div class="step" id="step2">2</div>
+                    <div class="step" id="step3">3</div>
+                </div>
+
+                <!-- Formulaire multi-étapes -->
+                <form method="post" id="registerForm" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Étape 1: Informations personnelles -->
+                    <div class="form-step active" id="formStep1">
+                        <h4 class="mb-4 text-center">Informations personnelles</h4>
                         
-                        <div class="text-center mt-4">
-                            <a href="/" class="text-muted">← Retour à l'accueil</a>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating-modern">
+                                    <input type="text" 
+                                           class="form-control-modern" 
+                                           id="first_name" 
+                                           name="first_name" 
+                                           placeholder=" " 
+                                           required>
+                                    <label for="first_name">Prénom</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating-modern">
+                                    <input type="text" 
+                                           class="form-control-modern" 
+                                           id="last_name" 
+                                           name="last_name" 
+                                           placeholder=" " 
+                                           required>
+                                    <label for="last_name">Nom</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-floating-modern">
+                                    <input type="email" 
+                                           class="form-control-modern" 
+                                           id="email" 
+                                           name="email" 
+                                           placeholder=" " 
+                                           required>
+                                    <label for="email">Adresse email</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-floating-modern">
+                                    <input type="tel" 
+                                           class="form-control-modern" 
+                                           id="phone" 
+                                           name="phone" 
+                                           placeholder=" ">
+                                    <label for="phone">Téléphone (optionnel)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="navigation-buttons">
+                            <div></div>
+                            <button type="button" class="btn btn-modern" onclick="nextStep(1)">
+                                Suivant <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
                         </div>
                     </div>
+
+                    <!-- Étape 2: Compte et sécurité -->
+                    <div class="form-step" id="formStep2">
+                        <h4 class="mb-4 text-center">Compte et sécurité</h4>
+                        
+                        <div class="form-floating-modern">
+                            <input type="text" 
+                                   class="form-control-modern" 
+                                   id="username" 
+                                   name="username" 
+                                   placeholder=" " 
+                                   required>
+                            <label for="username">Nom d'utilisateur</label>
+                        </div>
+
+                        <div class="form-floating-modern">
+                            <input type="password" 
+                                   class="form-control-modern" 
+                                   id="password" 
+                                   name="password" 
+                                   placeholder=" " 
+                                   required 
+                                   oninput="checkPasswordStrength()">
+                            <label for="password">Mot de passe</label>
+                        </div>
+
+                        <div class="password-strength">
+                            <div class="strength-meter">
+                                <div class="strength-fill" id="strengthFill"></div>
+                            </div>
+                            <div class="strength-text" id="strengthText">Entrez un mot de passe</div>
+                        </div>
+
+                        <div class="form-floating-modern">
+                            <input type="password" 
+                                   class="form-control-modern" 
+                                   id="confirmPassword" 
+                                   placeholder=" " 
+                                   required 
+                                   oninput="checkPasswordMatch()">
+                            <label for="confirmPassword">Confirmer le mot de passe</label>
+                        </div>
+
+                        <div class="navigation-buttons">
+                            <button type="button" class="btn btn-outline-modern" onclick="prevStep(2)">
+                                <i class="fas fa-arrow-left me-2"></i> Précédent
+                            </button>
+                            <button type="button" class="btn btn-modern" onclick="nextStep(2)">
+                                Suivant <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Étape 3: Type de compte et validation -->
+                    <div class="form-step" id="formStep3">
+                        <h4 class="mb-4 text-center">Type de compte</h4>
+                        
+                        <div class="role-selector">
+                            <div class="role-option" onclick="selectRole('client')">
+                                <input type="radio" name="role" value="client" id="roleClient">
+                                <div class="role-icon">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="role-title">Client</div>
+                                <div class="role-description">
+                                    Je souhaite expédier des marchandises
+                                </div>
+                            </div>
+                            
+                            <div class="role-option" onclick="selectRole('driver')">
+                                <input type="radio" name="role" value="driver" id="roleDriver">
+                                <div class="role-icon">
+                                    <i class="fas fa-truck"></i>
+                                </div>
+                                <div class="role-title">Chauffeur</div>
+                                <div class="role-description">
+                                    Je souhaite transporter des marchandises
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="terms-checkbox">
+                            <input type="checkbox" id="terms" required>
+                            <div class="terms-text">
+                                J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> 
+                                et la <a href="#" target="_blank">politique de confidentialité</a> 
+                                de TransportSystem. Je confirme avoir lu et compris ces documents.
+                            </div>
+                        </div>
+
+                        <div class="terms-checkbox">
+                            <input type="checkbox" id="newsletter">
+                            <div class="terms-text">
+                                Je souhaite recevoir des informations sur les nouveautés et offres spéciales 
+                                de TransportSystem (optionnel).
+                            </div>
+                        </div>
+
+                        <div class="navigation-buttons">
+                            <button type="button" class="btn btn-outline-modern" onclick="prevStep(3)">
+                                <i class="fas fa-arrow-left me-2"></i> Précédent
+                            </button>
+                            <button type="submit" class="btn btn-modern">
+                                <i class="fas fa-user-plus me-2"></i> Créer mon compte
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="register-footer">
+                <p class="mb-0">
+                    Vous avez déjà un compte ? 
+                    <a href="{% url 'login' %}">Se connecter</a>
+                </p>
+                <div class="mt-3">
+                    <a href="{% url 'accueil' %}" class="text-muted small">
+                        <i class="fas fa-arrow-left me-1"></i>
+                        Retour à l'accueil
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let currentStep = 1;
+        
+        // Animation de chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('first_name').focus();
+            setupFormValidation();
+        });
+
+        // Navigation entre les étapes
+        function nextStep(step) {
+            if (validateCurrentStep(step)) {
+                hideStep(step);
+                showStep(step + 1);
+                updateStepIndicator(step + 1);
+                currentStep = step + 1;
+            }
+        }
+
+        function prevStep(step) {
+            hideStep(step);
+            showStep(step - 1);
+            updateStepIndicator(step - 1);
+            currentStep = step - 1;
+        }
+
+        function hideStep(step) {
+            document.getElementById(`formStep${step}`).classList.remove('active');
+        }
+
+        function showStep(step) {
+            document.getElementById(`formStep${step}`).classList.add('active');
+        }
+
+        function updateStepIndicator(step) {
+            // Marquer les étapes précédentes comme complétées
+            for (let i = 1; i < step; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                stepElement.classList.add('completed');
+                stepElement.classList.remove('active');
+                stepElement.innerHTML = '<i class="fas fa-check"></i>';
+            }
+            
+            // Marquer l'étape actuelle comme active
+            const currentStepElement = document.getElementById(`step${step}`);
+            currentStepElement.classList.add('active');
+            currentStepElement.classList.remove('completed');
+            currentStepElement.textContent = step;
+            
+            // Réinitialiser les étapes suivantes
+            for (let i = step + 1; i <= 3; i++) {
+                const stepElement = document.getElementById(`step${i}`);
+                stepElement.classList.remove('active', 'completed');
+                stepElement.textContent = i;
+            }
+        }
+
+        // Validation des étapes
+        function validateCurrentStep(step) {
+            let isValid = true;
+            
+            switch(step) {
+                case 1:
+                    const requiredFields1 = ['first_name', 'last_name', 'email'];
+                    requiredFields1.forEach(fieldId => {
+                        if (!validateField(document.getElementById(fieldId))) {
+                            isValid = false;
+                        }
+                    });
+                    
+                    // Validation email spécifique
+                    const email = document.getElementById('email');
+                    if (email.value && !isValidEmail(email.value)) {
+                        email.classList.add('is-invalid');
+                        isValid = false;
+                    }
+                    break;
+                    
+                case 2:
+                    const requiredFields2 = ['username', 'password'];
+                    requiredFields2.forEach(fieldId => {
+                        if (!validateField(document.getElementById(fieldId))) {
+                            isValid = false;
+                        }
+                    });
+                    
+                    // Validation mot de passe
+                    if (!checkPasswordStrength(true)) {
+                        isValid = false;
+                    }
+                    
+                    if (!checkPasswordMatch(true)) {
+                        isValid = false;
+                    }
+                    break;
+                    
+                case 3:
+                    if (!document.querySelector('input[name="role"]:checked')) {
+                        showError('Veuillez sélectionner un type de compte.');
+                        isValid = false;
+                    }
+                    
+                    if (!document.getElementById('terms').checked) {
+                        showError('Vous devez accepter les conditions d\'utilisation.');
+                        isValid = false;
+                    }
+                    break;
+            }
+            
+            return isValid;
+        }
+
+        // Sélection du rôle
+        function selectRole(role) {
+            // Retirer la sélection précédente
+            document.querySelectorAll('.role-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            // Sélectionner le nouveau rôle
+            document.querySelector(`[onclick="selectRole('${role}')"]`).classList.add('selected');
+            document.getElementById(`role${role.charAt(0).toUpperCase() + role.slice(1)}`).checked = true;
+        }
+
+        // Vérification de la force du mot de passe
+        function checkPasswordStrength(validate = false) {
+            const password = document.getElementById('password').value;
+            const strengthFill = document.getElementById('strengthFill');
+            const strengthText = document.getElementById('strengthText');
+            
+            let score = 0;
+            let feedback = '';
+            
+            if (password.length >= 8) score++;
+            if (/[a-z]/.test(password)) score++;
+            if (/[A-Z]/.test(password)) score++;
+            if (/[0-9]/.test(password)) score++;
+            if (/[^A-Za-z0-9]/.test(password)) score++;
+            
+            // Mise à jour visuelle
+            strengthFill.className = 'strength-fill';
+            
+            switch(score) {
+                case 0:
+                case 1:
+                    strengthFill.classList.add('strength-weak');
+                    feedback = 'Mot de passe faible';
+                    break;
+                case 2:
+                    strengthFill.classList.add('strength-fair');
+                    feedback = 'Mot de passe acceptable';
+                    break;
+                case 3:
+                case 4:
+                    strengthFill.classList.add('strength-good');
+                    feedback = 'Mot de passe fort';
+                    break;
+                case 5:
+                    strengthFill.classList.add('strength-strong');
+                    feedback = 'Mot de passe excellent';
+                    break;
+            }
+            
+            strengthText.textContent = feedback;
+            
+            if (validate) {
+                const passwordField = document.getElementById('password');
+                if (score < 2) {
+                    passwordField.classList.add('is-invalid');
+                    return false;
+                } else {
+                    passwordField.classList.remove('is-invalid');
+                    passwordField.classList.add('is-valid');
+                    return true;
+                }
+            }
+            
+            return score >= 2;
+        }
+
+        // Vérification de la correspondance des mots de passe
+        function checkPasswordMatch(validate = false) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const confirmField = document.getElementById('confirmPassword');
+            
+            if (confirmPassword && password !== confirmPassword) {
+                if (validate) {
+                    confirmField.classList.add('is-invalid');
+                    return false;
+                }
+            } else if (confirmPassword) {
+                confirmField.classList.remove('is-invalid');
+                confirmField.classList.add('is-valid');
+                if (validate) return true;
+            }
+            
+            return true;
+        }
+
+        // Validation des champs
+        function validateField(field) {
+            const value = field.value.trim();
+            let isValid = true;
+            
+            if (field.hasAttribute('required') && !value) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid');
+                isValid = false;
+            } else if (field.type === 'email' && value && !isValidEmail(value)) {
+                field.classList.add('is-invalid');
+                field.classList.remove('is-valid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+                field.classList.add('is-valid');
+            }
+            
+            return isValid;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Configuration de la validation en temps réel
+        function setupFormValidation() {
+            const form = document.getElementById('registerForm');
+            const inputs = form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"]');
+            
+            inputs.forEach(input => {
+                input.addEventListener('blur', () => validateField(input));
+                input.addEventListener('input', () => {
+                    if (input.classList.contains('is-invalid')) {
+                        validateField(input);
+                    }
+                });
+            });
+
+            // Validation à la soumission
+            form.addEventListener('submit', function(e) {
+                if (!validateCurrentStep(3)) {
+                    e.preventDefault();
+                    return false;
+                }
+                
+                // Animation de soumission
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Création en cours...';
+                submitBtn.disabled = true;
+            });
+        }
+
+        function showError(message) {
+            // Créer ou mettre à jour l'alerte d'erreur
+            let alertContainer = document.querySelector('.alert-danger');
+            
+            if (!alertContainer) {
+                alertContainer = document.createElement('div');
+                alertContainer.className = 'alert alert-danger alert-modern d-flex align-items-center mb-3';
+                alertContainer.innerHTML = `
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span></span>
+                `;
+                
+                const stepIndicator = document.querySelector('.step-indicator');
+                stepIndicator.parentNode.insertBefore(alertContainer, stepIndicator.nextSibling);
+            }
+            
+            alertContainer.querySelector('span').textContent = message;
+            
+            // Auto-hide après 5 secondes
+            setTimeout(() => {
+                alertContainer.style.opacity = '0';
+                setTimeout(() => {
+                    if (alertContainer.parentNode) {
+                        alertContainer.remove();
+                    }
+                }, 300);
+            }, 5000);
+        }
+
+        // Animations et effets visuels
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.btn-modern') || e.target.closest('.btn-modern')) {
+                createRipple(e);
+            }
+        });
+
+        function createRipple(event) {
+            const button = event.target.closest('.btn-modern');
+            if (!button) return;
+            
+            const rect = button.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = event.clientX - rect.left - size / 2;
+            const y = event.clientY - rect.top - size / 2;
+            
+            const ripple = document.createElement('span');
+            ripple.style.cssText = `
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.6);
+                transform: scale(0);
+                animation: ripple 0.6s linear;
+                left: ${x}px;
+                top: ${y}px;
+                width: ${size}px;
+                height: ${size}px;
+                pointer-events: none;
+            `;
+            
+            button.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+
+        // CSS pour l'animation ripple
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes ripple {
+                to {
+                    transform: scale(4);
+                    opacity: 0;
+                }
+            }
+            
+            .alert-modern {
+                border-radius: 1rem;
+                border: none;
+                padding: 1rem 1.5rem;
+            }
+            
+            .alert-success {
+                background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+                color: #155724;
+                border-left: 4px solid #28a745;
+            }
+            
+            .alert-danger {
+                background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+                color: #721c24;
+                border-left: 4px solid #dc3545;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
-</html> 
+</html>
