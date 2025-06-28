@@ -36,11 +36,16 @@ urlpatterns = [
     path('transporteur/commandes/', views.transporteur_commandes, name='transporteur_commandes'),
     path('transporteur/commandes/<int:commande_id>/accept/', views.transporteur_accept_commande, name='transporteur_accept_commande'),
     path('transporteur/livraisons/', views.transporteur_livraisons, name='transporteur_livraisons'),
+    path('transporteur/livraisons/<int:livraison_id>/details/', views.transporteur_livraison_details, name='transporteur_livraison_details'),
     path('transporteur/livraisons/<int:livraison_id>/update/', views.transporteur_update_livraison, name='transporteur_update_livraison'),
     path('transporteur/vehicules/', views.transporteur_vehicules, name='transporteur_vehicules'),
     path('transporteur/vehicules/add/', views.transporteur_add_vehicule, name='transporteur_add_vehicule'),
+    path('transporteur/vehicules/<int:vehicule_id>/details/', views.transporteur_vehicule_details, name='transporteur_vehicule_details'),
+    path('transporteur/vehicules/<int:vehicule_id>/update/', views.transporteur_vehicule_update, name='transporteur_vehicule_update'),
+    path('transporteur/tournee/start/', views.transporteur_start_tournee, name='transporteur_start_tournee'),
     path('transporteur/itineraire/', views.transporteur_itineraire, name='transporteur_itineraire'),
     path('transporteur/profil/', views.transporteur_profil, name='transporteur_profil'),
+    path('transporteur/change-password/', views.transporteur_change_password, name='transporteur_change_password'),
     
     # Dashboard Client
     path('client/dashboard/', views.client_dashboard, name='client_dashboard'),
@@ -50,6 +55,7 @@ urlpatterns = [
     path('client/commandes/<int:commande_id>/suivi/', views.client_suivi_commande, name='client_suivi_commande'),
     path('client/commandes/<int:commande_id>/annuler/', views.client_annuler_commande, name='client_annuler_commande'),
     path('client/profil/', views.client_profil, name='client_profil'),
+    path('client/change-password/', views.client_change_password, name='client_change_password'),
     path('client/factures/', views.client_factures, name='client_factures'),
     
     # API AJAX

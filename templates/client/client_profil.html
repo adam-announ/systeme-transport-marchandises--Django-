@@ -193,12 +193,26 @@ function submitPasswordChange() {
         return;
     }
     
-    // Simulation d'appel API
-    postWithCSRF('/client/change-password/', {
-        current_password: currentPassword,
-        new_password: newPassword
+    // Appel API pour changer le mot de passe
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('/client/change-password/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+        })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             alert('Mot de passe changé avec succès !');
@@ -210,7 +224,7 @@ function submitPasswordChange() {
     })
     .catch(error => {
         console.error('Erreur:', error);
-        alert('Erreur lors du changement de mot de passe');
+        alert('Erreur lors du changement de mot de passe: ' + error.message);
     });
 }
 </script>

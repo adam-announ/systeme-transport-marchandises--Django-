@@ -1,4 +1,5 @@
 {% extends 'public/base.html' %}
+{% load static %}
 {% block title %}Dashboard Client - Système de Transport{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
@@ -52,7 +53,7 @@
             <!-- Statistiques -->
             <div class="row mb-4">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-primary h-100 py-2">
+                    <div class="card border-left-primary shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
@@ -60,9 +61,10 @@
                                         Total commandes
                                     </div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.commandes_total }}</div>
+                                    <small class="text-muted">{{ stats.poids_total|floatformat:1 }} kg au total</small>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-box fa-2x text-gray-300"></i>
+                                    <i class="fas fa-box fa-2x text-primary opacity-25"></i>
                                 </div>
                             </div>
                         </div>
@@ -70,7 +72,7 @@
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-warning h-100 py-2">
+                    <div class="card border-left-warning shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
@@ -78,9 +80,10 @@
                                         En cours
                                     </div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.commandes_en_cours }}</div>
+                                    <small class="text-muted">{{ stats.commandes_en_attente }} en attente</small>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-truck fa-2x text-gray-300"></i>
+                                    <i class="fas fa-truck fa-2x text-warning opacity-25"></i>
                                 </div>
                             </div>
                         </div>
@@ -88,7 +91,7 @@
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-success h-100 py-2">
+                    <div class="card border-left-success shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
@@ -96,9 +99,10 @@
                                         Livrées
                                     </div>
                                     <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.commandes_livrees }}</div>
+                                    <small class="text-muted">{{ stats.commandes_annulees }} annulées</small>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                                    <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
                                 </div>
                             </div>
                         </div>
@@ -106,19 +110,44 @@
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card border-left-info h-100 py-2">
+                    <div class="card border-left-info shadow h-100 py-2">
                         <div class="card-body">
                             <div class="row no-gutters align-items-center">
                                 <div class="col mr-2">
                                     <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                         Dépenses totales
                                     </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.depenses_totales }}€</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.depenses_totales|floatformat:2 }}€</div>
+                                    <small class="text-muted">Ce mois</small>
                                 </div>
                                 <div class="col-auto">
-                                    <i class="fas fa-euro-sign fa-2x text-gray-300"></i>
+                                    <i class="fas fa-euro-sign fa-2x text-info opacity-25"></i>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique des statistiques mensuelles -->
+            <div class="row mb-4">
+                <div class="col-lg-8">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Évolution des commandes (3 derniers mois)</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="commandesChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow">
+                        <div class="card-header py-3">
+                            <h6 class="m-0 font-weight-bold text-primary">Répartition des statuts</h6>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="statutsChart" width="300" height="300"></canvas>
                         </div>
                     </div>
                 </div>
@@ -127,7 +156,7 @@
             <!-- Commandes récentes et notifications -->
             <div class="row">
                 <div class="col-lg-8 mb-4">
-                    <div class="card">
+                    <div class="card shadow">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                             <h6 class="m-0 font-weight-bold text-primary">Commandes récentes</h6>
                             <a href="{% url 'client_commandes' %}" class="btn btn-sm btn-outline-primary">Voir toutes</a>
@@ -135,11 +164,12 @@
                         <div class="card-body">
                             {% if commandes_recentes %}
                             <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
+                                <table class="table table-hover">
+                                    <thead class="table-light">
                                         <tr>
                                             <th>ID</th>
-                                            <th>Destination</th>
+                                            <th>Trajet</th>
+                                            <th>Transporteur</th>
                                             <th>Statut</th>
                                             <th>Date</th>
                                             <th>Actions</th>
@@ -148,23 +178,53 @@
                                     <tbody>
                                         {% for commande in commandes_recentes %}
                                         <tr>
-                                            <td>#{{ commande.id }}</td>
-                                            <td>{{ commande.destination|truncatechars:30 }}</td>
+                                            <td><strong>#{{ commande.id }}</strong></td>
                                             <td>
-                                                <span class="badge badge-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'affectee' %}info{% elif commande.statut == 'annulee' %}danger{% else %}secondary{% endif %}">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-map-marker-alt text-success me-1"></i>
+                                                    <small>{{ commande.origine|truncatechars:15 }}</small>
+                                                    <i class="fas fa-arrow-right mx-2 text-muted"></i>
+                                                    <i class="fas fa-map-marker-alt text-danger me-1"></i>
+                                                    <small>{{ commande.destination|truncatechars:15 }}</small>
+                                                </div>
+                                                <small class="text-muted">{{ commande.poids }} kg</small>
+                                            </td>
+                                            <td>
+                                                {% if commande.transporteur %}
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-user-circle me-2"></i>
+                                                        <div>
+                                                            <div class="fw-bold">{{ commande.transporteur.get_full_name }}</div>
+                                                            <small class="text-muted">{{ commande.transporteur.phone }}</small>
+                                                        </div>
+                                                    </div>
+                                                {% else %}
+                                                    <span class="text-muted">Non assigné</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'affectee' %}info{% elif commande.statut == 'annulee' %}danger{% else %}secondary{% endif %}">
                                                     {{ commande.get_statut_display }}
                                                 </span>
-                                            </td>
-                                            <td>{{ commande.date_creation|date:"d/m/Y" }}</td>
-                                            <td>
-                                                <a href="{% url 'client_commande_detail' commande.id %}" class="btn btn-sm btn-info">
-                                                    <i class="fas fa-eye"></i>
-                                                </a>
-                                                {% if commande.statut != 'annulee' and commande.statut != 'livree' %}
-                                                <a href="{% url 'client_suivi_commande' commande.id %}" class="btn btn-sm btn-primary">
-                                                    <i class="fas fa-truck"></i>
-                                                </a>
+                                                {% if commande.priorite == 'urgente' %}
+                                                    <br><span class="badge bg-danger">Urgent</span>
                                                 {% endif %}
+                                            </td>
+                                            <td>
+                                                <div>{{ commande.date_creation|date:"d/m/Y" }}</div>
+                                                <small class="text-muted">{{ commande.date_creation|time:"H:i" }}</small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <a href="{% url 'client_commande_detail' commande.id %}" class="btn btn-sm btn-outline-info" title="Détails">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    {% if commande.statut != 'annulee' and commande.statut != 'livree' %}
+                                                    <a href="{% url 'client_suivi_commande' commande.id %}" class="btn btn-sm btn-outline-primary" title="Suivi">
+                                                        <i class="fas fa-truck"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -172,11 +232,12 @@
                                 </table>
                             </div>
                             {% else %}
-                            <div class="text-center py-4">
-                                <i class="fas fa-box fa-3x text-muted mb-3"></i>
-                                <p class="text-muted">Aucune commande récente</p>
-                                <a href="{% url 'client_nouvelle_commande' %}" class="btn btn-success">
-                                    Créer ma première commande
+                            <div class="text-center py-5">
+                                <i class="fas fa-box fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">Aucune commande récente</h5>
+                                <p class="text-muted">Commencez par créer votre première commande</p>
+                                <a href="{% url 'client_nouvelle_commande' %}" class="btn btn-success btn-lg">
+                                    <i class="fas fa-plus"></i> Créer ma première commande
                                 </a>
                             </div>
                             {% endif %}
@@ -186,40 +247,58 @@
 
                 <div class="col-lg-4 mb-4">
                     <!-- Notifications récentes -->
-                    <div class="card mb-3">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">Notifications récentes</h6>
+                    <div class="card shadow mb-3">
+                        <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Notifications</h6>
+                            <span class="badge bg-primary">{{ notifications|length }}</span>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-0">
                             {% if notifications %}
-                                {% for notif in notifications %}
-                                <div class="alert alert-{% if notif.type_notification == 'commande_affectee' %}success{% elif notif.type_notification == 'statut_livraison' %}info{% else %}primary{% endif %} alert-sm">
-                                    <strong>{{ notif.titre }}</strong><br>
-                                    <small>{{ notif.message|truncatechars:80 }}</small>
-                                    <br><small class="text-muted">{{ notif.date_creation|timesince }} ago</small>
+                                <div class="list-group list-group-flush">
+                                    {% for notif in notifications %}
+                                    <div class="list-group-item border-0 py-3">
+                                        <div class="d-flex align-items-start">
+                                            <div class="me-3">
+                                                <i class="fas fa-{% if notif.type_notification == 'commande_affectee' %}check-circle text-success{% elif notif.type_notification == 'statut_livraison' %}truck text-info{% else %}bell text-primary{% endif %} fa-lg"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-1">{{ notif.titre }}</h6>
+                                                <p class="mb-1 text-muted small">{{ notif.message|truncatechars:60 }}</p>
+                                                <small class="text-muted">{{ notif.date_creation|timesince }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
                                 </div>
-                                {% endfor %}
                             {% else %}
-                                <p class="text-muted">Aucune notification récente</p>
+                                <div class="text-center py-4">
+                                    <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
+                                    <p class="text-muted mb-0">Aucune notification</p>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Actions rapides -->
-                    <div class="card">
+                    <div class="card shadow">
                         <div class="card-header py-3">
                             <h6 class="m-0 font-weight-bold text-primary">Actions rapides</h6>
                         </div>
                         <div class="card-body">
-                            <a href="{% url 'client_nouvelle_commande' %}" class="btn btn-success btn-block mb-2">
-                                <i class="fas fa-plus"></i> Nouvelle commande
-                            </a>
-                            <a href="{% url 'client_commandes' %}" class="btn btn-info btn-block mb-2">
-                                <i class="fas fa-list"></i> Voir mes commandes
-                            </a>
-                            <a href="{% url 'client_factures' %}" class="btn btn-warning btn-block">
-                                <i class="fas fa-file-invoice"></i> Mes factures
-                            </a>
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'client_nouvelle_commande' %}" class="btn btn-success">
+                                    <i class="fas fa-plus me-2"></i>Nouvelle commande
+                                </a>
+                                <a href="{% url 'client_commandes' %}" class="btn btn-info">
+                                    <i class="fas fa-list me-2"></i>Voir mes commandes
+                                </a>
+                                <a href="{% url 'client_factures' %}" class="btn btn-warning">
+                                    <i class="fas fa-file-invoice me-2"></i>Mes factures
+                                </a>
+                                <a href="{% url 'client_profil' %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-user-cog me-2"></i>Mon profil
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -228,10 +307,132 @@
     </div>
 </div>
 
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
+// Données pour les graphiques
+const statsData = {
+    commandes: [{% for stat in stats_mensuelles %}{{ stat.commandes }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    livrees: [{% for stat in stats_mensuelles %}{{ stat.livrees }}{% if not forloop.last %},{% endif %}{% endfor %}],
+    mois: [{% for stat in stats_mensuelles %}'{{ stat.mois }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    statuts: {
+        en_attente: {{ stats.commandes_en_attente }},
+        en_cours: {{ stats.commandes_en_cours }},
+        livrees: {{ stats.commandes_livrees }},
+        annulees: {{ stats.commandes_annulees }}
+    }
+};
+
+// Graphique d'évolution des commandes
+const ctx1 = document.getElementById('commandesChart').getContext('2d');
+const commandesChart = new Chart(ctx1, {
+    type: 'line',
+    data: {
+        labels: statsData.mois.reverse(),
+        datasets: [{
+            label: 'Commandes créées',
+            data: statsData.commandes.reverse(),
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Commandes livrées',
+            data: statsData.livrees.reverse(),
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+
+// Graphique en secteurs des statuts
+const ctx2 = document.getElementById('statutsChart').getContext('2d');
+const statutsChart = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+        labels: ['En attente', 'En cours', 'Livrées', 'Annulées'],
+        datasets: [{
+            data: [
+                statsData.statuts.en_attente,
+                statsData.statuts.en_cours,
+                statsData.statuts.livrees,
+                statsData.statuts.annulees
+            ],
+            backgroundColor: [
+                '#6c757d',
+                '#ffc107',
+                '#198754',
+                '#dc3545'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            }
+        }
+    }
+});
+
+// Fonction de rafraîchissement
 function refreshData() {
-    location.reload();
+    const btn = document.querySelector('[onclick="refreshData()"]');
+    const icon = btn.querySelector('i');
+    
+    // Animation de rotation
+    icon.classList.add('fa-spin');
+    btn.disabled = true;
+    
+    setTimeout(() => {
+        location.reload();
+    }, 500);
 }
+
+// Mise à jour automatique des données toutes les 5 minutes
+setInterval(() => {
+    console.log('Vérification des mises à jour...');
+    // Ici on pourrait faire un appel AJAX pour vérifier les nouvelles données
+}, 300000); // 5 minutes
+
+// Animation d'entrée pour les cartes
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
 </script>
 
 <style>
@@ -253,9 +454,41 @@ function refreshData() {
 .text-gray-300 {
     color: #dddfeb !important;
 }
-.alert-sm {
-    padding: 0.5rem;
-    font-size: 0.875rem;
+.opacity-25 {
+    opacity: 0.25 !important;
+}
+.shadow {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+}
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2) !important;
+}
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+.btn-group .btn {
+    border-radius: 0.25rem !important;
+    margin-right: 2px;
+}
+.list-group-item {
+    transition: background-color 0.2s ease;
+}
+.list-group-item:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+#commandesChart, #statutsChart {
+    height: 300px !important;
+}
+.fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+@keyframes fa-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 </style>
 {% endblock %}

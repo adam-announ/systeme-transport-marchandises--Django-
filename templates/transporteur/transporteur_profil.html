@@ -1,6 +1,235 @@
 <!-- templates/transporteur/transporteur_profil.html -->
-{% extends 'base.html' %}
+{% extends 'public/base.html' %}
+{% block title %}Mon Profil - Transporteur{% endblock %}
 {% block content %}
-<h1>Profil Transporteur</h1>
-<p>Ce template doit être complété selon les besoins fonctionnels.</p>
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Transporteur -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Commandes disponibles
+                    </a>
+                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                    </a>
+                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-truck"></i> Mes véhicules
+                    </a>
+                    <a href="{% url 'transporteur_itineraire' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-route"></i> Itinéraire
+                    </a>
+                    <a href="{% url 'transporteur_profil' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-user-cog"></i> Mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Mon Profil</h1>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <!-- Informations personnelles -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-user-edit"></i> Informations personnelles</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">Nom</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">Téléphone</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}" placeholder="+33 6 12 34 56 78">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">Nom d'utilisateur</label>
+                                    <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                                    <small class="text-muted">Le nom d'utilisateur ne peut pas être modifié</small>
+                                </div>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="fas fa-save"></i> Sauvegarder les modifications
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistiques et informations -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations du compte</h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <td><strong>Rôle:</strong></td>
+                                    <td><span class="badge bg-warning text-dark">{{ user.get_role_display }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Membre depuis:</strong></td>
+                                    <td>{{ user.created_at|date:"F Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Statut:</strong></td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Changement de mot de passe -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-key"></i> Sécurité</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted small">Pour votre sécurité, changez régulièrement votre mot de passe.</p>
+                            <button class="btn btn-outline-warning btn-sm" onclick="changePassword()">
+                                <i class="fas fa-lock"></i> Changer le mot de passe
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal changement de mot de passe -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Changer le mot de passe</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="passwordForm">
+                    <div class="mb-3">
+                        <label class="form-label">Mot de passe actuel</label>
+                        <input type="password" class="form-control" id="currentPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="newPassword" required>
+                        <small class="text-muted">Minimum 8 caractères</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirmer le nouveau mot de passe</label>
+                        <input type="password" class="form-control" id="confirmPassword" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="submitPasswordChange()">
+                    <i class="fas fa-key"></i> Changer le mot de passe
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+<script>
+function changePassword() {
+    const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+    modal.show();
+}
+
+function submitPasswordChange() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword.length < 8) {
+        alert('Le nouveau mot de passe doit contenir au moins 8 caractères');
+        return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+        alert('Les mots de passe ne correspondent pas');
+        return;
+    }
+    
+    // Appel API pour changer le mot de passe
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('/transporteur/change-password/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            current_password: currentPassword,
+            new_password: newPassword
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Mot de passe changé avec succès !');
+            bootstrap.Modal.getInstance(document.getElementById('passwordModal')).hide();
+            document.getElementById('passwordForm').reset();
+        } else {
+            alert(data.message || 'Erreur lors du changement de mot de passe');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors du changement de mot de passe: ' + error.message);
+    });
+}
+</script>
 {% endblock %}

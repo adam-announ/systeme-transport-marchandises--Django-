@@ -114,8 +114,6 @@
                                     <small class="text-muted">Véhicule utilisé</small>
                                     <p class="mb-1">
                                         <i class="fas fa-truck text-info"></i> {{ livraison.vehicule.immatriculation }} 
-                                        <span class="badge bg-light text-dark">{{ livraison.vehicule.get_type_vehicule_display }}
-                                         <i class="fas fa-truck text-info"></i> {{ livraison.vehicule.immatriculation }} 
                                         <span class="badge bg-light text-dark">{{ livraison.vehicule.get_type_vehicule_display }}</span>
                                     </p>
                                 </div>
@@ -192,9 +190,9 @@
                                         Acceptée {{ livraison.commande.date_creation|timesince }} ago
                                     </small>
                                     <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-info" onclick="showLivraisonDetails({{ livraison.id }})">
+                                        <a href="{% url 'transporteur_livraison_details' livraison.id %}" class="btn btn-sm btn-outline-info">
                                             <i class="fas fa-eye"></i> Détails
-                                        </button>
+                                        </a>
                                         {% if livraison.statut != 'livree' %}
                                         <button class="btn btn-sm btn-outline-primary" onclick="updateLivraisonStatus({{ livraison.id }})">
                                             <i class="fas fa-edit"></i> Statut
@@ -260,6 +258,7 @@
     </div>
 </div>
 
+{% csrf_token %}
 <!-- Modal de mise à jour du statut -->
 <div class="modal fade" id="statusModal" tabindex="-1">
     <div class="modal-dialog">
@@ -331,10 +330,7 @@ function refreshLivraisons() {
     location.reload();
 }
 
-function showLivraisonDetails(livraisonId) {
-    // Rediriger vers la page de détails ou ouvrir un modal avec plus d'infos
-    window.open(`/transporteur/livraisons/${livraisonId}/details/`, '_blank');
-}
+
 
 function updateLivraisonStatus(livraisonId) {
     currentLivraisonId = livraisonId;

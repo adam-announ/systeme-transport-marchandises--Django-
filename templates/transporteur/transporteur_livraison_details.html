@@ -1,0 +1,200 @@
+{% extends 'public/base.html' %}
+{% block title %}Détails Livraison #{{ livraison.id }} - Transporteur{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Transporteur -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-truck"></i> Panel Transporteur</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'transporteur_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'transporteur_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Commandes disponibles
+                    </a>
+                    <a href="{% url 'transporteur_livraisons' %}" class="list-group-item list-group-item-action active">
+                        <i class="fas fa-shipping-fast"></i> Mes livraisons
+                    </a>
+                    <a href="{% url 'transporteur_vehicules' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-truck"></i> Mes véhicules
+                    </a>
+                    <a href="{% url 'transporteur_profil' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-user-cog"></i> Mon profil
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3">Détails de la Livraison #{{ livraison.id }}</h1>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{% url 'transporteur_dashboard' %}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'transporteur_livraisons' %}">Livraisons</a></li>
+                            <li class="breadcrumb-item active">Livraison #{{ livraison.id }}</li>
+                        </ol>
+                    </nav>
+                </div>
+                <div>
+                    <a href="{% url 'transporteur_livraisons' %}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Informations de la commande -->
+                <div class="col-lg-8 mb-4">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-box"></i> Informations de la Commande #{{ commande.id }}</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Trajet</h6>
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fas fa-map-marker-alt text-success me-2"></i>
+                                            <strong>Origine:</strong> {{ commande.origine }}
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                            <strong>Destination:</strong> {{ commande.destination }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Détails</h6>
+                                    <p><strong>Poids:</strong> {{ commande.poids }} kg</p>
+                                    <p><strong>Priorité:</strong> 
+                                        <span class="badge bg-{% if commande.priorite == 'urgente' %}danger{% elif commande.priorite == 'haute' %}warning{% else %}secondary{% endif %}">
+                                            {{ commande.get_priorite_display }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="text-muted">Description de la marchandise</h6>
+                                    <p class="bg-light p-3 rounded">{{ commande.description_marchandise }}</p>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Client</h6>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user-circle fa-2x text-primary me-3"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ commande.client.get_full_name }}</div>
+                                            <small class="text-muted">{{ commande.client.email }}</small><br>
+                                            <small class="text-muted">{{ commande.client.phone }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Dates</h6>
+                                    <p><strong>Créée le:</strong> {{ commande.date_creation|date:"d/m/Y H:i" }}</p>
+                                    <p><strong>Livraison prévue:</strong> {{ commande.date_livraison_prevue|date:"d/m/Y H:i" }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statut et actions -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card shadow mb-3">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-info-circle"></i> Statut de la Livraison</h6>
+                        </div>
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <span class="badge bg-{% if livraison.statut == 'livree' %}success{% elif livraison.statut == 'en_cours' %}warning{% elif livraison.statut == 'incident' %}danger{% else %}secondary{% endif %} fs-6 p-3">
+                                    {{ livraison.get_statut_display }}
+                                </span>
+                            </div>
+                            
+                            {% if livraison.date_debut %}
+                            <p><strong>Débutée le:</strong><br>{{ livraison.date_debut|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            
+                            {% if livraison.date_fin %}
+                            <p><strong>Terminée le:</strong><br>{{ livraison.date_fin|date:"d/m/Y H:i" }}</p>
+                            {% endif %}
+                            
+                            {% if livraison.statut == 'en_attente' %}
+                            <button class="btn btn-success btn-sm" onclick="demarrerLivraison()">
+                                <i class="fas fa-play"></i> Démarrer la livraison
+                            </button>
+                            {% elif livraison.statut == 'en_cours' %}
+                            <button class="btn btn-primary btn-sm" onclick="terminerLivraison()">
+                                <i class="fas fa-check"></i> Marquer comme livrée
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Véhicule utilisé -->
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-truck"></i> Véhicule</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-truck fa-2x text-warning me-3"></i>
+                                <div>
+                                    <div class="fw-bold">{{ livraison.vehicule.immatriculation }}</div>
+                                    <small class="text-muted">{{ livraison.vehicule.get_type_vehicule_display }}</small><br>
+                                    <small class="text-muted">Capacité: {{ livraison.vehicule.capacite_max }} kg</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes de livraison -->
+            {% if livraison.notes_livraison %}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card shadow">
+                        <div class="card-header">
+                            <h6 class="mb-0"><i class="fas fa-sticky-note"></i> Notes de Livraison</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">{{ livraison.notes_livraison }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function demarrerLivraison() {
+    if (confirm('Êtes-vous sûr de vouloir démarrer cette livraison ?')) {
+        // Appel AJAX pour démarrer la livraison
+        alert('Fonctionnalité à implémenter');
+    }
+}
+
+function terminerLivraison() {
+    if (confirm('Êtes-vous sûr que cette livraison est terminée ?')) {
+        // Appel AJAX pour terminer la livraison
+        alert('Fonctionnalité à implémenter');
+    }
+}
+</script>
+{% endblock %}

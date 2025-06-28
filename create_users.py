@@ -7,7 +7,7 @@ sys.path.append('c:\\Users\\HP\\Desktop\\transport_system')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'transport_system.settings')
 django.setup()
 
-from utilisateurs.models import User
+from utilisateurs.models import User, Commande
 
 # Supprimer tous les utilisateurs existants
 User.objects.all().delete()
@@ -187,9 +187,74 @@ print("Username: client3 | Password: client123 | Email: client3@transport.com")
 print("Username: client4 | Password: client123 | Email: client4@transport.com")
 print("Username: client5 | Password: client123 | Email: client5@transport.com")
 
+# Créer des commandes de test
+from datetime import datetime, timedelta
+from decimal import Decimal
+
+print("\n[INFO] Création de commandes de test...")
+
+try:
+
+# Commandes pour les clients
+commandes_test = [
+    {
+        'client': User.objects.get(username='client1'),
+        'origine': 'Casablanca Centre',
+        'destination': 'Rabat Agdal',
+        'description_marchandise': 'Documents administratifs',
+        'poids': Decimal('2.5'),
+        'date_livraison_prevue': datetime.now() + timedelta(days=1),
+        'statut': 'en_attente',
+        'priorite': 'normale'
+    },
+    {
+        'client': User.objects.get(username='client2'),
+        'origine': 'Marrakech Gueliz',
+        'destination': 'Casablanca Maarif',
+        'description_marchandise': 'Équipements informatiques',
+        'poids': Decimal('15.0'),
+        'date_livraison_prevue': datetime.now() + timedelta(days=2),
+        'statut': 'en_attente',
+        'priorite': 'haute'
+    },
+    {
+        'client': User.objects.get(username='client3'),
+        'origine': 'Fès Médina',
+        'destination': 'Tanger Ville',
+        'description_marchandise': 'Produits artisanaux',
+        'poids': Decimal('8.3'),
+        'date_livraison_prevue': datetime.now() + timedelta(hours=12),
+        'statut': 'affectee',
+        'priorite': 'urgente',
+        'transporteur': User.objects.get(username='transporteur1')
+    }
+]
+
+    for cmd_data in commandes_test:
+        commande = Commande.objects.create(**cmd_data)
+        print(f"[OK] Commande #{commande.id} créée: {commande.origine} → {commande.destination}")
+    
+    print(f"\n[SUCCESS] {len(commandes_test)} commandes de test créées!")
+    
+except Exception as e:
+    print(f"[ERROR] Erreur lors de la création des commandes: {str(e)}")
+    print("[INFO] Les utilisateurs ont été créés avec succès, mais pas les commandes de test.")
+
 print("\n" + "="*60)
-print("[WEB] ACCES AU SYSTEME:")
+print("[WEB] ACCÈS AU SYSTÈME:")
 print("URL: http://127.0.0.1:8000/")
+print("API: http://127.0.0.1:8000/api/")
 print("Connexion: http://127.0.0.1:8000/login/")
 print("Inscription: http://127.0.0.1:8000/register/")
+print("="*60)
+
+print("\n[AMÉLIORATIONS APPORTÉES:]")
+print("✅ API REST avec Django REST Framework")
+print("✅ Interface utilisateur moderne et responsive")
+print("✅ Composants JavaScript réutilisables")
+print("✅ Service d'optimisation de tournées")
+print("✅ Notifications en temps réel")
+print("✅ Dashboard client amélioré")
+print("✅ Gestion avancée des statuts")
+print("✅ Support CORS pour applications frontend")
 print("="*60)

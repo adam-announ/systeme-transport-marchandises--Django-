@@ -76,7 +76,7 @@
             <!-- Messages -->
             {% if messages %}
                 {% for message in messages %}
-                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% else %}alert-info{% endif %} alert-dismissible fade show">
                         {{ message }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -243,6 +243,7 @@
     </div>
 </div>
 
+{% csrf_token %}
 <script>
 let currentCommandeId = null;
 
@@ -253,27 +254,51 @@ function annulerCommande(commandeId) {
 }
 
 function confirmAnnulation() {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
     fetch(`/client/commandes/${currentCommandeId}/annuler/`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'X-CSRFToken': csrfToken,
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({})
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            location.reload();
+            // Fermer le modal
+            bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+            
+            // Afficher un message de succès
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                ${data.message || 'Commande annulée avec succès'}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // Insérer l'alerte au début du contenu principal
+            const mainContent = document.querySelector('.col-md-9.col-lg-10');
+            mainContent.insertBefore(alertDiv, mainContent.children[1]);
+            
+            // Recharger la page après 2 secondes
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
         } else {
             alert(data.message || 'Erreur lors de l\'annulation');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        alert('Erreur lors de l\'annulation de la commande');
+        alert('Erreur lors de l\'annulation de la commande: ' + error.message);
     });
-    
-    bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
 }
 </script>
 

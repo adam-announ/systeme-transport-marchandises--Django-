@@ -197,6 +197,7 @@
     </div>
 </div>
 
+{% csrf_token %}
 <!-- Modal d'édition de véhicule -->
 <div class="modal fade" id="editVehiculeModal" tabindex="-1">
     <div class="modal-dialog">
@@ -293,7 +294,7 @@ function saveVehiculeChanges() {
         disponible: document.getElementById('editDisponible').checked
     };
     
-    fetch(`/api/vehicules/${currentVehiculeId}/update/`, {
+    fetch(`/transporteur/vehicules/${currentVehiculeId}/update/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
@@ -318,7 +319,11 @@ function saveVehiculeChanges() {
 }
 
 function showVehiculeDetails(vehiculeId) {
-    fetch(`/api/vehicules/${vehiculeId}/details/`)
+    fetch(`/transporteur/vehicules/${vehiculeId}/details/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
         .then(response => response.text())
         .then(html => {
             document.getElementById('vehiculeDetailsContent').innerHTML = html;
@@ -332,12 +337,15 @@ function showVehiculeDetails(vehiculeId) {
 }
 
 function toggleDisponibilite(vehiculeId) {
-    fetch(`/api/vehicules/${vehiculeId}/toggle/`, {
+    fetch(`/transporteur/vehicules/${vehiculeId}/update/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+            toggle_disponibilite: true
+        })
     })
     .then(response => response.json())
     .then(data => {
