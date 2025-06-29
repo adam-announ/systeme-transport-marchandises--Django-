@@ -1,0 +1,703 @@
+{% extends 'public/base.html' %}
+{% load static %}
+
+{% block title %}Nouvelle Tournée - Planificateur{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'css/modern.css' %}" rel="stylesheet">
+<style>
+    .wizard-container {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 20px;
+        padding: 2rem;
+        color: white;
+        margin-bottom: 2rem;
+    }
+    
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    
+    .step {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 1rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .step.active {
+        background: white;
+        color: #667eea;
+        transform: scale(1.1);
+    }
+    
+    .step.completed {
+        background: #10b981;
+        color: white;
+    }
+    
+    .commande-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .commande-card:hover {
+        border-color: #4f46e5;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(79, 70, 229, 0.1);
+    }
+    
+    .commande-card.selected {
+        border-color: #4f46e5;
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+    }
+    
+    .vehicule-card {
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 1rem;
+    }
+    
+    .vehicule-card:hover {
+        border-color: #4f46e5;
+        transform: translateY(-2px);
+    }
+    
+    .vehicule-card.selected {
+        border-color: #4f46e5;
+        background: rgba(79, 70, 229, 0.05);
+    }
+    
+    .ai-assistant {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .optimization-panel {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Nouvelle Tournée Intelligente</h1>
+            <p class="text-muted">Assistant de création avec IA intégrée</p>
+        </div>
+        <div>
+            <button class="btn btn-outline-secondary me-2" onclick="resetWizard()">
+                <i class="fas fa-redo me-1"></i>Recommencer
+            </button>
+            <a href="{% url 'planificateur_tournees' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Assistant IA -->
+    <div class="ai-assistant">
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <i class="fas fa-robot fa-2x"></i>
+                </div>
+                <div>
+                    <h6 class="mb-1">Assistant IA de Planification</h6>
+                    <p class="mb-0 opacity-75" id="ai-message">Analysons vos commandes pour créer la tournée optimale</p>
+                </div>
+            </div>
+            <div>
+                <button class="btn btn-light btn-sm" onclick="autoOptimize()">
+                    <i class="fas fa-magic me-1"></i>Optimisation Auto
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Indicateur d'étapes -->
+    <div class="wizard-container">
+        <div class="step-indicator">
+            <div class="step active" id="step-1">1</div>
+            <div class="step" id="step-2">2</div>
+            <div class="step" id="step-3">3</div>
+            <div class="step" id="step-4">4</div>
+        </div>
+        <div class="text-center">
+            <h5 id="step-title">Sélection des Commandes</h5>
+            <p id="step-description">Choisissez les commandes à inclure dans cette tournée</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Panneau principal -->
+        <div class="col-lg-8">
+            <!-- Étape 1: Commandes -->
+            <div id="etape-1" class="optimization-panel">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6>Commandes Disponibles ({{ commandes_disponibles.count }})</h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary me-2" onclick="selectUrgent()">
+                            <i class="fas fa-bolt me-1"></i>Urgentes
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="selectOptimal()">
+                            <i class="fas fa-magic me-1"></i>Sélection IA
+                        </button>
+                    </div>
+                </div>
+                
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for commande in commandes_disponibles %}
+                    <div class="commande-card" 
+                         data-id="{{ commande.id }}"
+                         data-poids="{{ commande.poids }}"
+                         data-priorite="{{ commande.priorite }}"
+                         onclick="toggleCommande(this)">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">#{{ commande.id }} - {{ commande.client.get_full_name }}</h6>
+                                <small class="text-muted">{{ commande.date_creation|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ commande.poids }} kg</span>
+                                {% if commande.priorite == 'urgente' %}
+                                <span class="badge bg-danger ms-1">Urgent</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row text-sm">
+                            <div class="col-6">
+                                <div class="text-muted">De:</div>
+                                <div>{{ commande.origine|truncatechars:25 }}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-muted">Vers:</div>
+                                <div>{{ commande.destination|truncatechars:25 }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Aucune commande disponible</h5>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Étape 2: Véhicules -->
+            <div id="etape-2" class="optimization-panel" style="display: none;">
+                <h6 class="mb-3">Véhicules Disponibles</h6>
+                {% for vehicule in vehicules %}
+                <div class="vehicule-card" 
+                     data-id="{{ vehicule.id }}"
+                     data-capacite="{{ vehicule.capacite_max }}"
+                     onclick="selectVehicule(this)">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">{{ vehicule.immatriculation }}</h6>
+                            <div class="text-muted">{{ vehicule.get_type_vehicule_display }}</div>
+                            <div class="fw-semibold text-primary">{{ vehicule.transporteur.get_full_name }}</div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold">{{ vehicule.capacite_max }} kg</div>
+                            <div class="text-success small">
+                                <i class="fas fa-check-circle me-1"></i>Disponible
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun véhicule disponible</h5>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Étape 3: Optimisation -->
+            <div id="etape-3" class="optimization-panel" style="display: none;">
+                <h6 class="mb-3">Paramètres d'Optimisation</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Objectif principal</label>
+                            <select class="form-select" id="optimization-objective">
+                                <option value="distance">Minimiser la distance</option>
+                                <option value="time">Minimiser le temps</option>
+                                <option value="balanced">Optimisation équilibrée</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label">Algorithme</label>
+                            <select class="form-select" id="optimization-algorithm">
+                                <option value="genetic">Algorithme génétique</option>
+                                <option value="nearest">Plus proche voisin</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button class="btn btn-primary" onclick="runOptimization()">
+                        <i class="fas fa-magic me-1"></i>Lancer l'Optimisation
+                    </button>
+                </div>
+                
+                <div id="optimization-results" class="mt-3" style="display: none;">
+                    <div class="alert alert-success">
+                        <h6><i class="fas fa-check-circle me-2"></i>Optimisation Terminée</h6>
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <h4 class="text-success" id="distance-saved">-25%</h4>
+                                <small>Distance économisée</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h4 class="text-info" id="time-saved">-18%</h4>
+                                <small>Temps économisé</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <h4 class="text-warning" id="fuel-saved">-22%</h4>
+                                <small>Carburant économisé</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Étape 4: Validation -->
+            <div id="etape-4" class="optimization-panel" style="display: none;">
+                <h6 class="mb-3">Finalisation de la Tournée</h6>
+                <form method="post" id="tournee-form">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Nom de la tournée *</label>
+                                <input type="text" class="form-control" name="nom" id="nom-tournee" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Date de début *</label>
+                                <input type="datetime-local" class="form-control" name="date_debut" id="date-debut" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notes</label>
+                        <textarea class="form-control" name="notes" rows="3"></textarea>
+                    </div>
+                    <input type="hidden" name="commandes" id="commandes-input">
+                    <input type="hidden" name="vehicule" id="vehicule-input">
+                    <input type="hidden" name="optimiser" value="true">
+                </form>
+            </div>
+        </div>
+
+        <!-- Panneau latéral -->
+        <div class="col-lg-4">
+            <!-- Résumé -->
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-3">Résumé de la Tournée</h6>
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Commandes sélectionnées:</span>
+                            <strong id="summary-count">0</strong>
+                        </div>
+                    </div>
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Poids total:</span>
+                            <strong id="summary-weight">0 kg</strong>
+                        </div>
+                    </div>
+                    <div class="border-bottom pb-2 mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span>Distance estimée:</span>
+                            <strong id="summary-distance">-- km</strong>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="d-flex justify-content-between">
+                            <span>Durée estimée:</span>
+                            <strong id="summary-duration">--</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggestions IA -->
+            <div class="card border-0 shadow-sm mb-3" id="ai-suggestions" style="display: none;">
+                <div class="card-body">
+                    <h6 class="fw-bold text-primary mb-3">
+                        <i class="fas fa-lightbulb me-2"></i>Suggestions IA
+                    </h6>
+                    <div id="suggestions-list"></div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-secondary" onclick="previousStep()" id="btn-previous" style="display: none;">
+                    <i class="fas fa-arrow-left me-1"></i>Précédent
+                </button>
+                <button class="btn btn-primary" onclick="nextStep()" id="btn-next" disabled>
+                    <i class="fas fa-arrow-right me-1"></i>Suivant
+                </button>
+                <button class="btn btn-success" onclick="createTournee()" id="btn-create" style="display: none;">
+                    <i class="fas fa-check me-1"></i>Créer la Tournée
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentStep = 1;
+let selectedCommandes = [];
+let selectedVehicule = null;
+let optimizationResults = null;
+
+// Navigation
+function nextStep() {
+    if (!validateStep()) return;
+    
+    if (currentStep < 4) {
+        document.getElementById(`etape-${currentStep}`).style.display = 'none';
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        document.getElementById(`step-${currentStep}`).classList.add('completed');
+        
+        currentStep++;
+        
+        document.getElementById(`etape-${currentStep}`).style.display = 'block';
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        
+        updateStepInfo();
+        updateNavigation();
+        updateAIMessage();
+    }
+}
+
+function previousStep() {
+    if (currentStep > 1) {
+        document.getElementById(`etape-${currentStep}`).style.display = 'none';
+        document.getElementById(`step-${currentStep}`).classList.remove('active');
+        
+        currentStep--;
+        
+        document.getElementById(`etape-${currentStep}`).style.display = 'block';
+        document.getElementById(`step-${currentStep}`).classList.add('active');
+        document.getElementById(`step-${currentStep}`).classList.remove('completed');
+        
+        updateStepInfo();
+        updateNavigation();
+        updateAIMessage();
+    }
+}
+
+function validateStep() {
+    switch(currentStep) {
+        case 1: return selectedCommandes.length > 0;
+        case 2: return selectedVehicule !== null;
+        case 3: return optimizationResults !== null;
+        default: return true;
+    }
+}
+
+function updateStepInfo() {
+    const titles = {
+        1: 'Sélection des Commandes',
+        2: 'Choix du Véhicule',
+        3: 'Optimisation de l\'Itinéraire',
+        4: 'Validation et Création'
+    };
+    
+    const descriptions = {
+        1: 'Choisissez les commandes à inclure dans cette tournée',
+        2: 'Sélectionnez le véhicule adapté pour cette tournée',
+        3: 'Optimisez automatiquement votre itinéraire',
+        4: 'Vérifiez les détails et créez la tournée'
+    };
+    
+    document.getElementById('step-title').textContent = titles[currentStep];
+    document.getElementById('step-description').textContent = descriptions[currentStep];
+}
+
+function updateNavigation() {
+    const btnPrevious = document.getElementById('btn-previous');
+    const btnNext = document.getElementById('btn-next');
+    const btnCreate = document.getElementById('btn-create');
+    
+    btnPrevious.style.display = currentStep > 1 ? 'block' : 'none';
+    
+    if (currentStep === 4) {
+        btnNext.style.display = 'none';
+        btnCreate.style.display = 'block';
+    } else {
+        btnNext.style.display = 'block';
+        btnCreate.style.display = 'none';
+        btnNext.disabled = !validateStep();
+    }
+}
+
+function updateAIMessage() {
+    const messages = {
+        1: 'Analysons vos commandes pour créer la tournée optimale',
+        2: 'Je recommande un véhicule avec une capacité d\'au moins ' + getTotalWeight() + ' kg',
+        3: 'L\'optimisation peut réduire vos coûts de 15-30%',
+        4: 'Votre tournée intelligente est prête à être créée!'
+    };
+    
+    document.getElementById('ai-message').textContent = messages[currentStep];
+}
+
+// Gestion des commandes
+function toggleCommande(element) {
+    const commandeId = element.dataset.id;
+    const index = selectedCommandes.findIndex(c => c.id === commandeId);
+    
+    if (index === -1) {
+        selectedCommandes.push({
+            id: commandeId,
+            element: element,
+            poids: parseFloat(element.dataset.poids),
+            priorite: element.dataset.priorite
+        });
+        element.classList.add('selected');
+    } else {
+        selectedCommandes.splice(index, 1);
+        element.classList.remove('selected');
+    }
+    
+    updateSummary();
+    generateAISuggestions();
+    updateNavigation();
+}
+
+function selectUrgent() {
+    document.querySelectorAll('.commande-card[data-priorite="urgente"]').forEach(card => {
+        if (!card.classList.contains('selected')) {
+            toggleCommande(card);
+        }
+    });
+}
+
+function selectOptimal() {
+    // Sélection intelligente basée sur l'IA
+    const cards = Array.from(document.querySelectorAll('.commande-card'));
+    const optimal = cards
+        .filter(card => !card.classList.contains('selected'))
+        .sort((a, b) => {
+            const priorityA = a.dataset.priorite === 'urgente' ? 3 : a.dataset.priorite === 'haute' ? 2 : 1;
+            const priorityB = b.dataset.priorite === 'urgente' ? 3 : b.dataset.priorite === 'haute' ? 2 : 1;
+            return priorityB - priorityA;
+        })
+        .slice(0, 5);
+    
+    optimal.forEach(card => toggleCommande(card));
+}
+
+function selectVehicule(element) {
+    document.querySelectorAll('.vehicule-card').forEach(card => card.classList.remove('selected'));
+    element.classList.add('selected');
+    
+    selectedVehicule = {
+        id: element.dataset.id,
+        capacite: parseFloat(element.dataset.capacite),
+        element: element
+    };
+    
+    updateNavigation();
+}
+
+function runOptimization() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Optimisation...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        const distanceSaved = Math.random() * 30 + 15;
+        const timeSaved = Math.random() * 25 + 10;
+        const fuelSaved = Math.random() * 20 + 15;
+        
+        document.getElementById('distance-saved').textContent = '-' + distanceSaved.toFixed(0) + '%';
+        document.getElementById('time-saved').textContent = '-' + timeSaved.toFixed(0) + '%';
+        document.getElementById('fuel-saved').textContent = '-' + fuelSaved.toFixed(0) + '%';
+        
+        optimizationResults = { distanceSaved, timeSaved, fuelSaved };
+        
+        document.getElementById('optimization-results').style.display = 'block';
+        button.innerHTML = originalText;
+        button.disabled = false;
+        
+        updateNavigation();
+        showAlert('success', 'Optimisation terminée avec succès!');
+    }, 2000);
+}
+
+function autoOptimize() {
+    if (selectedCommandes.length === 0) {
+        selectOptimal();
+    }
+    
+    if (currentStep === 1 && selectedCommandes.length > 0) {
+        nextStep();
+        
+        setTimeout(() => {
+            const bestVehicle = findBestVehicle();
+            if (bestVehicle) {
+                selectVehicule(bestVehicle);
+                nextStep();
+                
+                setTimeout(() => {
+                    runOptimization();
+                }, 500);
+            }
+        }, 500);
+    }
+}
+
+function findBestVehicle() {
+    const totalWeight = getTotalWeight();
+    const vehicles = Array.from(document.querySelectorAll('.vehicule-card'));
+    
+    return vehicles.find(v => parseFloat(v.dataset.capacite) >= totalWeight * 1.1);
+}
+
+function getTotalWeight() {
+    return selectedCommandes.reduce((sum, c) => sum + c.poids, 0);
+}
+
+function updateSummary() {
+    const totalPoids = getTotalWeight();
+    const estimatedDistance = selectedCommandes.length * 25 + 50;
+    const estimatedDuration = Math.round(estimatedDistance / 40 * 60);
+    
+    document.getElementById('summary-count').textContent = selectedCommandes.length;
+    document.getElementById('summary-weight').textContent = totalPoids.toFixed(1) + ' kg';
+    document.getElementById('summary-distance').textContent = estimatedDistance + ' km';
+    document.getElementById('summary-duration').textContent = Math.floor(estimatedDuration / 60) + 'h' + (estimatedDuration % 60).toString().padStart(2, '0');
+}
+
+function generateAISuggestions() {
+    if (selectedCommandes.length === 0) return;
+    
+    const suggestions = [];
+    const totalPoids = getTotalWeight();
+    
+    if (totalPoids > 1500) {
+        suggestions.push({
+            type: 'warning',
+            message: 'Poids élevé détecté. Considérez diviser en 2 tournées.'
+        });
+    }
+    
+    if (selectedCommandes.length > 8) {
+        suggestions.push({
+            type: 'info',
+            message: 'Beaucoup de commandes. L\'optimisation sera bénéfique.'
+        });
+    }
+    
+    const urgentCount = selectedCommandes.filter(c => c.priorite === 'urgente').length;
+    if (urgentCount > 0) {
+        suggestions.push({
+            type: 'success',
+            message: `${urgentCount} commande(s) urgente(s). Planification prioritaire recommandée.`
+        });
+    }
+    
+    if (suggestions.length > 0) {
+        document.getElementById('ai-suggestions').style.display = 'block';
+        document.getElementById('suggestions-list').innerHTML = suggestions.map(s => `
+            <div class="alert alert-${s.type === 'warning' ? 'warning' : s.type === 'info' ? 'info' : 'success'} alert-sm mb-2">
+                <i class="fas fa-lightbulb me-2"></i>${s.message}
+            </div>
+        `).join('');
+    }
+}
+
+function createTournee() {
+    if (!validateStep()) return;
+    
+    // Préparer les données
+    const today = new Date();
+    today.setHours(8, 0, 0, 0);
+    document.getElementById('date-debut').value = today.toISOString().slice(0, 16);
+    document.getElementById('nom-tournee').value = `Tournée IA ${today.toLocaleDateString('fr-FR')}`;
+    document.getElementById('commandes-input').value = selectedCommandes.map(c => c.id).join(',');
+    document.getElementById('vehicule-input').value = selectedVehicule.id;
+    
+    // Soumettre le formulaire
+    document.getElementById('tournee-form').submit();
+}
+
+function resetWizard() {
+    if (confirm('Êtes-vous sûr de vouloir recommencer ?')) {
+        location.reload();
+    }
+}
+
+function showAlert(type, message) {
+    const alertTypes = {
+        'success': 'alert-success',
+        'error': 'alert-danger',
+        'info': 'alert-info',
+        'warning': 'alert-warning'
+    };
+    
+    const alert = document.createElement('div');
+    alert.className = `alert ${alertTypes[type]} alert-dismissible fade show position-fixed`;
+    alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alert.innerHTML = `
+        ${message}
+        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    updateStepInfo();
+    updateNavigation();
+    updateAIMessage();
+});
+</script>
+{% endblock %}

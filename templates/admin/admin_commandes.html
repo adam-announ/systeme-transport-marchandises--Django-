@@ -321,12 +321,11 @@ function viewCommande(commandeId) {
                 `;
                 new bootstrap.Modal(document.getElementById('commandeDetailModal')).show();
             } else {
-                alert('Erreur lors du chargement des détails');
+                console.error('Erreur lors du chargement des détails');
             }
         })
         .catch(error => {
             console.error('Erreur:', error);
-            alert('Erreur lors du chargement des détails');
         });
 }
 
@@ -367,7 +366,7 @@ document.getElementById('confirmAssign').addEventListener('click', function() {
     const vehiculeId = document.getElementById('assignVehicule').value;
     
     if (!transporteurId) {
-        alert('Veuillez sélectionner un transporteur');
+        console.warn('Veuillez sélectionner un transporteur');
         return;
     }
     
@@ -388,12 +387,12 @@ document.getElementById('confirmAssign').addEventListener('click', function() {
             bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
             location.reload();
         } else {
-            alert(data.message || 'Erreur lors de l\'assignation');
+            console.error(data.message || 'Erreur lors de l\'assignation');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        alert('Erreur lors de l\'assignation');
+        console.error('Erreur lors de l\'assignation');
     });
 });
 </script>

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -20,16 +20,21 @@ urlpatterns = [
     path('admin/users/create/', views.admin_create_user, name='admin_create_user'),
     path('admin/users/<int:user_id>/edit/', views.admin_edit_user, name='admin_edit_user'),
     path('admin/users/<int:user_id>/toggle/', views.admin_toggle_user, name='admin_toggle_user'),
+    path('admin/users/<int:user_id>/delete/', views.admin_delete_user, name='admin_delete_user'),
     path('admin/commandes/', views.admin_commandes, name='admin_commandes'),
     path('admin/reports/', views.admin_reports, name='admin_reports'),
+    path('admin/reports/export/', views.admin_reports_export, name='admin_reports_export'),
     path('admin/system-config/', views.admin_system_config, name='admin_system_config'),
     path('admin/notifications/', views.admin_notifications, name='admin_notifications'),
+    path('admin/profil/', views.admin_profil, name='admin_profil'),
     
     # Dashboard Planificateur
     path('planificateur/dashboard/', views.planificateur_dashboard, name='planificateur_dashboard'),
     path('planificateur/commandes/', views.planificateur_commandes, name='planificateur_commandes'),
     path('planificateur/tournees/', views.planificateur_tournees, name='planificateur_tournees'),
     path('planificateur/tournees/create/', views.planificateur_create_tournee, name='planificateur_create_tournee'),
+    path('planificateur/nouvelle-tournee/', views.nouvelle_tournee, name='nouvelle_tournee'),
+    path('planificateur/profil/', views.planificateur_profil, name='planificateur_profil'),
     
     # Dashboard Transporteur
     path('transporteur/dashboard/', views.transporteur_dashboard, name='transporteur_dashboard'),
@@ -71,4 +76,7 @@ urlpatterns = [
     path('api/transporteur/<int:transporteur_id>/vehicules/', views.get_vehicules_transporteur, name='get_vehicules_transporteur'),
     path('api/notifications/count/', views.get_notifications_count, name='get_notifications_count'),
     path('api/optimize-route/', views.optimize_route_api, name='optimize_route_api'),
+    
+    # API Planificateur spécialisées
+    path('', include('utilisateurs.urls_planificateur')),
 ]

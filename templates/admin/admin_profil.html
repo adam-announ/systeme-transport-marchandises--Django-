@@ -1,0 +1,147 @@
+{% extends 'public/base.html' %}
+{% block title %}Mon Profil - Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar Admin -->
+        <div class="col-md-3 col-lg-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-user-shield"></i> Panel Admin</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a href="{% url 'admin_dashboard' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="{% url 'admin_users' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-users"></i> Gérer utilisateurs
+                    </a>
+                    <a href="{% url 'admin_commandes' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-box"></i> Toutes les commandes
+                    </a>
+                    <a href="{% url 'admin_reports' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-chart-bar"></i> Rapports
+                    </a>
+                    <a href="{% url 'admin_system_config' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-cog"></i> Configuration
+                    </a>
+                    <a href="{% url 'admin_notifications' %}" class="list-group-item list-group-item-action">
+                        <i class="fas fa-bell"></i> Notifications
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Mon Profil</h1>
+                <a href="{% url 'admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-user-edit"></i> Informations personnelles</h5>
+                        </div>
+                        <div class="card-body">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="first_name" class="form-label">Prénom</label>
+                                        <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="last_name" class="form-label">Nom</label>
+                                        <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="username" class="form-label">Nom d'utilisateur</label>
+                                        <input type="text" class="form-control" id="username" value="{{ user.username }}" readonly>
+                                        <small class="text-muted">Le nom d'utilisateur ne peut pas être modifié</small>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="email" class="form-label">Email</label>
+                                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="phone" class="form-label">Téléphone</label>
+                                        <input type="tel" class="form-control" id="phone" name="phone" value="{{ user.phone }}">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="role" class="form-label">Rôle</label>
+                                        <input type="text" class="form-control" id="role" value="Administrateur" readonly>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Sauvegarder les modifications
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations du compte</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Date de création:</strong><br>
+                                <span class="text-muted">{{ user.created_at|date:"d/m/Y à H:i"|default:"N/A" }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Dernière modification:</strong><br>
+                                <span class="text-muted">{{ user.updated_at|date:"d/m/Y à H:i"|default:"N/A" }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Statut du compte:</strong><br>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Actif</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactif</span>
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <strong>ID utilisateur:</strong><br>
+                                <span class="text-muted">#{{ user.id }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Sécurité</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">Pour des raisons de sécurité, le changement de mot de passe doit être effectué via la configuration système.</p>
+                            <a href="{% url 'admin_system_config' %}" class="btn btn-outline-warning btn-sm">
+                                <i class="fas fa-cog"></i> Configuration système
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

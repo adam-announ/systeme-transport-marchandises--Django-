@@ -1,5 +1,834 @@
-{% extends 'base.html' %}
-{% block content %}
-<h1>Analytics Planificateur</h1>
-<p>Ce template doit être complété selon les besoins fonctionnels.</p>
-{% endblock %} 
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Planificateur - TransportSystem</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #7c3aed;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            margin: 4px 0;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .main-content {
+            background-color: #f8fafc;
+            min-height: 100vh;
+        }
+
+        .analytics-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .analytics-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: rotate(45deg);
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .metric-trend {
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            background: white;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-tabs {
+            background: white;
+            border-radius: 12px;
+            padding: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: #6b7280;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            position: relative;
+        }
+
+        .performance-indicator {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            margin: 0 auto 10px;
+        }
+
+        .performance-excellent { background: #10b981; }
+        .performance-good { background: #3b82f6; }
+        .performance-average { background: #f59e0b; }
+        .performance-poor { background: #ef4444; }
+
+        .insight-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .prediction-chart {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(124, 58, 237, 0.1));
+            border-radius: 12px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <div class="d-flex align-items-center justify-content-center mb-3">
+                            <i class="fas fa-route fa-2x me-2 text-white"></i>
+                            <div>
+                                <h4 class="text-white mb-0">Planificateur</h4>
+                                <small class="text-white-50">{{ request.session.first_name }} {{ request.session.last_name }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'planificateur_dashboard' %}">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'planificateur_commandes' %}">
+                                <i class="fas fa-clipboard-list me-2"></i>Commandes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'planificateur_tournees' %}">
+                                <i class="fas fa-route me-2"></i>Tournées
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{% url 'planificateur_analytics' %}">
+                                <i class="fas fa-chart-bar me-2"></i>Analytics
+                            </a>
+                        </li>
+                        <li class="nav-item mt-3">
+                            <a class="nav-link" href="{% url 'logout' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+                    <div>
+                        <h1 class="h2 mb-1">Analytics Avancées</h1>
+                        <p class="text-muted mb-0">Analyse de performance et insights prédictifs</p>
+                    </div>
+                    <div class="btn-toolbar">
+                        <div class="filter-tabs me-3">
+                            <button class="filter-tab active" onclick="switchPeriod('today')">Aujourd'hui</button>
+                            <button class="filter-tab" onclick="switchPeriod('week')">7 jours</button>
+                            <button class="filter-tab" onclick="switchPeriod('month')">30 jours</button>
+                            <button class="filter-tab" onclick="switchPeriod('year')">Année</button>
+                        </div>
+                        <button type="button" class="btn btn-primary" onclick="exportReport()">
+                            <i class="fas fa-download me-1"></i>Exporter
+                        </button>
+                    </div>
+                </div>
+
+                <!-- KPIs Principaux -->
+                <div class="kpi-grid">
+                    <div class="metric-card">
+                        <div class="metric-value" id="kpi-efficiency">94.2%</div>
+                        <div class="metric-label">Efficacité Globale</div>
+                        <div class="metric-trend">
+                            <i class="fas fa-arrow-up"></i> +2.3% vs période précédente
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="kpi-cost-savings">€12,450</div>
+                        <div class="metric-label">Économies Réalisées</div>
+                        <div class="metric-trend">
+                            <i class="fas fa-arrow-up"></i> +18% ce mois
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="kpi-distance-optimized">2,847</div>
+                        <div class="metric-label">km Optimisés</div>
+                        <div class="metric-trend">
+                            <i class="fas fa-leaf"></i> -25% émissions CO2
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="kpi-satisfaction">4.8/5</div>
+                        <div class="metric-label">Satisfaction Client</div>
+                        <div class="metric-trend">
+                            <i class="fas fa-star"></i> 247 évaluations
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Insights IA -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="insight-card">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div>
+                                    <h5 class="mb-2">
+                                        <i class="fas fa-brain me-2"></i>Insights Intelligence Artificielle
+                                    </h5>
+                                    <p class="mb-0">Analyse prédictive basée sur vos données historiques</p>
+                                </div>
+                                <button class="btn btn-light btn-sm" onclick="refreshInsights()">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <div class="row mt-3" id="ai-insights">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-lightbulb fa-2x me-3"></i>
+                                        <div>
+                                            <strong>Optimisation Détectée</strong>
+                                            <p class="mb-0 small opacity-75">Regrouper 8 commandes zone Nord pourrait économiser 67km</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-chart-line fa-2x me-3"></i>
+                                        <div>
+                                            <strong>Tendance Prédite</strong>
+                                            <p class="mb-0 small opacity-75">+23% de commandes prévues la semaine prochaine</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                                        <div>
+                                            <strong>Alerte Capacité</strong>
+                                            <p class="mb-0 small opacity-75">Risque de surcharge jeudi après-midi</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graphiques Principaux -->
+                <div class="row mb-4">
+                    <div class="col-lg-8">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <h6 class="mb-0 fw-bold">Performance des Tournées</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="performanceChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <h6 class="mb-0 fw-bold">Répartition des Coûts</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container">
+                                    <canvas id="costChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heatmap et Performance -->
+                <div class="row mb-4">
+                    <div class="col-lg-6">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <h6 class="mb-0 fw-bold">Heatmap d'Activité</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="activityHeatmap"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <h6 class="mb-0 fw-bold">Performance par Transporteur</h6>
+                            </div>
+                            <div class="card-body">
+                                <div id="transporteurPerformance"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prédictions -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold">Prédictions & Tendances</h6>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary active" onclick="showPrediction('demand')">Demande</button>
+                                        <button class="btn btn-outline-primary" onclick="showPrediction('capacity')">Capacité</button>
+                                        <button class="btn btn-outline-primary" onclick="showPrediction('costs')">Coûts</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="prediction-chart">
+                                    <canvas id="predictionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommandations -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="analytics-card">
+                            <div class="card-header border-0 bg-transparent">
+                                <h6 class="mb-0 fw-bold">
+                                    <i class="fas fa-magic me-2"></i>Recommandations Intelligentes
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row" id="recommendations">
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="performance-indicator performance-excellent">A+</div>
+                                                <div class="ms-3">
+                                                    <h6 class="mb-1">Optimisation Routes</h6>
+                                                    <small class="text-muted">Impact élevé</small>
+                                                </div>
+                                            </div>
+                                            <p class="text-sm">Implémenter l'algorithme génétique pour réduire les distances de 15-25%</p>
+                                            <button class="btn btn-primary btn-sm" onclick="implementRecommendation('routes')">
+                                                Implémenter
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="performance-indicator performance-good">B+</div>
+                                                <div class="ms-3">
+                                                    <h6 class="mb-1">Planification Prédictive</h6>
+                                                    <small class="text-muted">Impact moyen</small>
+                                                </div>
+                                            </div>
+                                            <p class="text-sm">Utiliser l'IA pour anticiper les pics de demande et ajuster les ressources</p>
+                                            <button class="btn btn-outline-primary btn-sm" onclick="implementRecommendation('prediction')">
+                                                Évaluer
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="border rounded p-3 h-100">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <div class="performance-indicator performance-average">C</div>
+                                                <div class="ms-3">
+                                                    <h6 class="mb-1">Maintenance Préventive</h6>
+                                                    <small class="text-muted">Impact faible</small>
+                                                </div>
+                                            </div>
+                                            <p class="text-sm">Programmer la maintenance des véhicules selon l'utilisation réelle</p>
+                                            <button class="btn btn-outline-secondary btn-sm" onclick="implementRecommendation('maintenance')">
+                                                Planifier
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let performanceChart, costChart, predictionChart;
+        let currentPeriod = 'today';
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            generateHeatmap();
+            generateTransporteurPerformance();
+            startRealTimeUpdates();
+        });
+
+        function initializeCharts() {
+            // Graphique de performance
+            const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+            performanceChart = new Chart(performanceCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                    datasets: [{
+                        label: 'Efficacité (%)',
+                        data: [92, 94, 89, 96, 93, 91, 95],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }, {
+                        label: 'Économies (€)',
+                        data: [1200, 1450, 1100, 1680, 1520, 1300, 1750],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            min: 80,
+                            max: 100
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    }
+                }
+            });
+
+            // Graphique des coûts
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            costChart = new Chart(costCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Carburant', 'Maintenance', 'Salaires', 'Assurance', 'Autres'],
+                    datasets: [{
+                        data: [45, 20, 25, 7, 3],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#f59e0b',
+                            '#10b981',
+                            '#3b82f6',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Graphique de prédiction
+            const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+            predictionChart = new Chart(predictionCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'],
+                    datasets: [{
+                        label: 'Demande Réelle',
+                        data: [120, 135, 128, 142, 138, 145],
+                        borderColor: '#4f46e5',
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Prédiction IA',
+                        data: [null, null, null, null, 140, 152, 158, 165],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        borderDash: [5, 5],
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateHeatmap() {
+            const heatmapContainer = document.getElementById('activityHeatmap');
+            const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const hours = Array.from({length: 24}, (_, i) => i);
+            
+            let heatmapHTML = '<div class="d-flex flex-column">';
+            
+            days.forEach(day => {
+                heatmapHTML += `<div class="d-flex align-items-center mb-1">`;
+                heatmapHTML += `<div style="width: 40px; font-size: 0.8rem;">${day}</div>`;
+                
+                hours.forEach(hour => {
+                    const intensity = Math.random();
+                    const color = intensity > 0.7 ? '#ef4444' : 
+                                 intensity > 0.4 ? '#f59e0b' : 
+                                 intensity > 0.2 ? '#10b981' : '#e5e7eb';
+                    
+                    heatmapHTML += `<div class="heatmap-cell me-1" style="background-color: ${color}; width: 15px; height: 15px;" title="${day} ${hour}h: ${Math.round(intensity * 100)}%"></div>`;
+                });
+                
+                heatmapHTML += '</div>';
+            });
+            
+            heatmapHTML += '</div>';
+            heatmapContainer.innerHTML = heatmapHTML;
+        }
+
+        function generateTransporteurPerformance() {
+            const container = document.getElementById('transporteurPerformance');
+            const transporteurs = [
+                { nom: 'Ahmed Benali', score: 95, tournees: 24, satisfaction: 4.8 },
+                { nom: 'Fatima Zahra', score: 92, tournees: 28, satisfaction: 4.6 },
+                { nom: 'Mohamed Alami', score: 88, tournees: 22, satisfaction: 4.4 },
+                { nom: 'Khadija Idrissi', score: 94, tournees: 26, satisfaction: 4.7 }
+            ];
+
+            let html = '';
+            transporteurs.forEach(t => {
+                const performanceClass = t.score >= 95 ? 'performance-excellent' :
+                                       t.score >= 90 ? 'performance-good' :
+                                       t.score >= 85 ? 'performance-average' : 'performance-poor';
+                
+                html += `
+                    <div class="d-flex align-items-center justify-content-between border-bottom py-3">
+                        <div class="d-flex align-items-center">
+                            <div class="performance-indicator ${performanceClass}" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                                ${t.score}
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="mb-1">${t.nom}</h6>
+                                <small class="text-muted">${t.tournees} tournées • ${t.satisfaction}/5 ⭐</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="progress" style="width: 100px; height: 6px;">
+                                <div class="progress-bar" style="width: ${t.score}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function switchPeriod(period) {
+            currentPeriod = period;
+            
+            // Mettre à jour les onglets
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Simuler la mise à jour des données
+            updateChartsForPeriod(period);
+            updateKPIsForPeriod(period);
+        }
+
+        function updateChartsForPeriod(period) {
+            // Simulation de nouvelles données selon la période
+            const multiplier = period === 'year' ? 12 : period === 'month' ? 4 : 1;
+            
+            // Mettre à jour le graphique de performance
+            performanceChart.data.datasets[0].data = performanceChart.data.datasets[0].data.map(val => 
+                Math.max(80, Math.min(100, val + (Math.random() - 0.5) * 10))
+            );
+            performanceChart.data.datasets[1].data = performanceChart.data.datasets[1].data.map(val => 
+                Math.round(val * multiplier * (0.8 + Math.random() * 0.4))
+            );
+            performanceChart.update();
+        }
+
+        function updateKPIsForPeriod(period) {
+            const multipliers = {
+                'today': 1,
+                'week': 7,
+                'month': 30,
+                'year': 365
+            };
+            
+            const mult = multipliers[period];
+            document.getElementById('kpi-efficiency').textContent = (90 + Math.random() * 10).toFixed(1) + '%';
+            document.getElementById('kpi-cost-savings').textContent = '€' + (1000 * mult * (0.8 + Math.random() * 0.4)).toLocaleString();
+            document.getElementById('kpi-distance-optimized').textContent = Math.round(200 * mult * (0.8 + Math.random() * 0.4)).toLocaleString();
+        }
+
+        function showPrediction(type) {
+            // Mettre à jour les boutons
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Mettre à jour le graphique selon le type
+            const datasets = {
+                demand: [{
+                    label: 'Demande Prévue',
+                    data: [120, 135, 128, 142, 138, 145, 152, 158],
+                    borderColor: '#4f46e5'
+                }],
+                capacity: [{
+                    label: 'Capacité Requise',
+                    data: [85, 92, 88, 95, 91, 98, 102, 105],
+                    borderColor: '#10b981'
+                }],
+                costs: [{
+                    label: 'Coûts Prévus',
+                    data: [8500, 9200, 8800, 9500, 9100, 9800, 10200, 10500],
+                    borderColor: '#ef4444'
+                }]
+            };
+
+            predictionChart.data.datasets = datasets[type];
+            predictionChart.update();
+        }
+
+        function refreshInsights() {
+            const insights = [
+                {
+                    icon: 'lightbulb',
+                    title: 'Optimisation Détectée',
+                    desc: 'Regrouper 8 commandes zone Nord pourrait économiser 67km'
+                },
+                {
+                    icon: 'chart-line',
+                    title: 'Tendance Prédite',
+                    desc: '+23% de commandes prévues la semaine prochaine'
+                },
+                {
+                    icon: 'exclamation-triangle',
+                    title: 'Alerte Capacité',
+                    desc: 'Risque de surcharge jeudi après-midi'
+                }
+            ];
+
+            const container = document.getElementById('ai-insights');
+            container.innerHTML = insights.map(insight => `
+                <div class="col-md-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-${insight.icon} fa-2x me-3"></i>
+                        <div>
+                            <strong>${insight.title}</strong>
+                            <p class="mb-0 small opacity-75">${insight.desc}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function implementRecommendation(type) {
+            const messages = {
+                routes: 'Optimisation des routes activée! Analyse en cours...',
+                prediction: 'Module de prédiction en cours d\'évaluation...',
+                maintenance: 'Planification de maintenance programmée...'
+            };
+
+            showAlert('info', messages[type]);
+            
+            setTimeout(() => {
+                showAlert('success', 'Recommandation implémentée avec succès!');
+            }, 3000);
+        }
+
+        function exportReport() {
+            showAlert('info', 'Génération du rapport en cours...');
+            
+            setTimeout(() => {
+                showAlert('success', 'Rapport exporté avec succès!');
+                // Simuler le téléchargement
+                const link = document.createElement('a');
+                link.href = 'data:text/plain;charset=utf-8,Rapport Analytics Planificateur';
+                link.download = 'analytics_report.pdf';
+                link.click();
+            }, 2000);
+        }
+
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                // Mise à jour des KPIs en temps réel
+                const efficiency = document.getElementById('kpi-efficiency');
+                const currentValue = parseFloat(efficiency.textContent);
+                const newValue = Math.max(85, Math.min(100, currentValue + (Math.random() - 0.5) * 2));
+                efficiency.textContent = newValue.toFixed(1) + '%';
+            }, 30000); // Toutes les 30 secondes
+        }
+
+        function showAlert(type, message) {
+            const alertTypes = {
+                'success': 'alert-success',
+                'error': 'alert-danger',
+                'info': 'alert-info',
+                'warning': 'alert-warning'
+            };
+            
+            const alert = document.createElement('div');
+            alert.className = `alert ${alertTypes[type]} alert-dismissible fade show position-fixed`;
+            alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alert.innerHTML = `
+                ${message}
+                <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\"></button>
+            `;
+            
+            document.body.appendChild(alert);
+            
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

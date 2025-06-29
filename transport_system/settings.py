@@ -154,6 +154,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Configuration des APIs
 OPENWEATHER_API_KEY = config('OPENWEATHER_API_KEY', default='')
 OPENROUTE_API_KEY = config('OPENROUTE_API_KEY', default='')
+GEOAPIFY_API_KEY = config('GEOAPIFY_API_KEY', default='')
 GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
 
 # transport_system/settings_maps.py

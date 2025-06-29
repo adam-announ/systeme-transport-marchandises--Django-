@@ -244,7 +244,7 @@ function toggleUser(userId) {
             }
         }).catch(error => {
             console.error('Erreur:', error);
-            alert('Erreur lors de la modification du statut');
+            console.error('Erreur lors de la modification du statut');
         });
         modal.hide();
     };
@@ -255,9 +255,42 @@ function deleteUser(userId) {
     const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
     document.getElementById('confirmMessage').textContent = 'Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.';
     document.getElementById('confirmAction').onclick = function() {
-        // Implémentation de la suppression
-        console.log('Suppression utilisateur:', userId);
-        alert('Fonctionnalité de suppression non implémentée');
+        fetch(`{% url 'admin_delete_user' 0 %}`.replace('0', userId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        }).then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Afficher un message de succès
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.card'));
+                
+                // Recharger la page après un court délai
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                // Afficher un message d'erreur
+                const alertDiv = document.createElement('div');
+                alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+                alertDiv.innerHTML = `
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.card'));
+            }
+        }).catch(error => {
+            console.error('Erreur:', error);
+            console.error('Erreur lors de la suppression de l\'utilisateur');
+        });
         modal.hide();
     };
     modal.show();

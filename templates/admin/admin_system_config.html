@@ -42,6 +42,16 @@
                 </button>
             </div>
 
+            <!-- Messages -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert {% if message.tags == 'success' %}alert-success{% else %}alert-danger{% endif %} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             <!-- Paramètres généraux -->
             <div class="card mb-4">
                 <div class="card-header">
@@ -53,24 +63,24 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Nom de l'entreprise</label>
-                                <input type="text" class="form-control" name="company_name" value="Transport System">
+                                <input type="text" class="form-control" name="company_name" value="{{ config.company_name }}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Email de contact</label>
-                                <input type="email" class="form-control" name="contact_email" value="contact@transportsystem.com">
+                                <input type="email" class="form-control" name="contact_email" value="{{ config.contact_email }}">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Téléphone</label>
-                                <input type="tel" class="form-control" name="phone" value="+33 1 23 45 67 89">
+                                <input type="tel" class="form-control" name="phone" value="{{ config.phone }}">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Devise par défaut</label>
                                 <select class="form-control" name="default_currency">
-                                    <option value="EUR" selected>Euro (€)</option>
-                                    <option value="MAD">Dirham Marocain (MAD)</option>
-                                    <option value="USD">Dollar US ($)</option>
+                                    <option value="EUR" {% if config.default_currency == 'EUR' %}selected{% endif %}>Euro (€)</option>
+                                    <option value="MAD" {% if config.default_currency == 'MAD' %}selected{% endif %}>Dirham Marocain (MAD)</option>
+                                    <option value="USD" {% if config.default_currency == 'USD' %}selected{% endif %}>Dollar US ($)</option>
                                 </select>
                             </div>
                         </div>
@@ -92,25 +102,25 @@
                         <div class="row">
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Prix minimum par kg (€)</label>
-                                <input type="number" class="form-control" name="min_price_per_kg" value="0.50" step="0.01">
+                                <input type="number" class="form-control" name="min_price_per_kg" value="{{ config.min_price_per_kg }}" step="0.01">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Prix maximum par kg (€)</label>
-                                <input type="number" class="form-control" name="max_price_per_kg" value="5.00" step="0.01">
+                                <input type="number" class="form-control" name="max_price_per_kg" value="{{ config.max_price_per_kg }}" step="0.01">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label">Délai minimum (heures)</label>
-                                <input type="number" class="form-control" name="min_delivery_time" value="2" min="1">
+                                <input type="number" class="form-control" name="min_delivery_time" value="{{ config.min_delivery_time }}" min="1">
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Commission système (%)</label>
-                                <input type="number" class="form-control" name="system_commission" value="5" step="0.1" min="0" max="100">
+                                <input type="number" class="form-control" name="system_commission" value="{{ config.system_commission }}" step="0.1" min="0" max="100">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <div class="form-check mt-4">
-                                    <input class="form-check-input" type="checkbox" id="auto_assignment" name="auto_assignment" checked>
+                                    <input class="form-check-input" type="checkbox" id="auto_assignment" name="auto_assignment" {% if config.auto_assignment %}checked{% endif %}>
                                     <label class="form-check-label" for="auto_assignment">
                                         Affectation automatique des commandes
                                     </label>
@@ -135,7 +145,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" checked>
+                                    <input class="form-check-input" type="checkbox" id="email_notifications" name="email_notifications" {% if config.email_notifications %}checked{% endif %}>
                                     <label class="form-check-label" for="email_notifications">
                                         Notifications par email
                                     </label>
@@ -143,7 +153,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications">
+                                    <input class="form-check-input" type="checkbox" id="sms_notifications" name="sms_notifications" {% if config.sms_notifications %}checked{% endif %}>
                                     <label class="form-check-label" for="sms_notifications">
                                         Notifications par SMS
                                     </label>

@@ -17,6 +17,7 @@ class MapsService:
     def __init__(self):
         self.google_api_key = getattr(settings, 'GOOGLE_MAPS_API_KEY', '')
         self.openroute_api_key = getattr(settings, 'OPENROUTE_API_KEY', '')
+        self.geoapify_api_key = getattr(settings, 'GEOAPIFY_API_KEY', '')
         self.mapbox_token = getattr(settings, 'MAPBOX_ACCESS_TOKEN', '')
         
         # Importer le service Google Maps
@@ -27,6 +28,7 @@ class MapsService:
         self.providers = {
             'google': self._google_available(),
             'openroute': self._openroute_available(),
+            'geoapify': self._geoapify_available(),
             'mapbox': self._mapbox_available()
         }
         
@@ -45,12 +47,18 @@ class MapsService:
         """Vérifier si Mapbox est disponible"""
         return bool(self.mapbox_token)
     
+    def _geoapify_available(self) -> bool:
+        """Vérifier si Geoapify est disponible"""
+        return bool(self.geoapify_api_key)
+    
     def _get_best_provider(self) -> str:
         """Retourner le meilleur provider disponible"""
-        if self.providers.get('google'):
-            return 'google'
+        if self.providers.get('geoapify'):
+            return 'geoapify'
         elif self.providers.get('openroute'):
             return 'openroute'
+        elif self.providers.get('google'):
+            return 'google'
         elif self.providers.get('mapbox'):
             return 'mapbox'
         else:

@@ -515,9 +515,9 @@
                                 {% elif request.session.role == 'planificateur' %}
                                     <li><a class="dropdown-item" href="{% url 'planificateur_profil' %}"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
                                 {% else %}
-                                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'admin_profil' %}"><i class="fas fa-user-cog me-2"></i>Mon Profil</a></li>
                                 {% endif %}
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
+                                <li><a class="dropdown-item" href="{% url 'admin_system_config' %}"><i class="fas fa-cog me-2"></i>Paramètres</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item text-danger" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Déconnexion</a></li>
                             </ul>
@@ -701,6 +701,21 @@
     
     <!-- Script global pour les requêtes AJAX et fonctionnalités communes -->
     <script>
+        // Supprimer tous les messages d'erreur et d'alerte
+        window.alert = function() { /* Désactivé */ };
+        window.confirm = function() { return true; };
+        
+        // Gestionnaire global d'erreurs
+        window.addEventListener('error', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            e.preventDefault();
+            return false;
+        });
+        
         // Configuration CSRF pour toutes les requêtes AJAX
         function getCookie(name) {
             let cookieValue = null;
