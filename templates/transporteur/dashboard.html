@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-truck"></i> Tableau de bord Transporteur</h2>
+        <p class="text-muted">Bienvenue {{ user.first_name }} {{ user.last_name }}</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.missions_actives }}</h4>
+                        <p>Missions actives</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tasks fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.missions_completees }}</h4>
+                        <p>Complétées</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.vehicules_count }}</h4>
+                        <p>Véhicules</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-car fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="km-parcourus">0</h4>
+                        <p>Km parcourus</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-road fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-clipboard-list"></i> Prochaines missions</h5>
+                <a href="{% url 'transporteur:mes_missions' %}" class="btn btn-sm btn-primary">
+                    Voir toutes
+                </a>
+            </div>
+            <div class="card-body">
+                {% if prochaines_missions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Mission</th>
+                                    <th>Client</th>
+                                    <th>Destination</th>
+                                    <th>Heure prévue</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mission in prochaines_missions %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ mission.numero }}</strong>
+                                        <br>
+                                        <span class="badge bg-{{ mission.statut|yesno:'info,warning' }}">
+                                            {{ mission.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ mission.client.username }}</td>
+                                    <td>
+                                        <small>{{ mission.adresse_livraison|truncatechars:40 }}</small>
+                                    </td>
+                                    <td>{{ mission.date_enlevement_prevue|date:"d/m H:i" }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'transporteur:mission_detail' mission.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{% url 'transporteur:itineraire_mission' mission.id %}" class="btn btn-sm btn-outline-success">
+                                                <i class="fas fa-route"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>Aucune mission programmée</p>
+                        <small>Les nouvelles missions apparaîtront ici</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-tachometer-alt"></i> Statut en temps réel</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Statut:</span>
+                        <span class="badge bg-success" id="statut-transporteur">Disponible</span>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Position:</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="mettreAJourPosition()">
+                            <i class="fas fa-map-marker-alt"></i> Actualiser
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Dernière mise à jour</small>
+                    <div id="derniere-maj">{{ user.last_login|date:"d/m/Y H:i" }}</div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="demarrerMission()" id="btn-demarrer" disabled>
+                        <i class="fas fa-play"></i> Démarrer mission
+                    </button>
+                    <button class="btn btn-warning" onclick="signalerIncident()">
+                        <i class="fas fa-exclamation-triangle"></i> Signaler incident
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-car"></i> Mes véhicules</h5>
+            </div>
+            <div class="card-body">
+                <div id="vehicules-list">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p>Chargement...</p>
+                    </div>
+                </div>
+                <div class="d-grid mt-3">
+                    <a href="{% url 'transporteur:mes_vehicules' %}" class="btn btn-outline-primary">
+                        <i class="fas fa-cog"></i> Gérer véhicules
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-bell"></i> Notifications</h5>
+            </div>
+            <div class="card-body">
+                <div id="notifications-list">
+                    <!-- Notifications chargées dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de signalement d'incident -->
+<div class="modal fade" id="incidentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Signaler un incident</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="incidentForm">
+                    <div class="mb-3">
+                        <label for="typeIncident" class="form-label">Type d'incident</label>
+                        <select class="form-control" id="typeIncident" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="panne">Panne véhicule</option>
+                            <option value="accident">Accident</option>
+                            <option value="retard">Retard</option>
+                            <option value="probleme_marchandise">Problème marchandise</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descriptionIncident" class="form-label">Description</label>
+                        <textarea class="form-control" id="descriptionIncident" rows="4" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="missionConcernee" class="form-label">Mission concernée (optionnel)</label>
+                        <select class="form-control" id="missionConcernee">
+                            <option value="">Aucune mission spécifique</option>
+                            {% for mission in prochaines_missions %}
+                            <option value="{{ mission.id }}">{{ mission.numero }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="envoyerIncident()">
+                    <i class="fas fa-paper-plane"></i> Signaler
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    chargerVehicules();
+    chargerNotifications();
+    verifierMissionActive();
+    
+    // Mise à jour automatique toutes les 30 secondes
+    setInterval(function() {
+        mettreAJourStatut();
+    }, 30000);
+});
+
+function chargerVehicules() {
+    fetch('/transporteur/api/vehicules/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('vehicules-list');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">Aucun véhicule enregistré</p>';
+                return;
+            }
+            
+            let html = '';
+            data.forEach(vehicule => {
+                const statusClass = vehicule.disponible ? 'success' : 'secondary';
+                const statusText = vehicule.disponible ? 'Disponible' : 'Indisponible';
+                
+                html += `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>${vehicule.immatriculation}</strong>
+                            <br>
+                            <small class="text-muted">${vehicule.type_vehicule}</small>
+                        </div>
+                        <span class="badge bg-${statusClass}">${statusText}</span>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            document.getElementById('vehicules-list').innerHTML = 
+                '<p class="text-danger text-center">Erreur de chargement</p>';
+        });
+}
+
+function chargerNotifications() {
+    // Simulation de notifications
+    const notifications = [
+        { type: 'info', message: 'Nouvelle mission assignée', time: '10:30' },
+        { type: 'warning', message: 'Retard signalé sur M-001', time: '09:15' },
+        { type: 'success', message: 'Livraison confirmée', time: '08:45' }
+    ];
+    
+    let html = '';
+    notifications.forEach(notif => {
+        html += `
+            <div class="d-flex align-items-start mb-2">
+                <i class="fas fa-circle text-${notif.type === 'info' ? 'primary' : notif.type} me-2 mt-1" style="font-size: 0.5rem;"></i>
+                <div class="flex-grow-1">
+                    <small>${notif.message}</small>
+                    <br>
+                    <small class="text-muted">${notif.time}</small>
+                </div>
+            </div>
+        `;
+    });
+    
+    document.getElementById('notifications-list').innerHTML = html || '<p class="text-muted text-center">Aucune notification</p>';
+}
+
+function verifierMissionActive() {
+    // Vérifier s'il y a une mission active pour activer le bouton
+    const missionActive = {{ prochaines_missions|length }} > 0;
+    if (missionActive) {
+        document.getElementById('btn-demarrer').disabled = false;
+    }
+}
+
+function mettreAJourPosition() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            fetch('/transporteur/api/position/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': Utils.getCsrfToken()
+                },
+                body: JSON.stringify({
+                    latitude: lat,
+                    longitude: lng,
+                    mission_id: null // ou l'ID de la mission active
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Utils.showToast('Position mise à jour', 'success');
+                    document.getElementById('derniere-maj').textContent = new Date().toLocaleString('fr-FR');
+                }
+            });
+        }, function(error) {
+            Utils.showToast('Impossible d\'obtenir la position', 'warning');
+        });
+    } else {
+        Utils.showToast('Géolocalisation non supportée', 'warning');
+    }
+}
+
+function demarrerMission() {
+    Utils.confirm('Démarrer la prochaine mission ?', function() {
+        // Ici, vous pourriez démarrer la mission
+        Utils.showToast('Mission démarrée', 'success');
+        document.getElementById('statut-transporteur').textContent = 'En mission';
+        document.getElementById('statut-transporteur').className = 'badge bg-warning';
+    });
+}
+
+function signalerIncident() {
+    new bootstrap.Modal(document.getElementById('incidentModal')).show();
+}
+
+function envoyerIncident() {
+    const type = document.getElementById('typeIncident').value;
+    const description = document.getElementById('descriptionIncident').value;
+    const mission = document.getElementById('missionConcernee').value;
+    
+    if (!type || !description) {
+        Utils.showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+        return;
+    }
+    
+    fetch('/transporteur/api/incident/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': Utils.getCsrfToken()
+        },
+        body: JSON.stringify({
+            type_incident: type,
+            description: description,
+            mission_id: mission || null
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Utils.showToast('Incident signalé avec succès', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('incidentModal')).hide();
+            document.getElementById('incidentForm').reset();
+        } else {
+            Utils.showToast('Erreur lors du signalement', 'danger');
+        }
+    });
+}
+
+function mettreAJourStatut() {
+    // Mise à jour périodique du statut
+    fetch('/transporteur/api/statut/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.km_parcourus) {
+                document.getElementById('km-parcourus').textContent = data.km_parcourus;
+            }
+        })
+        .catch(error => {
+            console.error('Erreur mise à jour statut:', error);
+        });
+}
+</script>
+{% endblock %}

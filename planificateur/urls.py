@@ -16,4 +16,5 @@ urlpatterns = [
     # API
     path('api/optimiser/', views.api_optimiser_itineraire, name='api_optimiser_itineraire'),
     path('api/transporteurs/', views.api_transporteurs_disponibles, name='api_transporteurs_disponibles'),
+    path('api/commandes-en-attente/', views.api_commandes_en_attente, name='api_commandes_en_attente'),
 ]

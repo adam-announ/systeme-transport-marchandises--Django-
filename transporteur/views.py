@@ -218,7 +218,8 @@ def api_mettre_a_jour_position(request):
     mission_id = request.data.get('mission_id')
     
     try:
-        mission = Commande.objects.get(id=mission_id, transporteur=request.user)
+        if mission_id:
+            mission = Commande.objects.get(id=mission_id, transporteur=request.user)
         
         # Ici, vous pourriez sauvegarder la position dans une table de tracking
         # Pour la démo, on retourne juste un succès
@@ -266,3 +267,87 @@ def api_confirmer_livraison(request):
         
     except Commande.DoesNotExist:
         return Response({'error': 'Mission non trouvée'}, status=404)
+
+@api_view(['GET'])
+def api_vehicules(request):
+    """API pour récupérer les véhicules du transporteur"""
+    if request.user.role != 'transporteur':
+        return Response({'error': 'Accès non autorisé'}, status=403)
+    
+    vehicules = Vehicule.objects.filter(transporteur=request.user)
+    data = []
+    
+    for vehicule in vehicules:
+        data.append({
+            'id': str(vehicule.id),
+            'immatriculation': vehicule.immatriculation,
+            'type_vehicule': vehicule.type_vehicule,
+            'capacite_poids': vehicule.capacite_poids,
+            'capacite_volume': vehicule.capacite_volume,
+            'disponible': vehicule.disponible
+        })
+    
+    return Response(data)
+
+@api_view(['GET'])
+def api_statut(request):
+    """API pour récupérer le statut du transporteur"""
+    if request.user.role != 'transporteur':
+        return Response({'error': 'Accès non autorisé'}, status=403)
+    
+    # Calcul des km parcourus (simulation)
+    missions_completees = Commande.objects.filter(
+        transporteur=request.user, 
+        statut='livree'
+    ).count()
+    
+    km_parcourus = missions_completees * 50  # Simulation
+    
+    return Response({
+        'km_parcourus': km_parcourus,
+        'missions_actives': Commande.objects.filter(
+            transporteur=request.user, 
+            statut__in=['confirmee', 'en_cours']
+        ).count(),
+        'statut': 'disponible'  # ou 'en_mission', 'indisponible'
+    })
+
+@api_view(['POST'])
+def api_incident(request):
+    """API pour signaler un incident"""
+    if request.user.role != 'transporteur':
+        return Response({'error': 'Accès non autorisé'}, status=403)
+    
+    type_incident = request.data.get('type_incident')
+    description = request.data.get('description')
+    mission_id = request.data.get('mission_id')
+    
+    if not type_incident or not description:
+        return Response({'error': 'Données manquantes'}, status=400)
+    
+    # Création des notifications pour les admins
+    from core.models import User
+    admins = User.objects.filter(role='admin')
+    
+    for admin in admins:
+        Notification.objects.create(
+            utilisateur=admin,
+            titre=f'Incident signalé - {request.user.username}',
+            message=f'Type: {type_incident}\nDescription: {description}',
+            type_notification='warning'
+        )
+    
+    # Si une mission est concernée, notifier le client
+    if mission_id:
+        try:
+            mission = Commande.objects.get(id=mission_id, transporteur=request.user)
+            Notification.objects.create(
+                utilisateur=mission.client,
+                titre=f'Incident sur votre commande {mission.numero}',
+                message=f'Un incident a été signalé: {type_incident}',
+                type_notification='warning'
+            )
+        except Commande.DoesNotExist:
+            pass
+    
+    return Response({'success': True, 'message': 'Incident signalé avec succès'})

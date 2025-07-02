@@ -1,0 +1,514 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail Commande {{ commande.numero }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-box"></i> Commande {{ commande.numero }}</h2>
+                <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'confirmee' %}info{% else %}secondary{% endif %} fs-6">
+                    {{ commande.get_statut_display }}
+                </span>
+            </div>
+            <div>
+                <a href="{% url 'client:mes_commandes' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                {% if commande.statut == 'en_cours' %}
+                <a href="{% url 'client:suivi_commande' commande.id %}" class="btn btn-success">
+                    <i class="fas fa-map-marker-alt"></i> Suivre en temps réel
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progression de la commande -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-route"></i> Progression de la commande</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress-timeline">
+                    <div class="timeline-step {% if commande.statut != 'annulee' %}completed{% endif %}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6>Commande créée</h6>
+                            <small class="text-muted">{{ commande.date_creation|date:"d/m/Y à H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-step {% if commande.statut in 'confirmee,en_cours,livree' %}completed{% endif %}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6>Commande confirmée</h6>
+                            {% if commande.transporteur %}
+                                <small class="text-muted">Assignée à {{ commande.transporteur.username }}</small>
+                            {% else %}
+                                <small class="text-muted">En attente d'assignation</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-step {% if commande.statut in 'en_cours,livree' %}completed{% endif %}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6>Transport en cours</h6>
+                            {% if commande.date_enlevement_reelle %}
+                                <small class="text-muted">Démarré le {{ commande.date_enlevement_reelle|date:"d/m/Y à H:i" }}</small>
+                            {% else %}
+                                <small class="text-muted">Prévu le {{ commande.date_enlevement_prevue|date:"d/m/Y à H:i" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-step {% if commande.statut == 'livree' %}completed{% endif %}">
+                        <div class="timeline-marker">
+                            <i class="fas fa-flag-checkered"></i>
+                        </div>
+                        <div class="timeline-content">
+                            <h6>Livraison terminée</h6>
+                            {% if commande.date_livraison_reelle %}
+                                <small class="text-muted">{{ commande.date_livraison_reelle|date:"d/m/Y à H:i" }}</small>
+                            {% else %}
+                                <small class="text-muted">Prévue le {{ commande.date_livraison_prevue|date:"d/m/Y à H:i" }}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations de la commande -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Numéro de commande:</strong></td>
+                                <td>{{ commande.numero }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Date de création:</strong></td>
+                                <td>{{ commande.date_creation|date:"d/m/Y à H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Statut:</strong></td>
+                                <td>
+                                    <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'confirmee' %}info{% else %}secondary{% endif %}">
+                                        {{ commande.get_statut_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Transporteur:</strong></td>
+                                <td>
+                                    {% if commande.transporteur %}
+                                        <i class="fas fa-user text-success"></i> {{ commande.transporteur.username }}
+                                        <br><small class="text-muted">{{ commande.transporteur.telephone }}</small>
+                                    {% else %}
+                                        <span class="text-muted">Non assigné</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Poids total:</strong></td>
+                                <td>{{ commande.poids }} kg</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Volume total:</strong></td>
+                                <td>{{ commande.volume }} m³</td>
+                            </tr>
+                            {% if commande.prix_estime %}
+                            <tr>
+                                <td><strong>Prix estimé:</strong></td>
+                                <td>{{ commande.prix_estime }} DH</td>
+                            </tr>
+                            {% endif %}
+                            {% if commande.prix_final %}
+                            <tr>
+                                <td><strong>Prix final:</strong></td>
+                                <td><strong>{{ commande.prix_final }} DH</strong></td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Détails de la marchandise -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-box-open"></i> Détails de la marchandise</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Description:</strong></p>
+                <p class="text-muted">{{ commande.description_marchandise }}</p>
+                
+                {% if commande.valeur_declaree %}
+                <p><strong>Valeur déclarée:</strong> {{ commande.valeur_declaree }} DH</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Adresses -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map"></i> Itinéraire</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="address-card pickup">
+                            <div class="address-header">
+                                <i class="fas fa-map-marker-alt text-success"></i>
+                                <strong>Point d'enlèvement</strong>
+                            </div>
+                            <p class="address-text">{{ commande.adresse_enlevement }}</p>
+                            {% if commande.date_enlevement_prevue %}
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                Prévu: {{ commande.date_enlevement_prevue|date:"d/m/Y à H:i" }}
+                            </small>
+                            {% endif %}
+                            {% if commande.date_enlevement_reelle %}
+                            <br>
+                            <small class="text-success">
+                                <i class="fas fa-check"></i> 
+                                Effectué: {{ commande.date_enlevement_reelle|date:"d/m/Y à H:i" }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="address-card delivery">
+                            <div class="address-header">
+                                <i class="fas fa-flag text-danger"></i>
+                                <strong>Point de livraison</strong>
+                            </div>
+                            <p class="address-text">{{ commande.adresse_livraison }}</p>
+                            {% if commande.date_livraison_prevue %}
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> 
+                                Prévu: {{ commande.date_livraison_prevue|date:"d/m/Y à H:i" }}
+                            </small>
+                            {% endif %}
+                            {% if commande.date_livraison_reelle %}
+                            <br>
+                            <small class="text-success">
+                                <i class="fas fa-check"></i> 
+                                Effectué: {{ commande.date_livraison_reelle|date:"d/m/Y à H:i" }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if commande.itineraire %}
+                <div class="mt-3">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <h5 class="text-primary">{{ commande.itineraire.distance_km|floatformat:1 }} km</h5>
+                                <small class="text-muted">Distance</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <h5 class="text-info">{{ commande.itineraire.duree_minutes }} min</h5>
+                                <small class="text-muted">Durée estimée</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="stat-item">
+                                <button class="btn btn-outline-primary btn-sm" onclick="afficherCarte()">
+                                    <i class="fas fa-map"></i> Voir sur la carte
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-tools"></i> Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if commande.statut == 'en_cours' %}
+                    <a href="{% url 'client:suivi_commande' commande.id %}" class="btn btn-success">
+                        <i class="fas fa-map-marker-alt"></i> Suivre en temps réel
+                    </a>
+                    {% endif %}
+                    
+                    {% if commande.statut == 'en_attente' %}
+                    <button class="btn btn-warning" onclick="modifierCommande()">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
+                    <button class="btn btn-danger" onclick="annulerCommande()">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    {% endif %}
+                    
+                    <button class="btn btn-outline-primary" onclick="telechargerPDF()">
+                        <i class="fas fa-file-pdf"></i> Télécharger PDF
+                    </button>
+                    
+                    <button class="btn btn-outline-info" onclick="partagerCommande()">
+                        <i class="fas fa-share"></i> Partager
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact transporteur -->
+        {% if commande.transporteur %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5><i class="fas fa-phone"></i> Contact transporteur</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-3x text-primary"></i>
+                    </div>
+                    <h6>{{ commande.transporteur.first_name }} {{ commande.transporteur.last_name }}</h6>
+                    <p class="text-muted">{{ commande.transporteur.username }}</p>
+                    
+                    {% if commande.transporteur.telephone %}
+                    <div class="d-grid gap-2">
+                        <a href="tel:{{ commande.transporteur.telephone }}" class="btn btn-success">
+                            <i class="fas fa-phone"></i> {{ commande.transporteur.telephone }}
+                        </a>
+                        <button class="btn btn-outline-primary" onclick="envoyerMessage()">
+                            <i class="fas fa-envelope"></i> Envoyer un message
+                        </button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Bon de livraison -->
+        {% if commande.statut == 'livree' and commande.bonlivraison %}
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-receipt"></i> Bon de livraison</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Numéro:</strong> {{ commande.bonlivraison.numero_bon }}</p>
+                <p><strong>Date:</strong> {{ commande.bonlivraison.date_livraison|date:"d/m/Y à H:i" }}</p>
+                <p><strong>Destinataire:</strong> {{ commande.bonlivraison.nom_destinataire }}</p>
+                
+                {% if commande.bonlivraison.commentaires %}
+                <p><strong>Commentaires:</strong></p>
+                <p class="text-muted">{{ commande.bonlivraison.commentaires }}</p>
+                {% endif %}
+                
+                <div class="d-grid">
+                    <button class="btn btn-outline-primary" onclick="telechargerBonLivraison()">
+                        <i class="fas fa-download"></i> Télécharger
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function afficherCarte() {
+    // Ici, vous pourriez ouvrir une modal avec la carte
+    Utils.showToast('Ouverture de la carte...', 'info');
+}
+
+function modifierCommande() {
+    Utils.confirm('Rediriger vers la modification de commande ?', function() {
+        // Redirection vers le formulaire de modification
+        window.location.href = '{% url "client:nouvelle_commande" %}?edit={{ commande.id }}';
+    });
+}
+
+function annulerCommande() {
+    Utils.confirm('Êtes-vous sûr de vouloir annuler cette commande ?', function() {
+        fetch(`/client/api/commandes/{{ commande.id }}/annuler/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': Utils.getCsrfToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Commande annulée avec succès', 'success');
+                location.reload();
+            } else {
+                Utils.showToast('Erreur lors de l\'annulation', 'danger');
+            }
+        });
+    });
+}
+
+function telechargerPDF() {
+    Utils.showToast('Génération du PDF...', 'info');
+    // Ici, vous pourriez générer et télécharger un PDF
+}
+
+function partagerCommande() {
+    if (navigator.share) {
+        navigator.share({
+            title: 'Commande {{ commande.numero }}',
+            text: 'Suivi de ma commande de transport',
+            url: window.location.href
+        });
+    } else {
+        // Fallback: copier l'URL
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            Utils.showToast('Lien copié dans le presse-papiers', 'success');
+        });
+    }
+}
+
+function envoyerMessage() {
+    // Ici, vous pourriez ouvrir une modal de messagerie
+    Utils.showToast('Ouverture de la messagerie...', 'info');
+}
+
+function telechargerBonLivraison() {
+    Utils.showToast('Téléchargement du bon de livraison...', 'info');
+    // Ici, vous pourriez télécharger le bon de livraison
+}
+</script>
+
+<style>
+.progress-timeline {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    margin: 2rem 0;
+}
+
+.progress-timeline::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #dee2e6;
+    z-index: 1;
+}
+
+.timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    flex: 1;
+}
+
+.timeline-marker {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.timeline-step.completed .timeline-marker {
+    background: #28a745;
+}
+
+.timeline-content {
+    text-align: center;
+}
+
+.address-card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.address-header {
+    margin-bottom: 0.5rem;
+}
+
+.address-text {
+    margin-bottom: 0.5rem;
+}
+
+.stat-item {
+    padding: 1rem;
+}
+
+@media (max-width: 768px) {
+    .progress-timeline {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .progress-timeline::before {
+        width: 2px;
+        height: 100%;
+        left: 20px;
+        top: 0;
+    }
+    
+    .timeline-step {
+        flex-direction: row;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .timeline-marker {
+        margin-right: 1rem;
+        margin-bottom: 0;
+    }
+    
+    .timeline-content {
+        text-align: left;
+    }
+}
+</style>
+{% endblock %}

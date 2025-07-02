@@ -1,0 +1,458 @@
+{% extends 'base.html' %}
+
+{% block title %}Suivi Commande {{ commande.numero }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-map-marker-alt"></i> Suivi en temps réel</h2>
+                <p class="text-muted">Commande {{ commande.numero }}</p>
+            </div>
+            <div>
+                <a href="{% url 'client:commande_detail' commande.id %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <button class="btn btn-primary" onclick="actualiserPosition()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Carte -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-map"></i> Position en temps réel</h5>
+                <div>
+                    <span class="badge bg-success" id="statut-connexion">Connecté</span>
+                    <small class="text-muted" id="derniere-maj">Dernière mise à jour: --</small>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="map-container" style="height: 500px; position: relative;">
+                    <!-- Carte interactive -->
+                    <div class="d-flex align-items-center justify-content-center h-100 bg-light">
+                        <div class="text-center">
+                            <i class="fas fa-map fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">Carte de suivi</h5>
+                            <p class="text-muted">Position du transporteur en temps réel</p>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-map-marker-alt text-success fa-lg"></i>
+                                        <small class="ms-1">Enlèvement</small>
+                                    </div>
+                                    <div class="me-3">
+                                        <i class="fas fa-truck text-primary fa-lg"></i>
+                                        <small class="ms-1">Transporteur</small>
+                                    </div>
+                                    <div>
+                                        <i class="fas fa-flag text-danger fa-lg"></i>
+                                        <small class="ms-1">Livraison</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informations de suivi -->
+    <div class="col-md-4">
+        <!-- Statut actuel -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle"></i> Statut actuel</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <div class="mb-3">
+                        <span class="badge bg-{% if commande.statut == 'en_cours' %}warning{% elif commande.statut == 'livree' %}success{% else %}info{% endif %} fs-6" id="statut-commande">
+                            {{ commande.get_statut_display }}
+                        </span>
+                    </div>
+                    
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <div class="border-end">
+                                <h6 class="text-primary" id="distance-parcourue">-- km</h6>
+                                <small class="text-muted">Parcouru</small>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-info" id="temps-estime">-- min</h6>
+                            <small class="text-muted">Temps restant</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Progression -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-route"></i> Progression</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress-steps">
+                    <div class="step completed">
+                        <div class="step-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="step-content">
+                            <h6>Commande confirmée</h6>
+                            <small class="text-muted">{{ commande.date_creation|date:"d/m H:i" }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if commande.date_enlevement_reelle %}completed{% elif commande.statut == 'en_cours' %}active{% endif %}">
+                        <div class="step-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="step-content">
+                            <h6>Marchandise récupérée</h6>
+                            <small class="text-muted">
+                                {% if commande.date_enlevement_reelle %}
+                                    {{ commande.date_enlevement_reelle|date:"d/m H:i" }}
+                                {% else %}
+                                    En cours...
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if commande.statut == 'en_cours' %}active{% elif commande.statut == 'livree' %}completed{% endif %}">
+                        <div class="step-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="step-content">
+                            <h6>Transport en cours</h6>
+                            <small class="text-muted" id="position-actuelle">Position en cours...</small>
+                        </div>
+                    </div>
+                    
+                    <div class="step {% if commande.statut == 'livree' %}completed{% endif %}">
+                        <div class="step-icon">
+                            <i class="fas fa-flag-checkered"></i>
+                        </div>
+                        <div class="step-content">
+                            <h6>Livraison terminée</h6>
+                            <small class="text-muted">
+                                {% if commande.date_livraison_reelle %}
+                                    {{ commande.date_livraison_reelle|date:"d/m H:i" }}
+                                {% else %}
+                                    Prévue: {{ commande.date_livraison_prevue|date:"d/m H:i" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Contact transporteur -->
+        {% if commande.transporteur %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5><i class="fas fa-user"></i> Transporteur</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ commande.transporteur.first_name }} {{ commande.transporteur.last_name }}</h6>
+                        <small class="text-muted">{{ commande.transporteur.username }}</small>
+                    </div>
+                </div>
+                
+                {% if commande.transporteur.telephone %}
+                <div class="mt-3 d-grid gap-2">
+                    <a href="tel:{{ commande.transporteur.telephone }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-phone"></i> {{ commande.transporteur.telephone }}
+                    </a>
+                    <button class="btn btn-outline-primary btn-sm" onclick="envoyerMessage()">
+                        <i class="fas fa-envelope"></i> Message
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Détails de livraison -->
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map-pin"></i> Détails</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Enlèvement</small>
+                    <p class="mb-1"><i class="fas fa-map-marker-alt text-success"></i> {{ commande.adresse_enlevement|truncatechars:40 }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">Livraison</small>
+                    <p class="mb-1"><i class="fas fa-flag text-danger"></i> {{ commande.adresse_livraison|truncatechars:40 }}</p>
+                </div>
+                
+                {% if commande.itineraire %}
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">Distance</small>
+                        <div><strong>{{ commande.itineraire.distance_km|floatformat:1 }} km</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Durée</small>
+                        <div><strong>{{ commande.itineraire.duree_minutes }} min</strong></div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notifications en temps réel -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050;">
+    <div id="notifications-container"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let suiviInterval;
+let isTracking = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    demarrerSuivi();
+    
+    // Démarrer le suivi automatique
+    suiviInterval = setInterval(actualiserPosition, 30000); // Toutes les 30 secondes
+});
+
+// Nettoyage avant fermeture
+window.addEventListener('beforeunload', function() {
+    if (suiviInterval) {
+        clearInterval(suiviInterval);
+    }
+});
+
+function demarrerSuivi() {
+    isTracking = true;
+    document.getElementById('statut-connexion').textContent = 'Connecté';
+    document.getElementById('statut-connexion').className = 'badge bg-success';
+    actualiserPosition();
+}
+
+function arreterSuivi() {
+    isTracking = false;
+    if (suiviInterval) {
+        clearInterval(suiviInterval);
+    }
+    document.getElementById('statut-connexion').textContent = 'Déconnecté';
+    document.getElementById('statut-connexion').className = 'badge bg-secondary';
+}
+
+function actualiserPosition() {
+    if (!isTracking) return;
+    
+    fetch('/client/api/suivi/{{ commande.id }}/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Erreur suivi:', data.error);
+                return;
+            }
+            
+            // Mettre à jour le statut
+            document.getElementById('statut-commande').textContent = data.statut;
+            
+            // Mettre à jour la progression
+            mettreAJourProgression(data.progression);
+            
+            // Mettre à jour la position sur la carte
+            if (data.position_transporteur) {
+                mettreAJourCarte(data.position_transporteur);
+            }
+            
+            // Mettre à jour l'heure
+            document.getElementById('derniere-maj').textContent = 
+                'Dernière mise à jour: ' + new Date().toLocaleTimeString('fr-FR');
+            
+            // Simuler quelques données
+            document.getElementById('distance-parcourue').textContent = 
+                Math.floor(Math.random() * 50 + 10) + ' km';
+            document.getElementById('temps-estime').textContent = 
+                Math.floor(Math.random() * 60 + 15) + ' min';
+            
+            // Mettre à jour la position actuelle
+            const positions = [
+                'Autoroute A1 - Sortie Rabat',
+                'Boulevard Mohammed V',
+                'Avenue Hassan II',
+                'Proche de la destination'
+            ];
+            document.getElementById('position-actuelle').textContent = 
+                positions[Math.floor(Math.random() * positions.length)];
+        })
+        .catch(error => {
+            console.error('Erreur actualisation:', error);
+            document.getElementById('statut-connexion').textContent = 'Erreur';
+            document.getElementById('statut-connexion').className = 'badge bg-danger';
+        });
+}
+
+function mettreAJourProgression(progression) {
+    const steps = document.querySelectorAll('.step');
+    
+    steps.forEach((step, index) => {
+        step.classList.remove('active', 'completed');
+        
+        if (index === 0 && progression.en_attente) {
+            step.classList.add('completed');
+        } else if (index === 1 && progression.confirmee) {
+            step.classList.add(progression.en_cours ? 'completed' : 'active');
+        } else if (index === 2 && progression.en_cours) {
+            step.classList.add(progression.livree ? 'completed' : 'active');
+        } else if (index === 3 && progression.livree) {
+            step.classList.add('completed');
+        }
+    });
+}
+
+function mettreAJourCarte(position) {
+    // Ici, vous pourriez mettre à jour une vraie carte
+    console.log('Position transporteur:', position);
+    
+    // Simulation d'une notification de mouvement
+    if (Math.random() > 0.8) {
+        afficherNotification('Le transporteur se rapproche de la destination', 'info');
+    }
+}
+
+function afficherNotification(message, type = 'info') {
+    const container = document.getElementById('notifications-container');
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show`;
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    container.appendChild(notification);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function envoyerMessage() {
+    // Ici, vous pourriez ouvrir une interface de messagerie
+    Utils.showToast('Ouverture de la messagerie...', 'info');
+}
+
+// Gestion des notifications push (si supportées)
+if ('Notification' in window && 'serviceWorker' in navigator) {
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            console.log('Notifications autorisées');
+        }
+    });
+}
+
+function envoyerNotificationPush(titre, message) {
+    if (Notification.permission === 'granted') {
+        new Notification(titre, {
+            body: message,
+            icon: '/static/img/logo.png',
+            badge: '/static/img/badge.png'
+        });
+    }
+}
+</script>
+
+<style>
+.progress-steps {
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.step {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+.step-icon {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background: #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 1rem;
+    position: relative;
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+.step.completed .step-icon {
+    background: #28a745;
+}
+
+.step.active .step-icon {
+    background: #007bff;
+    animation: pulse 2s infinite;
+}
+
+.step-content {
+    flex-grow: 1;
+    padding-top: 0.25rem;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+    }
+}
+
+#map-container {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.alert {
+    margin-bottom: 0.5rem;
+}
+</style>
+{% endblock %}

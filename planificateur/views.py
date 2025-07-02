@@ -167,3 +167,27 @@ def api_transporteurs_disponibles(request):
         })
     
     return Response(data)
+
+@api_view(['GET'])
+def api_commandes_en_attente(request):
+    """API pour récupérer les commandes en attente"""
+    if request.user.role != 'planificateur':
+        return Response({'error': 'Accès non autorisé'}, status=403)
+    
+    commandes = Commande.objects.filter(statut='en_attente').order_by('-date_creation')[:10]
+    data = []
+    
+    for commande in commandes:
+        data.append({
+            'id': str(commande.id),
+            'numero': commande.numero,
+            'client': commande.client.username,
+            'adresse_enlevement': commande.adresse_enlevement,
+            'adresse_livraison': commande.adresse_livraison,
+            'poids': commande.poids,
+            'volume': commande.volume,
+            'date_creation': commande.date_creation.isoformat(),
+            'distance': getattr(commande, 'itineraire', None) and commande.itineraire.distance_km or None
+        })
+    
+    return Response(data)

@@ -1,0 +1,262 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Commandes{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-list"></i> Mes Commandes</h2>
+            <a href="{% url 'client:nouvelle_commande' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle commande
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchCommandes" placeholder="Rechercher par numéro ou destination...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterStatut">
+            <option value="">Tous les statuts</option>
+            <option value="en_attente">En attente</option>
+            <option value="confirmee">Confirmée</option>
+            <option value="en_cours">En cours</option>
+            <option value="livree">Livrée</option>
+            <option value="annulee">Annulée</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterPeriode">
+            <option value="">Toutes les périodes</option>
+            <option value="7">7 derniers jours</option>
+            <option value="30">30 derniers jours</option>
+            <option value="90">3 derniers mois</option>
+        </select>
+    </div>
+</div>
+
+<div class="row">
+    {% for commande in commandes %}
+    <div class="col-md-6 col-lg-4 mb-4 commande-card" data-statut="{{ commande.statut }}" data-numero="{{ commande.numero }}">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">{{ commande.numero }}</h6>
+                <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% elif commande.statut == 'confirmee' %}info{% else %}secondary{% endif %}">
+                    {{ commande.get_statut_display }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <small class="text-muted">Enlèvement</small>
+                    <p class="mb-1"><i class="fas fa-map-marker-alt text-success"></i> {{ commande.adresse_enlevement|truncatechars:40 }}</p>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Livraison</small>
+                    <p class="mb-1"><i class="fas fa-flag text-danger"></i> {{ commande.adresse_livraison|truncatechars:40 }}</p>
+                </div>
+                <div class="mb-2">
+                    <small class="text-muted">Marchandise</small>
+                    <p class="mb-1">{{ commande.description_marchandise|truncatechars:50 }}</p>
+                </div>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">Poids</small>
+                        <div><strong>{{ commande.poids }} kg</strong></div>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Volume</small>
+                        <div><strong>{{ commande.volume }} m³</strong></div>
+                    </div>
+                </div>
+                {% if commande.transporteur %}
+                <div class="mt-2">
+                    <small class="text-muted">Transporteur</small>
+                    <p class="mb-0"><i class="fas fa-truck text-primary"></i> {{ commande.transporteur.username }}</p>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">{{ commande.date_creation|date:"d/m/Y H:i" }}</small>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'client:commande_detail' commande.id %}" class="btn btn-sm btn-outline-primary" title="Détails">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        {% if commande.statut == 'en_cours' %}
+                        <a href="{% url 'client:suivi_commande' commande.id %}" class="btn btn-sm btn-outline-success" title="Suivre">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </a>
+                        {% endif %}
+                        {% if commande.statut == 'en_attente' %}
+                        <button class="btn btn-sm btn-outline-danger" onclick="annulerCommande('{{ commande.id }}')" title="Annuler">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+            <h4 class="text-muted">Aucune commande</h4>
+            <p class="text-muted">Vous n'avez pas encore créé de commande</p>
+            <a href="{% url 'client:nouvelle_commande' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Créer ma première commande
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if commandes.has_other_pages %}
+<nav aria-label="Navigation des commandes">
+    <ul class="pagination justify-content-center">
+        {% if commandes.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ commandes.previous_page_number }}">Précédent</a>
+            </li>
+        {% endif %}
+        
+        {% for num in commandes.paginator.page_range %}
+            {% if commandes.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if commandes.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ commandes.next_page_number }}">Suivant</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filtrage et recherche
+document.getElementById('searchCommandes').addEventListener('input', filtrerCommandes);
+document.getElementById('filterStatut').addEventListener('change', filtrerCommandes);
+document.getElementById('filterPeriode').addEventListener('change', filtrerCommandes);
+
+function filtrerCommandes() {
+    const search = document.getElementById('searchCommandes').value.toLowerCase();
+    const statut = document.getElementById('filterStatut').value;
+    const periode = document.getElementById('filterPeriode').value;
+    
+    const cards = document.querySelectorAll('.commande-card');
+    
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const cardStatut = card.dataset.statut;
+        
+        let show = true;
+        
+        // Filtrage par recherche
+        if (search && !text.includes(search)) {
+            show = false;
+        }
+        
+        // Filtrage par statut
+        if (statut && cardStatut !== statut) {
+            show = false;
+        }
+        
+        // Filtrage par période (à implémenter selon vos besoins)
+        if (periode) {
+            // Logique de filtrage par période
+        }
+        
+        card.style.display = show ? '' : 'none';
+    });
+    
+    // Vérifier s'il y a des résultats
+    const visibleCards = document.querySelectorAll('.commande-card[style=""], .commande-card:not([style])');
+    if (visibleCards.length === 0) {
+        showNoResults();
+    } else {
+        hideNoResults();
+    }
+}
+
+function showNoResults() {
+    let noResultsDiv = document.getElementById('no-results');
+    if (!noResultsDiv) {
+        noResultsDiv = document.createElement('div');
+        noResultsDiv.id = 'no-results';
+        noResultsDiv.className = 'col-12 text-center py-5';
+        noResultsDiv.innerHTML = `
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Aucun résultat trouvé</h5>
+            <p class="text-muted">Essayez de modifier vos critères de recherche</p>
+        `;
+        document.querySelector('.row').appendChild(noResultsDiv);
+    }
+    noResultsDiv.style.display = 'block';
+}
+
+function hideNoResults() {
+    const noResultsDiv = document.getElementById('no-results');
+    if (noResultsDiv) {
+        noResultsDiv.style.display = 'none';
+    }
+}
+
+function annulerCommande(commandeId) {
+    Utils.confirm('Êtes-vous sûr de vouloir annuler cette commande ?', function() {
+        fetch(`/client/api/commandes/${commandeId}/annuler/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': Utils.getCsrfToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Commande annulée avec succès', 'success');
+                location.reload();
+            } else {
+                Utils.showToast('Erreur lors de l\'annulation', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            Utils.showToast('Erreur de communication', 'danger');
+        });
+    });
+}
+
+// Animation d'entrée des cartes
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.commande-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

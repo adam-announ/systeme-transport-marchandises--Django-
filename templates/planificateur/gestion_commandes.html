@@ -1,0 +1,375 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestion des Commandes - Planificateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-tasks"></i> Gestion des Commandes</h2>
+            <div>
+                <button class="btn btn-success" onclick="optimiserToutesCommandes()">
+                    <i class="fas fa-magic"></i> Optimiser tout
+                </button>
+                <button class="btn btn-info" onclick="planifierTournee()">
+                    <i class="fas fa-route"></i> Planifier tournée
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchCommandes" placeholder="Rechercher une commande...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterStatut">
+            <option value="">Tous les statuts</option>
+            <option value="en_attente">En attente</option>
+            <option value="confirmee">Confirmée</option>
+            <option value="en_cours">En cours</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterTransporteur">
+            <option value="">Tous les transporteurs</option>
+            {% for transporteur in transporteurs %}
+            <option value="{{ transporteur.id }}">{{ transporteur.username }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="commandesTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th>Numéro</th>
+                        <th>Client</th>
+                        <th>Origine → Destination</th>
+                        <th>Poids/Volume</th>
+                        <th>Statut</th>
+                        <th>Transporteur</th>
+                        <th>Distance</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for commande in commandes %}
+                    <tr data-commande-id="{{ commande.id }}">
+                        <td>
+                            <input type="checkbox" class="commande-checkbox" value="{{ commande.id }}">
+                        </td>
+                        <td>
+                            <strong>{{ commande.numero }}</strong>
+                            <br><small class="text-muted">{{ commande.date_creation|date:"d/m/Y H:i" }}</small>
+                        </td>
+                        <td>{{ commande.client.username }}</td>
+                        <td>
+                            <div class="small">
+                                <i class="fas fa-map-marker-alt text-success"></i> {{ commande.adresse_enlevement|truncatechars:30 }}
+                                <br>
+                                <i class="fas fa-flag text-danger"></i> {{ commande.adresse_livraison|truncatechars:30 }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ commande.poids }} kg</span>
+                            <br>
+                            <span class="badge bg-info">{{ commande.volume }} m³</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if commande.statut == 'en_attente' %}warning{% elif commande.statut == 'confirmee' %}info{% elif commande.statut == 'en_cours' %}primary{% else %}success{% endif %}">
+                                {{ commande.get_statut_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if commande.transporteur %}
+                                <span class="text-success">
+                                    <i class="fas fa-user-check"></i> {{ commande.transporteur.username }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted">
+                                    <i class="fas fa-user-times"></i> Non assigné
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span id="distance-{{ commande.id }}">
+                                {% if commande.itineraire %}
+                                    {{ commande.itineraire.distance_km|floatformat:1 }} km
+                                {% else %}
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="calculerDistance('{{ commande.id }}')">
+                                        <i class="fas fa-calculator"></i>
+                                    </button>
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-sm btn-outline-primary" onclick="optimiserItineraire('{{ commande.id }}')" title="Optimiser">
+                                    <i class="fas fa-route"></i>
+                                </button>
+                                {% if not commande.transporteur %}
+                                <button class="btn btn-sm btn-outline-success" onclick="affecterTransporteur('{{ commande.id }}')" title="Affecter">
+                                    <i class="fas fa-user-plus"></i>
+                                </button>
+                                {% endif %}
+                                <button class="btn btn-sm btn-outline-info" onclick="voirDetails('{{ commande.id }}')" title="Détails">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">Aucune commande trouvée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'affectation de transporteur -->
+<div class="modal fade" id="affectationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Affecter un transporteur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="affectationForm">
+                    <input type="hidden" id="commandeIdAffectation">
+                    <div class="mb-3">
+                        <label for="transporteurSelect" class="form-label">Sélectionner un transporteur</label>
+                        <select class="form-control" id="transporteurSelect" required>
+                            <option value="">Choisir un transporteur...</option>
+                            {% for transporteur in transporteurs %}
+                            <option value="{{ transporteur.id }}" data-vehicules="{{ transporteur.vehicules.count }}">
+                                {{ transporteur.username }} ({{ transporteur.vehicules.count }} véhicule{{ transporteur.vehicules.count|pluralize }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="vehiculeInfo" class="alert alert-info" style="display: none;"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" onclick="confirmerAffectation()">Affecter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de détails de commande -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Détails de la commande</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="detailsContent">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedCommandes = [];
+
+// Filtrage et recherche
+document.getElementById('searchCommandes').addEventListener('input', filtrerCommandes);
+document.getElementById('filterStatut').addEventListener('change', filtrerCommandes);
+document.getElementById('filterTransporteur').addEventListener('change', filtrerCommandes);
+
+function filtrerCommandes() {
+    const search = document.getElementById('searchCommandes').value.toLowerCase();
+    const statut = document.getElementById('filterStatut').value;
+    const transporteur = document.getElementById('filterTransporteur').value;
+    
+    const rows = document.querySelectorAll('#commandesTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const rowStatut = row.querySelector('.badge').textContent.toLowerCase();
+        
+        let show = true;
+        
+        if (search && !text.includes(search)) show = false;
+        if (statut && !rowStatut.includes(statut.replace('_', ' '))) show = false;
+        
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.commande-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+    
+    updateSelectedCommandes();
+}
+
+function updateSelectedCommandes() {
+    selectedCommandes = Array.from(document.querySelectorAll('.commande-checkbox:checked'))
+        .map(cb => cb.value);
+}
+
+function optimiserItineraire(commandeId) {
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.innerHTML = '<div class="spinner"></div>';
+    button.disabled = true;
+    
+    fetch('/planificateur/api/optimiser/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': Utils.getCsrfToken()
+        },
+        body: JSON.stringify({ commande_id: commandeId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Utils.showToast('Itinéraire optimisé avec succès', 'success');
+            // Mettre à jour la distance affichée
+            if (data.itineraire && data.itineraire.distance) {
+                document.getElementById(`distance-${commandeId}`).innerHTML = 
+                    `${data.itineraire.distance.toFixed(1)} km`;
+            }
+        } else {
+            Utils.showToast('Erreur lors de l\'optimisation: ' + (data.error || 'Erreur inconnue'), 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        Utils.showToast('Erreur de communication', 'danger');
+    })
+    .finally(() => {
+        button.innerHTML = originalContent;
+        button.disabled = false;
+    });
+}
+
+function affecterTransporteur(commandeId) {
+    document.getElementById('commandeIdAffectation').value = commandeId;
+    new bootstrap.Modal(document.getElementById('affectationModal')).show();
+}
+
+function confirmerAffectation() {
+    const commandeId = document.getElementById('commandeIdAffectation').value;
+    const transporteurId = document.getElementById('transporteurSelect').value;
+    
+    if (!transporteurId) {
+        Utils.showToast('Veuillez sélectionner un transporteur', 'warning');
+        return;
+    }
+    
+    fetch(`/planificateur/affecter/${commandeId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': Utils.getCsrfToken()
+        },
+        body: `transporteur_id=${transporteurId}`
+    })
+    .then(response => {
+        if (response.ok) {
+            Utils.showToast('Transporteur affecté avec succès', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('affectationModal')).hide();
+            location.reload();
+        } else {
+            Utils.showToast('Erreur lors de l\'affectation', 'danger');
+        }
+    });
+}
+
+function voirDetails(commandeId) {
+    fetch(`/client/api/commandes/${commandeId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('detailsContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informations générales</h6>
+                        <p><strong>Numéro:</strong> ${data.numero}</p>
+                        <p><strong>Client:</strong> ${data.client}</p>
+                        <p><strong>Statut:</strong> ${data.statut}</p>
+                        <p><strong>Date création:</strong> ${new Date(data.date_creation).toLocaleString('fr-FR')}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Marchandise</h6>
+                        <p><strong>Description:</strong> ${data.description_marchandise}</p>
+                        <p><strong>Poids:</strong> ${data.poids} kg</p>
+                        <p><strong>Volume:</strong> ${data.volume} m³</p>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-12">
+                        <h6>Adresses</h6>
+                        <p><strong>Enlèvement:</strong> ${data.adresse_enlevement}</p>
+                        <p><strong>Livraison:</strong> ${data.adresse_livraison}</p>
+                    </div>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('detailsModal')).show();
+        });
+}
+
+function calculerDistance(commandeId) {
+    // Simulation du calcul de distance
+    const distanceElement = document.getElementById(`distance-${commandeId}`);
+    distanceElement.innerHTML = '<div class="spinner"></div>';
+    
+    setTimeout(() => {
+        const distance = (Math.random() * 200 + 10).toFixed(1);
+        distanceElement.innerHTML = `${distance} km`;
+    }, 1000);
+}
+
+function optimiserToutesCommandes() {
+    Utils.confirm('Optimiser toutes les commandes en attente ?', function() {
+        Utils.showToast('Optimisation en cours...', 'info');
+        // Ici, vous pourriez lancer l'optimisation de toutes les commandes
+    });
+}
+
+function planifierTournee() {
+    if (selectedCommandes.length === 0) {
+        Utils.showToast('Veuillez sélectionner au moins une commande', 'warning');
+        return;
+    }
+    
+    Utils.showToast('Planification de tournée en cours...', 'info');
+    // Ici, vous pourriez lancer la planification d'une tournée
+}
+
+// Mise à jour de la sélection lors du changement des checkboxes
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('commande-checkbox')) {
+        updateSelectedCommandes();
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Planificateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-route"></i> Tableau de bord Planificateur</h2>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.commandes_en_attente }}</h4>
+                        <p>En attente</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.commandes_confirmees }}</h4>
+                        <p>Confirmées</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ stats.transporteurs_disponibles }}</h4>
+                        <p>Transporteurs</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-truck fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="optimisations-jour">0</h4>
+                        <p>Optimisations</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-cogs fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-tasks"></i> Commandes à traiter</h5>
+                <a href="{% url 'planificateur:gestion_commandes' %}" class="btn btn-sm btn-primary">
+                    Voir toutes
+                </a>
+            </div>
+            <div class="card-body">
+                <div id="commandes-en-attente">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p>Chargement des commandes...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Statistiques du jour</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Distance totale optimisée</small>
+                    <h6 id="distance-totale">0 km</h6>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Temps économisé</small>
+                    <h6 id="temps-economise">0 min</h6>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Coût réduit</small>
+                    <h6 id="cout-reduit">0 DH</h6>
+                </div>
+                <hr>
+                <div class="d-grid">
+                    <button class="btn btn-outline-primary" onclick="genererRapport()">
+                        <i class="fas fa-file-pdf"></i> Rapport journalier
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-cloud-sun"></i> Conditions météo</h5>
+            </div>
+            <div class="card-body">
+                <div id="meteo-info">
+                    <div class="text-center">
+                        <i class="fas fa-sun fa-2x text-warning"></i>
+                        <p class="mt-2">Ensoleillé - 22°C</p>
+                        <small class="text-muted">Conditions favorables au transport</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    chargerCommandesEnAttente();
+    chargerStatistiques();
+});
+
+function chargerCommandesEnAttente() {
+    fetch('/planificateur/api/commandes-en-attente/')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('commandes-en-attente');
+            if (data.length === 0) {
+                container.innerHTML = '<p class="text-muted text-center">Aucune commande en attente</p>';
+                return;
+            }
+            
+            let html = '<div class="table-responsive"><table class="table table-sm">';
+            html += '<thead><tr><th>Commande</th><th>Client</th><th>Distance</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(commande => {
+                html += `
+                    <tr>
+                        <td>${commande.numero}</td>
+                        <td>${commande.client}</td>
+                        <td>${commande.distance || 'N/A'} km</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="optimiserCommande('${commande.id}')">
+                                <i class="fas fa-route"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            document.getElementById('commandes-en-attente').innerHTML = 
+                '<p class="text-danger text-center">Erreur de chargement</p>';
+        });
+}
+
+function chargerStatistiques() {
+    // Simulation des statistiques
+    document.getElementById('optimisations-jour').textContent = '12';
+    document.getElementById('distance-totale').textContent = '1,250 km';
+    document.getElementById('temps-economise').textContent = '180 min';
+    document.getElementById('cout-reduit').textContent = '2,500 DH';
+}
+
+function optimiserCommande(commandeId) {
+    Utils.confirm('Optimiser l\'itinéraire de cette commande ?', function() {
+        fetch('/planificateur/api/optimiser/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': Utils.getCsrfToken()
+            },
+            body: JSON.stringify({ commande_id: commandeId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Itinéraire optimisé avec succès', 'success');
+                chargerCommandesEnAttente();
+            } else {
+                Utils.showToast('Erreur lors de l\'optimisation', 'danger');
+            }
+        });
+    });
+}
+
+function genererRapport() {
+    Utils.showToast('Génération du rapport en cours...', 'info');
+    // Ici, vous pourriez déclencher la génération d'un PDF
+}
+</script>
+{% endblock %}
