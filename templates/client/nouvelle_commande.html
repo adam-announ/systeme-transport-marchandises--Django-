@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Nouvelle Commande{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-plus"></i> Nouvelle Commande</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Informations de transport</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="commandeForm">
+                    {% csrf_token %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="adresse_enlevement" class="form-label">Adresse d'enlèvement</label>
+                            <input type="text" class="form-control" id="adresse_enlevement" name="adresse_enlevement" required>
+                            <input type="hidden" id="lat_enlevement" name="lat_enlevement">
+                            <input type="hidden" id="lng_enlevement" name="lng_enlevement">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="adresse_livraison" class="form-label">Adresse de livraison</label>
+                            <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" required>
+                            <input type="hidden" id="lat_livraison" name="lat_livraison">
+                            <input type="hidden" id="lng_livraison" name="lng_livraison">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description_marchandise" class="form-label">Description de la marchandise</label>
+                        <textarea class="form-control" id="description_marchandise" name="description_marchandise" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="poids" class="form-label">Poids (kg)</label>
+                            <input type="number" class="form-control" id="poids" name="poids" step="0.1" min="0.1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="volume" class="form-label">Volume (m³)</label>
+                            <input type="number" class="form-control" id="volume" name="volume" step="0.1" min="0.1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date_enlevement_prevue" class="form-label">Date d'enlèvement souhaitée</label>
+                        <input type="datetime-local" class="form-control" id="date_enlevement_prevue" name="date_enlevement_prevue" required>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'client:dashboard' %}" class="btn btn-secondary me-md-2">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Créer la commande
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map"></i> Carte</h5>
+            </div>
+            <div class="card-body">
+                <div id="map" style="height: 300px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem;">
+                    <div class="d-flex align-items-center justify-content-center h-100">
+                        <p class="text-muted">Carte interactive</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simulation de géocodage pour la démo
+document.getElementById('adresse_enlevement').addEventListener('blur', function() {
+    // Coordonnées simulées pour Casablanca
+    document.getElementById('lat_enlevement').value = 33.5731;
+    document.getElementById('lng_enlevement').value = -7.5898;
+});
+
+document.getElementById('adresse_livraison').addEventListener('blur', function() {
+    // Coordonnées simulées pour Rabat
+    document.getElementById('lat_livraison').value = 34.0209;
+    document.getElementById('lng_livraison').value = -6.8416;
+});
+
+// Définir la date minimale à aujourd'hui
+document.getElementById('date_enlevement_prevue').min = new Date().toISOString().slice(0, 16);
+</script>
+{% endblock %}
