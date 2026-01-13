@@ -2,6 +2,8 @@
 
 {% block title %}Gestion des Commandes - Planificateur{% endblock %}
 
+{% block breadcrumb %}Gestion des commandes{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
@@ -115,7 +117,7 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='{% url 'planificateur:optimiser_itineraire' commande.id %}'" title="Optimiser">
+                                <button class="btn btn-sm btn-outline-primary" onclick="optimiserItineraire('{{ commande.id }}', this)" title="Optimiser itinéraire">
                                     <i class="fas fa-route"></i>
                                 </button>
                                 {% if not commande.transporteur %}
@@ -235,12 +237,17 @@ function updateSelectedCommandes() {
         .map(cb => cb.value);
 }
 
-function optimiserItineraire(commandeId) {
-    const button = event.target.closest('button');
-    const originalContent = button.innerHTML;
-    button.innerHTML = '<div class="spinner"></div>';
-    button.disabled = true;
-    
+function optimiserItineraire(commandeId, buttonElement) {
+    // Utiliser l'élément bouton passé en paramètre ou le trouver via l'event global
+    const button = buttonElement || (window.event ? window.event.target.closest('button') : null);
+    let originalContent = '';
+
+    if (button) {
+        originalContent = button.innerHTML;
+        button.innerHTML = '<span class="spinner"></span>';
+        button.disabled = true;
+    }
+
     fetch('/planificateur/api/optimiser/', {
         method: 'POST',
         headers: {
@@ -255,20 +262,24 @@ function optimiserItineraire(commandeId) {
             Utils.showToast('Itinéraire optimisé avec succès', 'success');
             // Mettre à jour la distance affichée
             if (data.itineraire && data.itineraire.distance) {
-                document.getElementById(`distance-${commandeId}`).innerHTML = 
+                document.getElementById(`distance-${commandeId}`).innerHTML =
                     `${data.itineraire.distance.toFixed(1)} km`;
+            } else {
+                setTimeout(() => location.reload(), 1500);
             }
         } else {
-            Utils.showToast('Erreur lors de l\'optimisation: ' + (data.error || 'Erreur inconnue'), 'danger');
+            Utils.showToast('Erreur lors de l\'optimisation: ' + (data.message || data.error || 'Erreur inconnue'), 'danger');
         }
     })
     .catch(error => {
         console.error('Erreur:', error);
-        Utils.showToast('Erreur de communication', 'danger');
+        Utils.showToast('Erreur de communication avec le serveur', 'danger');
     })
     .finally(() => {
-        button.innerHTML = originalContent;
-        button.disabled = false;
+        if (button) {
+            button.innerHTML = originalContent;
+            button.disabled = false;
+        }
     });
 }
 

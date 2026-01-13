@@ -103,25 +103,67 @@
 </div>
 {% endblock %}
 
+{% block breadcrumb %}Gestion utilisateurs{% endblock %}
+
 {% block scripts %}
 <script>
 function supprimerUtilisateur(userId, username) {
     Utils.confirm(`Supprimer l'utilisateur ${username} ?`, function() {
-        fetch(`/admin-panel/api/supprimer-utilisateur/${userId}/`, {
-            method: 'POST',
+        fetch(`/admin-panel/api/utilisateurs/${userId}/supprimer/`, {
+            method: 'DELETE',
             headers: {
+                'Content-Type': 'application/json',
                 'X-CSRFToken': Utils.getCsrfToken()
             }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                Utils.showToast('Utilisateur supprimé', 'success');
-                location.reload();
+                Utils.showToast('Utilisateur supprimé avec succès', 'success');
+                setTimeout(() => location.reload(), 1000);
             } else {
-                Utils.showToast(data.error || 'Erreur', 'danger');
+                Utils.showToast(data.message || data.error || 'Erreur lors de la suppression', 'danger');
             }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            Utils.showToast('Erreur de communication avec le serveur', 'danger');
         });
+    });
+}
+
+// Filtrage utilisateurs
+document.getElementById('searchUser').addEventListener('input', filtrerUtilisateurs);
+document.getElementById('filterRole').addEventListener('change', filtrerUtilisateurs);
+document.getElementById('filterStatut').addEventListener('change', filtrerUtilisateurs);
+
+function filtrerUtilisateurs() {
+    const search = document.getElementById('searchUser').value.toLowerCase();
+    const role = document.getElementById('filterRole').value;
+    const statut = document.getElementById('filterStatut').value;
+
+    const rows = document.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const badges = row.querySelectorAll('.badge');
+        let roleBadge = '', statutBadge = '';
+
+        if (badges.length >= 1) {
+            roleBadge = badges[0].textContent.toLowerCase();
+        }
+        if (badges.length >= 2) {
+            statutBadge = badges[1].textContent.toLowerCase();
+        }
+
+        let show = true;
+
+        if (search && !text.includes(search)) show = false;
+        if (role && !roleBadge.includes(role)) show = false;
+        if (statut === 'actif' && !statutBadge.includes('actif')) show = false;
+        if (statut === 'inactif' && statutBadge.includes('actif')) show = false;
+
+        row.style.display = show ? '' : 'none';
     });
 }
 </script>
