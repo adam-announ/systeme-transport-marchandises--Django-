@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Détail Mission - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-box"></i> Mission {{ mission.numero }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Informations de la mission</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Client:</strong> {{ mission.client.username }}</p>
+                        <p><strong>Statut:</strong> 
+                            <span class="badge bg-{% if mission.statut == 'confirmee' %}info{% elif mission.statut == 'en_cours' %}warning{% else %}success{% endif %}">
+                                {{ mission.get_statut_display }}
+                            </span>
+                        </p>
+                        <p><strong>Poids:</strong> {{ mission.poids }} kg</p>
+                        <p><strong>Volume:</strong> {{ mission.volume }} m³</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Date enlèvement:</strong> {{ mission.date_enlevement_prevue|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Date livraison:</strong> {{ mission.date_livraison_prevue|date:"d/m/Y H:i" }}</p>
+                        <p><strong>Description:</strong> {{ mission.description_marchandise }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Itinéraire</h5>
+            </div>
+            <div class="card-body">
+                <p><strong><i class="fas fa-map-marker-alt text-success"></i> Enlèvement:</strong><br>
+                {{ mission.adresse_enlevement }}</p>
+                <p><strong><i class="fas fa-flag text-danger"></i> Livraison:</strong><br>
+                {{ mission.adresse_livraison }}</p>
+                <a href="{% url 'transporteur:itineraire_mission' mission.id %}" class="btn btn-primary">
+                    <i class="fas fa-route"></i> Voir l'itinéraire
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Actions</h5>
+            </div>
+            <div class="card-body">
+                {% if mission.statut == 'confirmee' %}
+                <form method="post" action="{% url 'transporteur:mettre_a_jour_statut' mission.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="statut" value="en_cours">
+                    <button type="submit" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-play"></i> Démarrer la mission
+                    </button>
+                </form>
+                {% elif mission.statut == 'en_cours' %}
+                <a href="{% url 'transporteur:mettre_a_jour_statut' mission.id %}" class="btn btn-success w-100 mb-2">
+                    <i class="fas fa-check"></i> Confirmer livraison
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'transporteur:signaler_incident' mission.id %}" class="btn btn-warning w-100 mb-2">
+                    <i class="fas fa-exclamation-triangle"></i> Signaler incident
+                </a>
+                
+                <a href="{% url 'transporteur:mes_missions' %}" class="btn btn-secondary w-100">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Rapports - Administrateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar"></i> Rapports</h2>
+        <p class="text-muted">Statistiques et analyses du système</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>Aujourd'hui</h5>
+                <h2 class="text-primary">{{ stats_periode.commandes_aujourd_hui }}</h2>
+                <p class="text-muted">Commandes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>7 derniers jours</h5>
+                <h2 class="text-info">{{ stats_periode.commandes_7_jours }}</h2>
+                <p class="text-muted">Commandes</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>30 derniers jours</h5>
+                <h2 class="text-success">{{ stats_periode.commandes_30_jours }}</h2>
+                <p class="text-muted">Commandes</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Répartition par statut</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Statut</th>
+                            <th>Nombre</th>
+                            <th>Pourcentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in stats_statut %}
+                        <tr>
+                            <td>{{ stat.statut }}</td>
+                            <td>{{ stat.count }}</td>
+                            <td>
+                                <div class="progress">
+                                    <div class="progress-bar" style="width: {{ stat.count }}%">{{ stat.count }}%</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Top 10 Clients</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Client</th>
+                            <th>Commandes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in top_clients %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ client.username }}</td>
+                            <td><span class="badge bg-primary">{{ client.nb_commandes }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">Aucun client</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-download"></i> Exporter les rapports</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <button class="btn btn-success w-100" onclick="exporterExcel()">
+                            <i class="fas fa-file-excel"></i> Excel
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-danger w-100" onclick="exporterPDF()">
+                            <i class="fas fa-file-pdf"></i> PDF
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-info w-100" onclick="exporterCSV()">
+                            <i class="fas fa-file-csv"></i> CSV
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-primary w-100" onclick="imprimerRapport()">
+                            <i class="fas fa-print"></i> Imprimer
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exporterExcel() {
+    Utils.showToast('Export Excel en cours...', 'info');
+}
+
+function exporterPDF() {
+    Utils.showToast('Export PDF en cours...', 'info');
+}
+
+function exporterCSV() {
+    Utils.showToast('Export CSV en cours...', 'info');
+}
+
+function imprimerRapport() {
+    window.print();
+}
+</script>
+{% endblock %}

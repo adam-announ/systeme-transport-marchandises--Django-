@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}Itinéraire - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-route"></i> Itinéraire - {{ mission.numero }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <div id="map" style="height: 500px;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Instructions</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Distance:</strong> ~50 km</p>
+                <p><strong>Durée estimée:</strong> ~1h</p>
+                <hr>
+                <ol>
+                    <li>Départ: {{ mission.adresse_enlevement }}</li>
+                    <li>Arrivée: {{ mission.adresse_livraison }}</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+let map;
+const OPENROUTE_API_KEY = '{{ OPENROUTE_API_KEY }}';
+
+const cities = {
+    'rabat': [34.0209, -6.8416],
+    'tanger': [35.7595, -5.8340],
+    'fes': [34.0181, -5.0078],
+    'marrakech': [31.6295, -7.9811],
+    'agadir': [30.4278, -9.5981],
+    'casablanca': [33.5731, -7.5898]
+};
+
+function initMap() {
+    map = L.map('map').setView([33.5731, -7.5898], 8);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    calculateRoute();
+}
+
+async function calculateRoute() {
+    const origin = "{{ mission.adresse_enlevement }}";
+    const destination = "{{ mission.adresse_livraison }}";
+    
+    console.log('Origine:', origin);
+    console.log('Destination:', destination);
+    
+    // Chercher la ville dans toute l'adresse
+    let originCoords = null;
+    let destCoords = null;
+    
+    const originLower = origin.toLowerCase();
+    const destLower = destination.toLowerCase();
+    
+    for (let city in cities) {
+        if (originLower.includes(city)) {
+            originCoords = cities[city];
+            console.log('Ville origine trouvée:', city, originCoords);
+            break;
+        }
+    }
+    
+    for (let city in cities) {
+        if (destLower.includes(city)) {
+            destCoords = cities[city];
+            console.log('Ville destination trouvée:', city, destCoords);
+            break;
+        }
+    }
+    
+    if (!originCoords || !destCoords) {
+        console.error('Coordonnées non trouvées');
+        alert('Villes non reconnues. Villes supportées: Casablanca, Rabat, Tanger, Fès, Marrakech, Agadir');
+        return;
+    }
+    
+    L.marker(originCoords).addTo(map)
+        .bindPopup('<b>Départ</b><br>' + origin).openPopup();
+    L.marker(destCoords).addTo(map)
+        .bindPopup('<b>Arrivée</b><br>' + destination);
+    
+    try {
+        const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${OPENROUTE_API_KEY}&start=${originCoords[1]},${originCoords[0]}&end=${destCoords[1]},${destCoords[0]}`;
+        
+        console.log('Appel API...');
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        console.log('Réponse API:', data);
+        
+        if (data.features && data.features.length > 0) {
+            const route = data.features[0];
+            const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            
+            L.polyline(coordinates, {color: '#0066ff', weight: 5, opacity: 0.7}).addTo(map);
+            map.fitBounds(L.latLngBounds(coordinates));
+            
+            const distance = (route.properties.segments[0].distance / 1000).toFixed(1);
+            const duration = Math.round(route.properties.segments[0].duration / 60);
+            
+            document.querySelector('.card-body p:nth-child(1)').innerHTML = `<strong>Distance:</strong> ${distance} km`;
+            document.querySelector('.card-body p:nth-child(2)').innerHTML = `<strong>Durée estimée:</strong> ${duration} min`;
+            
+            // Mettre à jour les instructions
+            const instructionsList = document.querySelector('.card-body ol');
+            instructionsList.innerHTML = `
+                <li>Départ: ${origin}</li>
+                <li>Arrivée: ${destination}</li>
+            `;
+        } else {
+            console.error('Pas de route trouvée');
+            alert('Impossible de calculer l\'itinéraire');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur API: ' + error.message);
+    }
+}
+
+window.onload = initMap;
+</script>
+{% endblock %}

@@ -75,7 +75,35 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+    },
+    # MongoDB (optionnel)
+    'mongodb': {
+        'ENGINE': 'djongo',
+        'NAME': config('MONGO_DB_NAME', default='transport_mongo'),
+        'CLIENT': {
+            'host': config('MONGO_HOST', default='localhost'),
+            'port': config('MONGO_PORT', default=27017, cast=int),
+            'username': config('MONGO_USER', default=''),
+            'password': config('MONGO_PASSWORD', default=''),
+        }
     }
+}
+
+# Configuration Neo4j
+NEO4J_CONFIG = {
+    'URI': config('NEO4J_URI', default='bolt://localhost:7687'),
+    'USERNAME': config('NEO4J_USER', default='neo4j'),
+    'PASSWORD': config('NEO4J_PASSWORD', default='password'),
+    'DATABASE': config('NEO4J_DATABASE', default='neo4j'),
+}
+
+# Configuration MongoDB (MongoEngine)
+MONGODB_CONFIG = {
+    'HOST': config('MONGO_HOST', default='localhost'),
+    'PORT': config('MONGO_PORT', default=27017, cast=int),
+    'DB': config('MONGO_DB_NAME', default='transport_mongo'),
+    'USERNAME': config('MONGO_USER', default=''),
+    'PASSWORD': config('MONGO_PASSWORD', default=''),
 }
 
 # Validation des mots de passe
@@ -178,6 +206,11 @@ LOGGING = {
         },
     },
 }
+
+# Configuration d'authentification
+LOGIN_URL = '/auth/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/auth/login/'
 
 # Configuration des rôles utilisateur
 USER_ROLES = {

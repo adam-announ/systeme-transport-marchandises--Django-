@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}Mes Véhicules - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-truck"></i> Mes Véhicules</h2>
+            <a href="{% url 'transporteur:ajouter_vehicule' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Ajouter un véhicule
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {% for vehicule in vehicules %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5><i class="fas fa-truck"></i> {{ vehicule.immatriculation }}</h5>
+                <p><strong>Type:</strong> {{ vehicule.get_type_vehicule_display }}</p>
+                <p><strong>Capacité poids:</strong> {{ vehicule.capacite_poids }} kg</p>
+                <p><strong>Capacité volume:</strong> {{ vehicule.capacite_volume }} m³</p>
+                <p>
+                    <strong>Statut:</strong>
+                    {% if vehicule.disponible %}
+                    <span class="badge bg-success">Disponible</span>
+                    {% else %}
+                    <span class="badge bg-warning">En mission</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> Aucun véhicule enregistré
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

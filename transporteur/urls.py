@@ -12,8 +12,8 @@ urlpatterns = [
     path('missions/', views.mes_missions, name='mes_missions'),
     path('mission/<uuid:mission_id>/', views.mission_detail, name='mission_detail'),
     path('itineraire/<uuid:mission_id>/', views.itineraire_mission, name='itineraire_mission'),
-    path('statut/<uuid:mission_id>/', views.mettre_a_jour_statut, name='mettre_a_jour_statut'),
-    path('incident/<uuid:mission_id>/', views.signaler_incident, name='signaler_incident'),
+    path('mission/<uuid:mission_id>/statut/', views.mettre_a_jour_statut, name='mettre_a_jour_statut'),
+    path('mission/<uuid:mission_id>/incident/', views.signaler_incident, name='signaler_incident'),
     path('vehicules/', views.mes_vehicules, name='mes_vehicules'),
     path('vehicules/ajouter/', views.ajouter_vehicule, name='ajouter_vehicule'),
     

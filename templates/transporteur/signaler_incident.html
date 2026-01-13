@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Signaler Incident - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle"></i> Signaler un incident - {{ mission.numero }}</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Type d'incident</label>
+                        <select class="form-control" name="type_incident" required>
+                            <option value="">Sélectionner...</option>
+                            <option value="panne">Panne véhicule</option>
+                            <option value="accident">Accident</option>
+                            <option value="retard">Retard</option>
+                            <option value="marchandise">Problème marchandise</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="5" required></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'transporteur:mission_detail' mission.id %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-warning">Signaler</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

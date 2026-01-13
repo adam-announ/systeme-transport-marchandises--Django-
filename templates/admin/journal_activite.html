@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Journal d'activité - Administrateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-history"></i> Journal d'activité</h2>
+        <p class="text-muted">Historique des actions du système</p>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="searchActivite" placeholder="Rechercher une activité...">
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterUtilisateur">
+            <option value="">Tous les utilisateurs</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="date" class="form-control" id="filterDate">
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date/Heure</th>
+                        <th>Utilisateur</th>
+                        <th>Action</th>
+                        <th>IP</th>
+                        <th>Détails</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for activite in activites %}
+                    <tr>
+                        <td>{{ activite.date_action|date:"d/m/Y H:i:s" }}</td>
+                        <td>
+                            <i class="fas fa-user"></i> 
+                            {{ activite.utilisateur.username|default:"Système" }}
+                        </td>
+                        <td>{{ activite.action }}</td>
+                        <td><code>{{ activite.adresse_ip|default:"-" }}</code></td>
+                        <td>
+                            {% if activite.details %}
+                            <button class="btn btn-sm btn-outline-info" onclick="voirDetails('{{ activite.id }}')">
+                                <i class="fas fa-info-circle"></i>
+                            </button>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Aucune activité enregistrée</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function voirDetails(activiteId) {
+    Utils.showToast('Chargement des détails...', 'info');
+}
+</script>
+{% endblock %}

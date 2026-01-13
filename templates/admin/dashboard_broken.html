@@ -1,0 +1,600 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord Administrateur{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold text-primary">
+                <i class="fas fa-chart-line"></i> Tableau de bord Administrateur
+            </h1>
+            <p class="text-muted">Vue d'ensemble du système de transport</p>
+        </div>
+    </div>
+
+    <!-- Statistiques principales -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Utilisateurs</p>
+                        <h2 class="fw-bold mb-0">{{ stats.total_utilisateurs }}</h2>
+                    </div>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Clients</p>
+                        <h2 class="fw-bold mb-0">{{ stats.clients_actifs }}</h2>
+                    </div>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); color: white;">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Transporteurs</p>
+                        <h2 class="fw-bold mb-0">{{ stats.transporteurs_actifs }}</h2>
+                    </div>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white;">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1">Commandes</p>
+                        <h2 class="fw-bold mb-0">{{ stats.total_commandes }}</h2>
+                    </div>
+                    <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white;">
+                        <i class="fas fa-box"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions rapides -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Actions rapides</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{% url 'admin_panel:creer_utilisateur' %}" class="btn btn-primary w-100 py-3">
+                                <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+                                Nouvel utilisateur
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admin_panel:envoyer_notification' %}" class="btn btn-info w-100 py-3">
+                                <i class="fas fa-bell fa-2x mb-2 d-block"></i>
+                                Notification
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admin_panel:configuration_systeme' %}" class="btn btn-warning w-100 py-3">
+                                <i class="fas fa-cog fa-2x mb-2 d-block"></i>
+                                Configuration
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{% url 'admin_panel:rapports' %}" class="btn btn-success w-100 py-3">
+                                <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
+                                Rapports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activités et commandes récentes -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Activités récentes</h5>
+                    <a href="{% url 'admin_panel:journal_activite' %}" class="btn btn-sm btn-light">
+                        Voir tout
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if activites_recentes %}
+                        <div class="timeline">
+                            {% for activite in activites_recentes %}
+                            <div class="d-flex mb-3 pb-3 border-bottom">
+                                <div class="flex-shrink-0">
+                                    <div class="stat-icon" style="width: 40px; height: 40px; background: #f1f5f9;">
+                                        <i class="fas fa-user-circle text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <strong>{{ activite.utilisateur.username|default:"Système" }}</strong>
+                                    <p class="mb-1 small">{{ activite.action }}</p>
+                                    <small class="text-muted">{{ activite.date_action|date:"d/m/Y H:i" }}</small>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-5">Aucune activité récente</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Commandes récentes</h5>
+                    <a href="{% url 'admin_panel:gestion_commandes' %}" class="btn btn-sm btn-light">
+                        Voir toutes
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if commandes_recentes %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Numéro</th>
+                                        <th>Client</th>
+                                        <th>Statut</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for commande in commandes_recentes %}
+                                    <tr>
+                                        <td><strong>{{ commande.numero }}</strong></td>
+                                        <td>{{ commande.client.username }}</td>
+                                        <td>
+                                            <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% else %}secondary{% endif %}">
+                                                {{ commande.get_statut_display }}
+                                            </span>
+                                        </td>
+                                        <td>{{ commande.date_creation|date:"d/m H:i" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center py-5">Aucune commande récente</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Statistiques principales -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4>{{ stats.total_utilisateurs }}</h4>
+                <small>Utilisateurs</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-user-tie fa-2x mb-2"></i>
+                <h4>{{ stats.clients_actifs }}</h4>
+                <small>Clients</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-truck fa-2x mb-2"></i>
+                <h4>{{ stats.transporteurs_actifs }}</h4>
+                <small>Transporteurs</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-box fa-2x mb-2"></i>
+                <h4>{{ stats.total_commandes }}</h4>
+                <small>Commandes</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-orange text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-clock fa-2x mb-2"></i>
+                <h4>{{ stats.commandes_en_cours }}</h4>
+                <small>En cours</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-dark text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4>{{ stats.commandes_livrees }}</h4>
+                <small>Livrées</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Graphiques et analyses -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Évolution des commandes</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="commandesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Répartition par statut</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="statutChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Activités et commandes récentes -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history"></i> Activités récentes</h5>
+                <a href="{% url 'admin_panel:journal_activite' %}" class="btn btn-sm btn-outline-primary">
+                    Voir tout
+                </a>
+            </div>
+            <div class="card-body">
+                {% if activites_recentes %}
+                    <div class="timeline">
+                        {% for activite in activites_recentes %}
+                        <div class="timeline-item">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <strong>{{ activite.utilisateur.username|default:"Système" }}</strong>
+                                    <p class="mb-1">{{ activite.action }}</p>
+                                    <small class="text-muted">{{ activite.date_action|date:"d/m/Y H:i" }}</small>
+                                </div>
+                                <div>
+                                    <i class="fas fa-user-circle text-muted"></i>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Aucune activité récente</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-list"></i> Commandes récentes</h5>
+                <a href="{% url 'admin_panel:gestion_commandes' %}" class="btn btn-sm btn-outline-primary">
+                    Voir toutes
+                </a>
+            </div>
+            <div class="card-body">
+                {% if commandes_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Numéro</th>
+                                    <th>Client</th>
+                                    <th>Statut</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for commande in commandes_recentes %}
+                                <tr>
+                                    <td>{{ commande.numero }}</td>
+                                    <td>{{ commande.client.username }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if commande.statut == 'livree' %}success{% elif commande.statut == 'en_cours' %}warning{% else %}secondary{% endif %}">
+                                            {{ commande.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ commande.date_creation|date:"d/m H:i" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Aucune commande récente</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Actions rapides</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <a href="{% url 'admin_panel:creer_utilisateur' %}" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> Nouvel utilisateur
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <a href="{% url 'admin_panel:envoyer_notification' %}" class="btn btn-info">
+                                <i class="fas fa-bell"></i> Notification
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <a href="{% url 'admin_panel:configuration_systeme' %}" class="btn btn-warning">
+                                <i class="fas fa-cog"></i> Configuration
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <a href="{% url 'admin_panel:rapports' %}" class="btn btn-success">
+                                <i class="fas fa-chart-bar"></i> Rapports
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertes système -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle"></i> Alertes système</h5>
+            </div>
+            <div class="card-body" id="alertes-systeme">
+                <div class="text-center">
+                    <div class="spinner"></div>
+                    <p>Vérification des alertes...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    initCommandesChart();
+    initStatutChart();
+    chargerAlertes();
+    
+    // Mise à jour automatique toutes les 5 minutes
+    setInterval(function() {
+        chargerStatistiques();
+        chargerAlertes();
+    }, 300000);
+});
+
+function initCommandesChart() {
+    const ctx = document.getElementById('commandesChart').getContext('2d');
+    
+    // Données simulées pour la démo
+    const data = {
+        labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+        datasets: [{
+            label: 'Commandes créées',
+            data: [12, 19, 15, 25, 22, 30],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }, {
+            label: 'Commandes livrées',
+            data: [10, 17, 13, 23, 20, 28],
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            tension: 0.1
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function initStatutChart() {
+    const ctx = document.getElementById('statutChart').getContext('2d');
+    
+    const data = {
+        labels: ['En attente', 'Confirmées', 'En cours', 'Livrées', 'Annulées'],
+        datasets: [{
+            data: [{{ stats.commandes_en_cours }}, 15, 8, {{ stats.commandes_livrees }}, 2],
+            backgroundColor: [
+                '#ffc107',
+                '#17a2b8',
+                '#fd7e14',
+                '#28a745',
+                '#dc3545'
+            ]
+        }]
+    };
+    
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true
+        }
+    });
+}
+
+function chargerStatistiques() {
+    fetch('/admin-panel/api/statistiques/')
+        .then(response => response.json())
+        .then(data => {
+            // Mettre à jour les statistiques en temps réel
+            console.log('Statistiques mises à jour:', data);
+        })
+        .catch(error => {
+            console.error('Erreur chargement statistiques:', error);
+        });
+}
+
+function chargerAlertes() {
+    // Simulation d'alertes système
+    const alertes = [
+        {
+            type: 'warning',
+            message: 'Espace disque faible (85% utilisé)',
+            action: 'Nettoyer les logs'
+        },
+        {
+            type: 'info',
+            message: '3 nouveaux utilisateurs en attente de validation',
+            action: 'Valider les comptes'
+        }
+    ];
+    
+    let html = '';
+    if (alertes.length === 0) {
+        html = '<div class="alert alert-success"><i class="fas fa-check-circle"></i> Aucune alerte système</div>';
+    } else {
+        alertes.forEach(alerte => {
+            html += `
+                <div class="alert alert-${alerte.type} d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="fas fa-${alerte.type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                        ${alerte.message}
+                    </div>
+                    <button class="btn btn-sm btn-outline-${alerte.type}">${alerte.action}</button>
+                </div>
+            `;
+        });
+    }
+    
+    document.getElementById('alertes-systeme').innerHTML = html;
+}
+
+// Fonctions utilitaires pour les actions rapides
+function creerSauvegarde() {
+    Utils.confirm('Créer une sauvegarde du système ?', function() {
+        Utils.showToast('Sauvegarde en cours...', 'info');
+        // Ici, vous pourriez déclencher une sauvegarde
+    });
+}
+
+function nettoyerLogs() {
+    Utils.confirm('Nettoyer les anciens logs ?', function() {
+        Utils.showToast('Nettoyage des logs...', 'info');
+        // Ici, vous pourriez nettoyer les logs
+    });
+}
+
+function redemarrerServices() {
+    Utils.confirm('Redémarrer les services système ?', function() {
+        Utils.showToast('Redémarrage des services...', 'warning');
+        // Ici, vous pourriez redémarrer les services
+    });
+}
+</script>
+
+<style>
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.5rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -0.75rem;
+    top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #007bff;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+</style>
+{% endblock %}

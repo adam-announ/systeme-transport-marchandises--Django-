@@ -49,33 +49,19 @@ def optimiser_itineraire(request, commande_id):
     if request.user.role != 'planificateur':
         return redirect('auth:login')
     
+    from django.conf import settings
     commande = get_object_or_404(Commande, id=commande_id)
     
     if request.method == 'POST':
-        # Utilisation du service d'optimisation
-        service = OptimisationService()
-        itineraire_data = service.optimiser_itineraire(
-            lat_depart=commande.latitude_enlevement,
-            lng_depart=commande.longitude_enlevement,
-            lat_arrivee=commande.latitude_livraison,
-            lng_arrivee=commande.longitude_livraison
-        )
-        
-        # Création de l'itinéraire
-        itineraire, created = Itineraire.objects.get_or_create(
-            commande=commande,
-            defaults={
-                'distance_km': itineraire_data['distance'],
-                'duree_minutes': itineraire_data['duree'],
-                'points_passage': itineraire_data['points'],
-                'instructions': itineraire_data['instructions']
-            }
-        )
-        
-        messages.success(request, 'Itinéraire optimisé avec succès')
+        commande.statut = 'confirmee'
+        commande.save()
+        messages.success(request, 'Itinéraire validé avec succès')
         return redirect('planificateur:gestion_commandes')
     
-    return render(request, 'planificateur/optimiser_itineraire.html', {'commande': commande})
+    return render(request, 'planificateur/optimiser_itineraire.html', {
+        'commande': commande,
+        'OPENROUTE_API_KEY': settings.OPENROUTE_API_KEY
+    })
 
 @login_required
 def affecter_transporteur(request, commande_id):

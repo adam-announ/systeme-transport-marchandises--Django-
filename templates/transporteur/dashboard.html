@@ -165,9 +165,15 @@
                 </div>
                 <hr>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-success" onclick="demarrerMission()" id="btn-demarrer" disabled>
+                    {% if prochaines_missions %}
+                    <button class="btn btn-success" onclick="demarrerMission()" id="btn-demarrer">
                         <i class="fas fa-play"></i> Démarrer mission
                     </button>
+                    {% else %}
+                    <button class="btn btn-success" disabled id="btn-demarrer">
+                        <i class="fas fa-play"></i> Démarrer mission
+                    </button>
+                    {% endif %}
                     <button class="btn btn-warning" onclick="signalerIncident()">
                         <i class="fas fa-exclamation-triangle"></i> Signaler incident
                     </button>
@@ -329,11 +335,7 @@ function chargerNotifications() {
 }
 
 function verifierMissionActive() {
-    // Vérifier s'il y a une mission active pour activer le bouton
-    const missionActive = {{ prochaines_missions|length }} > 0;
-    if (missionActive) {
-        document.getElementById('btn-demarrer').disabled = false;
-    }
+    // Le bouton est déjà géré par le template Django
 }
 
 function mettreAJourPosition() {
@@ -370,12 +372,19 @@ function mettreAJourPosition() {
 }
 
 function demarrerMission() {
-    Utils.confirm('Démarrer la prochaine mission ?', function() {
-        // Ici, vous pourriez démarrer la mission
-        Utils.showToast('Mission démarrée', 'success');
-        document.getElementById('statut-transporteur').textContent = 'En mission';
-        document.getElementById('statut-transporteur').className = 'badge bg-warning';
-    });
+    // Récupérer la première mission confirmée
+    {% if prochaines_missions %}
+    const premiereMission = '{{ prochaines_missions.0.id }}';
+    if (premiereMission) {
+        Utils.confirm('Démarrer la mission {{ prochaines_missions.0.numero }} ?', function() {
+            window.location.href = `/transporteur/mission/${premiereMission}/statut/`;
+        });
+    } else {
+        Utils.showToast('Aucune mission à démarrer', 'warning');
+    }
+    {% else %}
+    Utils.showToast('Aucune mission disponible', 'warning');
+    {% endif %}
 }
 
 function signalerIncident() {

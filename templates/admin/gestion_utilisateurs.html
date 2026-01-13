@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestion Utilisateurs - Administrateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-users"></i> Gestion des utilisateurs</h2>
+            </div>
+            <a href="{% url 'admin_panel:creer_utilisateur' %}" class="btn btn-primary">
+                <i class="fas fa-user-plus"></i> Nouvel utilisateur
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <input type="text" class="form-control" id="searchUser" placeholder="Rechercher un utilisateur...">
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterRole">
+            <option value="">Tous les rôles</option>
+            <option value="client">Client</option>
+            <option value="transporteur">Transporteur</option>
+            <option value="planificateur">Planificateur</option>
+            <option value="admin">Administrateur</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-control" id="filterStatut">
+            <option value="">Tous les statuts</option>
+            <option value="actif">Actif</option>
+            <option value="inactif">Inactif</option>
+        </select>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Utilisateur</th>
+                        <th>Email</th>
+                        <th>Rôle</th>
+                        <th>Téléphone</th>
+                        <th>Statut</th>
+                        <th>Date création</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in utilisateurs %}
+                    <tr>
+                        <td>
+                            <i class="fas fa-user-circle"></i>
+                            <strong>{{ user.username }}</strong>
+                            <br>
+                            <small class="text-muted">{{ user.first_name }} {{ user.last_name }}</small>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            <span class="badge bg-{% if user.role == 'admin' %}danger{% elif user.role == 'transporteur' %}success{% elif user.role == 'planificateur' %}warning{% else %}info{% endif %}">
+                                {{ user.get_role_display }}
+                            </span>
+                        </td>
+                        <td>{{ user.telephone|default:"-" }}</td>
+                        <td>
+                            {% if user.actif %}
+                            <span class="badge bg-success">Actif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.date_creation|date:"d/m/Y" }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'admin_panel:modifier_utilisateur' user.id %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="supprimerUtilisateur('{{ user.id }}', '{{ user.username }}')" 
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted">Aucun utilisateur trouvé</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function supprimerUtilisateur(userId, username) {
+    Utils.confirm(`Supprimer l'utilisateur ${username} ?`, function() {
+        fetch(`/admin-panel/api/supprimer-utilisateur/${userId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': Utils.getCsrfToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Utilisateur supprimé', 'success');
+                location.reload();
+            } else {
+                Utils.showToast(data.error || 'Erreur', 'danger');
+            }
+        });
+    });
+}
+</script>
+{% endblock %}

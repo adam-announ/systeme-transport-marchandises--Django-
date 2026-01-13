@@ -115,13 +115,13 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary" onclick="window.location.href='{% url 'planificateur:optimiser_itineraire' commande.id %}'" title="Optimiser">
+                                <button class="btn btn-sm btn-outline-primary" onclick="optimiserItineraire('{{ commande.id }}')" title="Optimiser">
                                     <i class="fas fa-route"></i>
                                 </button>
                                 {% if not commande.transporteur %}
-                                <a href="{% url 'planificateur:affecter_transporteur' commande.id %}" class="btn btn-sm btn-outline-success" title="Affecter">
+                                <button class="btn btn-sm btn-outline-success" onclick="affecterTransporteur('{{ commande.id }}')" title="Affecter">
                                     <i class="fas fa-user-plus"></i>
-                                </a>
+                                </button>
                                 {% endif %}
                                 <button class="btn btn-sm btn-outline-info" onclick="voirDetails('{{ commande.id }}')" title="Détails">
                                     <i class="fas fa-eye"></i>
@@ -150,7 +150,6 @@
             </div>
             <div class="modal-body">
                 <form id="affectationForm">
-                    {% csrf_token %}
                     <input type="hidden" id="commandeIdAffectation">
                     <div class="mb-3">
                         <label for="transporteurSelect" class="form-label">Sélectionner un transporteur</label>
@@ -282,32 +281,26 @@ function confirmerAffectation() {
     const transporteurId = document.getElementById('transporteurSelect').value;
     
     if (!transporteurId) {
-        alert('Veuillez sélectionner un transporteur');
+        Utils.showToast('Veuillez sélectionner un transporteur', 'warning');
         return;
     }
-    
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
     fetch(`/planificateur/affecter/${commandeId}/`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRFToken': csrftoken
+            'X-CSRFToken': Utils.getCsrfToken()
         },
         body: `transporteur_id=${transporteurId}`
     })
     .then(response => {
         if (response.ok) {
-            alert('Transporteur affecté avec succès');
+            Utils.showToast('Transporteur affecté avec succès', 'success');
             bootstrap.Modal.getInstance(document.getElementById('affectationModal')).hide();
             location.reload();
         } else {
-            alert('Erreur lors de l\'affectation');
+            Utils.showToast('Erreur lors de l\'affectation', 'danger');
         }
-    })
-    .catch(error => {
-        console.error('Erreur:', error);
-        alert('Erreur lors de l\'affectation');
     });
 }
 

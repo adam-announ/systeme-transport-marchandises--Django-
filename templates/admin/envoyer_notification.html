@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Envoyer Notification - Administrateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-bell"></i> Envoyer une notification</h2>
+        <p class="text-muted">Envoyer des notifications aux utilisateurs</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="destinataires" class="form-label">Destinataires</label>
+                        <select class="form-control" name="destinataires" id="destinataires" multiple size="10">
+                            <option value="tous">📢 Tous les utilisateurs</option>
+                            <optgroup label="Utilisateurs">
+                                {% for user in utilisateurs %}
+                                <option value="{{ user.id }}">
+                                    {{ user.username }} ({{ user.get_role_display }})
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                        <small class="text-muted">Maintenez Ctrl pour sélectionner plusieurs utilisateurs</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="type_notification" class="form-label">Type</label>
+                        <select class="form-control" name="type_notification" id="type_notification">
+                            <option value="info">ℹ️ Information</option>
+                            <option value="success">✅ Succès</option>
+                            <option value="warning">⚠️ Avertissement</option>
+                            <option value="danger">🚨 Urgent</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="titre" class="form-label">Titre</label>
+                        <input type="text" class="form-control" name="titre" id="titre" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="message" class="form-label">Message</label>
+                        <textarea class="form-control" name="message" id="message" rows="5" required></textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin_panel:dashboard' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Envoyer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('destinataires').addEventListener('change', function() {
+    const options = Array.from(this.selectedOptions);
+    const hasTous = options.some(opt => opt.value === 'tous');
+    
+    if (hasTous && options.length > 1) {
+        // Désélectionner les autres si "tous" est sélectionné
+        Array.from(this.options).forEach(opt => {
+            if (opt.value !== 'tous') opt.selected = false;
+        });
+    }
+});
+</script>
+{% endblock %}

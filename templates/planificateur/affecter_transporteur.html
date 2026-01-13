@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Affecter Transporteur - Planificateur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-plus"></i> Affecter un transporteur - {{ commande.numero }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <strong>Commande:</strong> {{ commande.numero }}<br>
+                    <strong>Client:</strong> {{ commande.client.username }}<br>
+                    <strong>Poids:</strong> {{ commande.poids }} kg | <strong>Volume:</strong> {{ commande.volume }} m³
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Sélectionner un transporteur</label>
+                        <select class="form-control" name="transporteur_id" id="transporteurSelect" required>
+                            <option value="">Choisir...</option>
+                            {% for transporteur in transporteurs %}
+                            <option value="{{ transporteur.id }}">
+                                {{ transporteur.username }} - {{ transporteur.email }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'planificateur:gestion_commandes' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Affecter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

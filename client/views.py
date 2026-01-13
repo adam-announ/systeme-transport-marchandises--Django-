@@ -37,33 +37,56 @@ def nouvelle_commande(request):
         return redirect('auth:login')
     
     if request.method == 'POST':
+        from core.models import Adresse
+        
         # Récupération des données du formulaire
-        adresse_enlevement = request.POST.get('adresse_enlevement')
-        adresse_livraison = request.POST.get('adresse_livraison')
-        lat_enlevement = float(request.POST.get('lat_enlevement'))
-        lng_enlevement = float(request.POST.get('lng_enlevement'))
-        lat_livraison = float(request.POST.get('lat_livraison'))
-        lng_livraison = float(request.POST.get('lng_livraison'))
+        adresse_enlevement_str = request.POST.get('adresse_enlevement')
+        adresse_livraison_str = request.POST.get('adresse_livraison')
+        lat_enlevement = float(request.POST.get('lat_enlevement', 0))
+        lng_enlevement = float(request.POST.get('lng_enlevement', 0))
+        lat_livraison = float(request.POST.get('lat_livraison', 0))
+        lng_livraison = float(request.POST.get('lng_livraison', 0))
         description = request.POST.get('description_marchandise')
         poids = float(request.POST.get('poids'))
         volume = float(request.POST.get('volume'))
         date_enlevement = request.POST.get('date_enlevement_prevue')
         
+        # Créer les objets Adresse
+        adresse_enl = Adresse.objects.create(
+            rue=adresse_enlevement_str,
+            ville='Casablanca',
+            code_postal='20000',
+            latitude=lat_enlevement,
+            longitude=lng_enlevement
+        )
+        
+        adresse_liv = Adresse.objects.create(
+            rue=adresse_livraison_str,
+            ville='Casablanca',
+            code_postal='20000',
+            latitude=lat_livraison,
+            longitude=lng_livraison
+        )
+        
+        # Créer le type de marchandise par défaut
+        from core.models import TypeMarchandise
+        type_marchandise, _ = TypeMarchandise.objects.get_or_create(
+            nom='Standard',
+            defaults={'tarif_base': 100.0}
+        )
+        
         # Création de la commande
         commande = Commande.objects.create(
             numero=f"CMD-{uuid.uuid4().hex[:8].upper()}",
             client=request.user,
-            adresse_enlevement=adresse_enlevement,
-            adresse_livraison=adresse_livraison,
-            latitude_enlevement=lat_enlevement,
-            longitude_enlevement=lng_enlevement,
-            latitude_livraison=lat_livraison,
-            longitude_livraison=lng_livraison,
+            adresse_enlevement=adresse_enl,
+            adresse_livraison=adresse_liv,
+            type_marchandise=type_marchandise,
             description_marchandise=description,
             poids=poids,
             volume=volume,
             date_enlevement_prevue=date_enlevement,
-            date_livraison_prevue=date_enlevement,  # À calculer avec l'optimisation
+            date_livraison_prevue=date_enlevement,
         )
         
         messages.success(request, f'Commande {commande.numero} créée avec succès')
@@ -112,8 +135,8 @@ def api_commandes(request):
             'id': str(commande.id),
             'numero': commande.numero,
             'statut': commande.statut,
-            'adresse_enlevement': commande.adresse_enlevement,
-            'adresse_livraison': commande.adresse_livraison,
+            'adresse_enlevement': commande.adresse_enlevement.adresse_complete if commande.adresse_enlevement else '',
+            'adresse_livraison': commande.adresse_livraison.adresse_complete if commande.adresse_livraison else '',
             'date_creation': commande.date_creation.isoformat(),
             'transporteur': commande.transporteur.username if commande.transporteur else None,
         })
@@ -133,8 +156,8 @@ def api_suivi_commande(request, commande_id):
             'numero': commande.numero,
             'statut': commande.statut,
             'position_transporteur': {
-                'lat': commande.latitude_enlevement,  # Position simulée
-                'lng': commande.longitude_enlevement,
+                'lat': commande.adresse_enlevement.latitude,
+                'lng': commande.adresse_enlevement.longitude,
             } if commande.transporteur else None,
             'progression': {
                 'en_attente': commande.statut in ['en_attente', 'confirmee', 'en_cours', 'livree'],

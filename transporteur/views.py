@@ -70,8 +70,12 @@ def itineraire_mission(request, mission_id):
     if request.user.role != 'transporteur':
         return redirect('auth:login')
     
+    from django.conf import settings
     mission = get_object_or_404(Commande, id=mission_id, transporteur=request.user)
-    return render(request, 'transporteur/itineraire_mission.html', {'mission': mission})
+    return render(request, 'transporteur/itineraire_mission.html', {
+        'mission': mission,
+        'OPENROUTE_API_KEY': settings.OPENROUTE_API_KEY
+    })
 
 @login_required
 def mettre_a_jour_statut(request, mission_id):
@@ -170,16 +174,22 @@ def ajouter_vehicule(request):
         return redirect('auth:login')
     
     if request.method == 'POST':
-        vehicule = Vehicule.objects.create(
-            transporteur=request.user,
-            immatriculation=request.POST.get('immatriculation'),
-            type_vehicule=request.POST.get('type_vehicule'),
-            capacite_poids=float(request.POST.get('capacite_poids')),
-            capacite_volume=float(request.POST.get('capacite_volume'))
-        )
-        
-        messages.success(request, 'Véhicule ajouté avec succès')
-        return redirect('transporteur:mes_vehicules')
+        try:
+            vehicule = Vehicule.objects.create(
+                transporteur=request.user,
+                immatriculation=request.POST.get('immatriculation'),
+                marque=request.POST.get('marque', ''),
+                modele=request.POST.get('modele', ''),
+                annee=int(request.POST.get('annee', 2020)),
+                type_vehicule=request.POST.get('type_vehicule'),
+                capacite_poids=float(request.POST.get('capacite_poids')),
+                capacite_volume=float(request.POST.get('capacite_volume'))
+            )
+            
+            messages.success(request, 'Véhicule ajouté avec succès')
+            return redirect('transporteur:mes_vehicules')
+        except Exception as e:
+            messages.error(request, f'Erreur: {str(e)}')
     
     return render(request, 'transporteur/ajouter_vehicule.html')
 
