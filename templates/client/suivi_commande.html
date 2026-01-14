@@ -34,32 +34,7 @@
                 </div>
             </div>
             <div class="card-body p-0">
-                <div id="map-container" style="height: 500px; position: relative;">
-                    <!-- Carte interactive -->
-                    <div class="d-flex align-items-center justify-content-center h-100 bg-light">
-                        <div class="text-center">
-                            <i class="fas fa-map fa-4x text-muted mb-3"></i>
-                            <h5 class="text-muted">Carte de suivi</h5>
-                            <p class="text-muted">Position du transporteur en temps réel</p>
-                            <div class="mt-3">
-                                <div class="d-flex justify-content-center align-items-center">
-                                    <div class="me-3">
-                                        <i class="fas fa-map-marker-alt text-success fa-lg"></i>
-                                        <small class="ms-1">Enlèvement</small>
-                                    </div>
-                                    <div class="me-3">
-                                        <i class="fas fa-truck text-primary fa-lg"></i>
-                                        <small class="ms-1">Transporteur</small>
-                                    </div>
-                                    <div>
-                                        <i class="fas fa-flag text-danger fa-lg"></i>
-                                        <small class="ms-1">Livraison</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div id="map" style="height: 500px;"></div>
             </div>
         </div>
     </div>
@@ -228,15 +203,23 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 let suiviInterval;
 let isTracking = false;
+let map;
+let transporteurMarker;
+let enlevementMarker;
+let livraisonMarker;
+let routeLine;
 
 document.addEventListener('DOMContentLoaded', function() {
+    initialiserCarte();
     demarrerSuivi();
     
     // Démarrer le suivi automatique
-    suiviInterval = setInterval(actualiserPosition, 30000); // Toutes les 30 secondes
+    suiviInterval = setInterval(actualiserPosition, 10000); // Toutes les 10 secondes
 });
 
 // Nettoyage avant fermeture
@@ -329,14 +312,88 @@ function mettreAJourProgression(progression) {
     });
 }
 
-function mettreAJourCarte(position) {
-    // Ici, vous pourriez mettre à jour une vraie carte
-    console.log('Position transporteur:', position);
+function initialiserCarte() {
+    // Coordonnées par défaut (Casablanca)
+    const defaultLat = {{ commande.adresse_enlevement.latitude|default:33.5731 }};
+    const defaultLng = {{ commande.adresse_enlevement.longitude|default:-7.5898 }};
     
-    // Simulation d'une notification de mouvement
-    if (Math.random() > 0.8) {
-        afficherNotification('Le transporteur se rapproche de la destination', 'info');
+    map = L.map('map').setView([defaultLat, defaultLng], 12);
+    
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Marqueur enlèvement
+    const enlevementIcon = L.divIcon({
+        html: '<i class="fas fa-map-marker-alt fa-2x text-success"></i>',
+        className: 'custom-marker',
+        iconSize: [30, 30]
+    });
+    enlevementMarker = L.marker(
+        [{{ commande.adresse_enlevement.latitude }}, {{ commande.adresse_enlevement.longitude }}],
+        {icon: enlevementIcon}
+    ).addTo(map).bindPopup('<b>Enlèvement</b><br>{{ commande.adresse_enlevement.rue }}');
+    
+    // Marqueur livraison
+    const livraisonIcon = L.divIcon({
+        html: '<i class="fas fa-flag fa-2x text-danger"></i>',
+        className: 'custom-marker',
+        iconSize: [30, 30]
+    });
+    livraisonMarker = L.marker(
+        [{{ commande.adresse_livraison.latitude }}, {{ commande.adresse_livraison.longitude }}],
+        {icon: livraisonIcon}
+    ).addTo(map).bindPopup('<b>Livraison</b><br>{{ commande.adresse_livraison.rue }}');
+    
+    // Ligne de route
+    routeLine = L.polyline([
+        [{{ commande.adresse_enlevement.latitude }}, {{ commande.adresse_enlevement.longitude }}],
+        [{{ commande.adresse_livraison.latitude }}, {{ commande.adresse_livraison.longitude }}]
+    ], {color: '#007bff', weight: 3, opacity: 0.5, dashArray: '10, 10'}).addTo(map);
+    
+    // Ajuster la vue pour inclure tous les marqueurs
+    const bounds = L.latLngBounds([
+        [{{ commande.adresse_enlevement.latitude }}, {{ commande.adresse_enlevement.longitude }}],
+        [{{ commande.adresse_livraison.latitude }}, {{ commande.adresse_livraison.longitude }}]
+    ]);
+    map.fitBounds(bounds, {padding: [50, 50]});
+}
+
+function mettreAJourCarte(position) {
+    if (!map || !position) return;
+    
+    // Créer ou mettre à jour le marqueur du transporteur
+    const transporteurIcon = L.divIcon({
+        html: '<i class="fas fa-truck fa-2x text-primary"></i>',
+        className: 'custom-marker transporteur-marker',
+        iconSize: [30, 30]
+    });
+    
+    if (transporteurMarker) {
+        transporteurMarker.setLatLng([position.lat, position.lng]);
+    } else {
+        transporteurMarker = L.marker([position.lat, position.lng], {icon: transporteurIcon})
+            .addTo(map)
+            .bindPopup('<b>Transporteur</b><br>Position actuelle');
     }
+    
+    // Mettre à jour la ligne de route
+    if (routeLine) {
+        map.removeLayer(routeLine);
+    }
+    routeLine = L.polyline([
+        [{{ commande.adresse_enlevement.latitude }}, {{ commande.adresse_enlevement.longitude }}],
+        [position.lat, position.lng],
+        [{{ commande.adresse_livraison.latitude }}, {{ commande.adresse_livraison.longitude }}]
+    ], {color: '#007bff', weight: 3, opacity: 0.7}).addTo(map);
+    
+    // Ajuster la vue
+    const bounds = L.latLngBounds([
+        [{{ commande.adresse_enlevement.latitude }}, {{ commande.adresse_enlevement.longitude }}],
+        [position.lat, position.lng],
+        [{{ commande.adresse_livraison.latitude }}, {{ commande.adresse_livraison.longitude }}]
+    ]);
+    map.fitBounds(bounds, {padding: [50, 50]});
 }
 
 function afficherNotification(message, type = 'info') {
@@ -446,13 +503,26 @@ function envoyerNotificationPush(titre, message) {
     }
 }
 
-#map-container {
-    border-radius: 0.375rem;
-    overflow: hidden;
-}
-
 .alert {
     margin-bottom: 0.5rem;
+}
+
+.custom-marker {
+    background: transparent;
+    border: none;
+}
+
+.transporteur-marker {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+#map {
+    border-radius: 0.375rem;
 }
 </style>
 {% endblock %}

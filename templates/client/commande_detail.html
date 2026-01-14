@@ -385,33 +385,33 @@ function annulerCommande() {
 }
 
 function telechargerPDF() {
-    Utils.showToast('Génération du PDF...', 'info');
-    // Ici, vous pourriez générer et télécharger un PDF
-}
-
-function partagerCommande() {
-    if (navigator.share) {
-        navigator.share({
-            title: 'Commande {{ commande.numero }}',
-            text: 'Suivi de ma commande de transport',
-            url: window.location.href
-        });
-    } else {
-        // Fallback: copier l'URL
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            Utils.showToast('Lien copié dans le presse-papiers', 'success');
-        });
-    }
-}
-
-function envoyerMessage() {
-    // Ici, vous pourriez ouvrir une modal de messagerie
-    Utils.showToast('Ouverture de la messagerie...', 'info');
+    window.location.href = '{% url "client:telecharger_pdf" commande.id %}';
 }
 
 function telechargerBonLivraison() {
-    Utils.showToast('Téléchargement du bon de livraison...', 'info');
-    // Ici, vous pourriez télécharger le bon de livraison
+    window.location.href = '{% url "client:telecharger_bon_livraison" commande.id %}';
+}
+
+function envoyerMessage() {
+    const message = prompt('Votre message au transporteur:');
+    if (message) {
+        fetch('{% url "client:envoyer_message" commande.id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': Utils.getCsrfToken()
+            },
+            body: `message=${encodeURIComponent(message)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Utils.showToast('Message envoyé avec succès', 'success');
+            } else {
+                Utils.showToast('Erreur lors de l\'envoi', 'danger');
+            }
+        });
+    }
 }
 </script>
 

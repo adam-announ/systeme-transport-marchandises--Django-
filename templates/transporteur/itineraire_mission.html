@@ -27,8 +27,8 @@
                 <p><strong>Durée estimée:</strong> ~1h</p>
                 <hr>
                 <ol>
-                    <li>Départ: {{ mission.adresse_enlevement }}</li>
-                    <li>Arrivée: {{ mission.adresse_livraison }}</li>
+                    <li>Départ: {{ mission.adresse_enlevement.adresse_complete }}</li>
+                    <li>Arrivée: {{ mission.adresse_livraison.adresse_complete }}</li>
                 </ol>
             </div>
         </div>
@@ -63,13 +63,9 @@ function initMap() {
 }
 
 async function calculateRoute() {
-    const origin = "{{ mission.adresse_enlevement }}";
-    const destination = "{{ mission.adresse_livraison }}";
+    const origin = "{{ mission.adresse_enlevement.adresse_complete }}";
+    const destination = "{{ mission.adresse_livraison.adresse_complete }}";
     
-    console.log('Origine:', origin);
-    console.log('Destination:', destination);
-    
-    // Chercher la ville dans toute l'adresse
     let originCoords = null;
     let destCoords = null;
     
@@ -79,7 +75,6 @@ async function calculateRoute() {
     for (let city in cities) {
         if (originLower.includes(city)) {
             originCoords = cities[city];
-            console.log('Ville origine trouvée:', city, originCoords);
             break;
         }
     }
@@ -87,35 +82,45 @@ async function calculateRoute() {
     for (let city in cities) {
         if (destLower.includes(city)) {
             destCoords = cities[city];
-            console.log('Ville destination trouvée:', city, destCoords);
             break;
         }
     }
     
     if (!originCoords || !destCoords) {
-        console.error('Coordonnées non trouvées');
-        alert('Villes non reconnues. Villes supportées: Casablanca, Rabat, Tanger, Fès, Marrakech, Agadir');
+        alert('Villes non reconnues');
         return;
     }
     
-    L.marker(originCoords).addTo(map)
-        .bindPopup('<b>Départ</b><br>' + origin).openPopup();
-    L.marker(destCoords).addTo(map)
-        .bindPopup('<b>Arrivée</b><br>' + destination);
+    L.marker(originCoords).addTo(map).bindPopup('<b>Départ</b><br>' + origin).openPopup();
+    L.marker(destCoords).addTo(map).bindPopup('<b>Arrivée</b><br>' + destination);
+    
+    if (!OPENROUTE_API_KEY || OPENROUTE_API_KEY.includes('demo')) {
+        const line = L.polyline([originCoords, destCoords], {color: '#0066ff', weight: 5, opacity: 0.7}).addTo(map);
+        map.fitBounds(line.getBounds());
+        
+        const R = 6371;
+        const lat1 = originCoords[0] * Math.PI / 180;
+        const lat2 = destCoords[0] * Math.PI / 180;
+        const deltaLat = (destCoords[0] - originCoords[0]) * Math.PI / 180;
+        const deltaLon = (destCoords[1] - originCoords[1]) * Math.PI / 180;
+        const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distance = (R * c).toFixed(1);
+        const duration = Math.round(distance * 1.2);
+        
+        document.querySelector('.card-body p:nth-child(1)').innerHTML = `<strong>Distance:</strong> ~${distance} km`;
+        document.querySelector('.card-body p:nth-child(2)').innerHTML = `<strong>Durée estimée:</strong> ~${duration} min`;
+        return;
+    }
     
     try {
         const url = `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${OPENROUTE_API_KEY}&start=${originCoords[1]},${originCoords[0]}&end=${destCoords[1]},${destCoords[0]}`;
-        
-        console.log('Appel API...');
         const response = await fetch(url);
         const data = await response.json();
-        
-        console.log('Réponse API:', data);
         
         if (data.features && data.features.length > 0) {
             const route = data.features[0];
             const coordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            
             L.polyline(coordinates, {color: '#0066ff', weight: 5, opacity: 0.7}).addTo(map);
             map.fitBounds(L.latLngBounds(coordinates));
             
@@ -124,20 +129,11 @@ async function calculateRoute() {
             
             document.querySelector('.card-body p:nth-child(1)').innerHTML = `<strong>Distance:</strong> ${distance} km`;
             document.querySelector('.card-body p:nth-child(2)').innerHTML = `<strong>Durée estimée:</strong> ${duration} min`;
-            
-            // Mettre à jour les instructions
-            const instructionsList = document.querySelector('.card-body ol');
-            instructionsList.innerHTML = `
-                <li>Départ: ${origin}</li>
-                <li>Arrivée: ${destination}</li>
-            `;
-        } else {
-            console.error('Pas de route trouvée');
-            alert('Impossible de calculer l\'itinéraire');
         }
     } catch (error) {
-        console.error('Erreur:', error);
-        alert('Erreur API: ' + error.message);
+        console.error('Erreur API:', error);
+        const line = L.polyline([originCoords, destCoords], {color: '#0066ff', weight: 5, opacity: 0.7}).addTo(map);
+        map.fitBounds(line.getBounds());
     }
 }
 

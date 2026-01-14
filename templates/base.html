@@ -186,7 +186,7 @@
             <div class="navbar-actions">
                 <div class="notification-bell" id="notificationBell">
                     <i class="fas fa-bell"></i>
-                    <span class="notification-badge" id="notificationCount">0</span>
+                    <span class="notification-badge" id="notificationCount" style="display: none;">0</span>
                 </div>
                 <div class="user-dropdown">
                     <button class="user-dropdown-toggle" data-bs-toggle="dropdown">
@@ -217,8 +217,7 @@
             </div>
             {% endif %}
 
-            {% block content %}
-            {% endblock %}
+            {% block content %}{% endblock %}
         </main>
 
         <!-- Footer -->
@@ -244,8 +243,7 @@
             </div>
             {% endif %}
 
-            {% block content %}
-            {% endblock %}
+            {% block auth_content %}{% endblock %}
         </main>
     </div>
     {% endif %}

@@ -97,28 +97,41 @@ def api_optimiser_itineraire(request):
     commande_id = request.data.get('commande_id')
     try:
         commande = Commande.objects.get(id=commande_id)
-        service = OptimisationService()
         
-        # Récupération des données météo
-        meteo_service = MeteoService()
-        meteo = meteo_service.get_weather(
-            commande.latitude_enlevement,
-            commande.longitude_enlevement
-        )
+        # Calculer la distance entre les deux adresses
+        import math
+        lat1 = commande.adresse_enlevement.latitude
+        lon1 = commande.adresse_enlevement.longitude
+        lat2 = commande.adresse_livraison.latitude
+        lon2 = commande.adresse_livraison.longitude
         
-        # Optimisation de l'itinéraire
-        itineraire_data = service.optimiser_itineraire(
-            lat_depart=commande.latitude_enlevement,
-            lng_depart=commande.longitude_enlevement,
-            lat_arrivee=commande.latitude_livraison,
-            lng_arrivee=commande.longitude_livraison,
-            conditions_meteo=meteo
+        # Formule de Haversine
+        R = 6371  # Rayon de la Terre en km
+        dlat = math.radians(lat2 - lat1)
+        dlon = math.radians(lon2 - lon1)
+        a = math.sin(dlat/2) * math.sin(dlat/2) + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon/2) * math.sin(dlon/2)
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        distance = R * c
+        
+        duree = int(distance * 1.2)  # Estimation: 1.2 min par km
+        
+        # Créer ou mettre à jour l'itinéraire
+        itineraire, created = Itineraire.objects.update_or_create(
+            commande=commande,
+            defaults={
+                'distance_km': round(distance, 1),
+                'duree_minutes': duree,
+                'optimise': True
+            }
         )
         
         return Response({
             'success': True,
-            'itineraire': itineraire_data,
-            'meteo': meteo
+            'message': 'Itinéraire optimisé',
+            'itineraire': {
+                'distance': round(distance, 1),
+                'duree': duree
+            }
         })
         
     except Commande.DoesNotExist:

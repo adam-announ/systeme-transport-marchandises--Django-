@@ -545,30 +545,112 @@ const TrackingManager = {
 const NotificationManager = {
     count: 0,
     badge: null,
+    bell: null,
 
     init: function() {
         this.badge = document.getElementById('notificationCount');
+        this.bell = document.getElementById('notificationBell');
+        
         if (this.badge) {
             this.updateCount();
-            // Refresh every 60 seconds
-            setInterval(() => this.updateCount(), 60000);
+            setInterval(() => this.updateCount(), 30000);
+        }
+        
+        if (this.bell) {
+            this.bell.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.showNotifications();
+            });
         }
     },
 
     updateCount: function() {
-        // Placeholder - implement actual notification fetching
-        // Utils.ajax('/api/notifications/count/')
-        //     .then(data => {
-        //         this.setCount(data.count);
-        //     });
+        fetch('/api/notifications/count/', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Notifications count:', data.count);
+            this.setCount(data.count || 0);
+        })
+        .catch(error => console.error('Erreur notifications:', error));
     },
 
     setCount: function(count) {
         this.count = count;
         if (this.badge) {
             this.badge.textContent = count > 99 ? '99+' : count;
-            this.badge.style.display = count > 0 ? 'block' : 'none';
+            this.badge.style.display = count > 0 ? 'inline-block' : 'none';
         }
+    },
+    
+    showNotifications: function() {
+        fetch('/api/notifications/', {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.displayNotificationModal(data.notifications || []);
+        });
+    },
+    
+    displayNotificationModal: function(notifications) {
+        // Créer ou récupérer la modal
+        let modal = document.getElementById('notificationModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'notificationModal';
+            modal.className = 'modal fade';
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-scrollable">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fas fa-bell"></i> Notifications</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body" id="notificationModalBody"></div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        const modalBody = document.getElementById('notificationModalBody');
+        let html = '<div class="list-group">';
+        
+        if (notifications.length === 0) {
+            html += '<div class="p-3 text-center text-muted">Aucune notification</div>';
+        } else {
+            notifications.forEach(notif => {
+                const iconMap = {
+                    'success': 'check-circle text-success',
+                    'warning': 'exclamation-triangle text-warning',
+                    'error': 'exclamation-circle text-danger',
+                    'info': 'info-circle text-info'
+                };
+                const icon = iconMap[notif.type_notification] || 'info-circle text-info';
+                
+                html += `
+                    <div class="list-group-item ${notif.lue ? '' : 'bg-light'}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1"><i class="fas fa-${icon}"></i> ${notif.titre}</h6>
+                            <small class="text-muted">${new Date(notif.date_creation).toLocaleString('fr-FR')}</small>
+                        </div>
+                        <p class="mb-1">${notif.message}</p>
+                    </div>
+                `;
+            });
+        }
+        html += '</div>';
+        
+        modalBody.innerHTML = html;
+        
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
     }
 };
 
@@ -838,11 +920,14 @@ const TransporteurUtils = {
 // Initialize Application
 // ============================================================================
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('TransportPro: Application initialisée');
+    
     // Initialize sidebar
     SidebarManager.init();
 
     // Initialize notifications
     NotificationManager.init();
+    console.log('NotificationManager initialisé');
 
     // Initialize forms
     FormManager.init();

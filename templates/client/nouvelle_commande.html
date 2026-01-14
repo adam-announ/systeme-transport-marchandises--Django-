@@ -72,10 +72,12 @@
                 <h5><i class="fas fa-map"></i> Carte</h5>
             </div>
             <div class="card-body">
-                <div id="map" style="height: 300px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 0.375rem;">
-                    <div class="d-flex align-items-center justify-content-center h-100">
-                        <p class="text-muted">Carte interactive</p>
-                    </div>
+                <div id="map" style="height: 400px; border-radius: 0.375rem;"></div>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Entrez les adresses ou cliquez sur la carte pour placer les marqueurs
+                    </small>
                 </div>
             </div>
         </div>
@@ -84,21 +86,194 @@
 {% endblock %}
 
 {% block scripts %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-// Simulation de géocodage pour la démo
+let map;
+let markerEnlevement;
+let markerLivraison;
+let routeLine;
+
+const cities = {
+    'casablanca': [33.5731, -7.5898],
+    'rabat': [34.0209, -6.8416],
+    'marrakech': [31.6295, -7.9811],
+    'fes': [34.0181, -5.0078],
+    'tanger': [35.7595, -5.8340],
+    'agadir': [30.4278, -9.5981]
+};
+
+// Initialiser la carte
+map = L.map('map').setView([33.5731, -7.5898], 7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+// Icônes personnalisées
+const iconEnlevement = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+const iconLivraison = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
+
+// Géocodage simple basé sur les villes
+function geocodeAddress(address, type) {
+    const addressLower = address.toLowerCase();
+    
+    for (let city in cities) {
+        if (addressLower.includes(city)) {
+            const coords = cities[city];
+            
+            if (type === 'enlevement') {
+                document.getElementById('lat_enlevement').value = coords[0];
+                document.getElementById('lng_enlevement').value = coords[1];
+                
+                if (markerEnlevement) {
+                    map.removeLayer(markerEnlevement);
+                }
+                markerEnlevement = L.marker(coords, {icon: iconEnlevement})
+                    .addTo(map)
+                    .bindPopup('<b>Enlèvement</b><br>' + address)
+                    .openPopup();
+            } else {
+                document.getElementById('lat_livraison').value = coords[0];
+                document.getElementById('lng_livraison').value = coords[1];
+                
+                if (markerLivraison) {
+                    map.removeLayer(markerLivraison);
+                }
+                markerLivraison = L.marker(coords, {icon: iconLivraison})
+                    .addTo(map)
+                    .bindPopup('<b>Livraison</b><br>' + address)
+                    .openPopup();
+            }
+            
+            // Tracer la route si les deux marqueurs existent
+            if (markerEnlevement && markerLivraison) {
+                if (routeLine) {
+                    map.removeLayer(routeLine);
+                }
+                
+                const latEnl = parseFloat(document.getElementById('lat_enlevement').value);
+                const lngEnl = parseFloat(document.getElementById('lng_enlevement').value);
+                const latLiv = parseFloat(document.getElementById('lat_livraison').value);
+                const lngLiv = parseFloat(document.getElementById('lng_livraison').value);
+                
+                routeLine = L.polyline([[latEnl, lngEnl], [latLiv, lngLiv]], {
+                    color: '#0066ff',
+                    weight: 3,
+                    opacity: 0.7,
+                    dashArray: '10, 10'
+                }).addTo(map);
+                
+                // Ajuster la vue pour voir les deux marqueurs
+                const bounds = L.latLngBounds([latEnl, lngEnl], [latLiv, lngLiv]);
+                map.fitBounds(bounds, {padding: [50, 50]});
+                
+                // Calculer la distance
+                const distance = map.distance([latEnl, lngEnl], [latLiv, lngLiv]) / 1000;
+                Utils.showToast(`Distance estimée: ${distance.toFixed(1)} km`, 'info');
+            }
+            
+            return true;
+        }
+    }
+    
+    Utils.showToast('Ville non reconnue. Villes supportées: Casablanca, Rabat, Marrakech, Fès, Tanger, Agadir', 'warning');
+    return false;
+}
+
+// Événements sur les champs d'adresse
 document.getElementById('adresse_enlevement').addEventListener('blur', function() {
-    // Coordonnées simulées pour Casablanca
-    document.getElementById('lat_enlevement').value = 33.5731;
-    document.getElementById('lng_enlevement').value = -7.5898;
+    if (this.value) {
+        geocodeAddress(this.value, 'enlevement');
+    }
 });
 
 document.getElementById('adresse_livraison').addEventListener('blur', function() {
-    // Coordonnées simulées pour Rabat
-    document.getElementById('lat_livraison').value = 34.0209;
-    document.getElementById('lng_livraison').value = -6.8416;
+    if (this.value) {
+        geocodeAddress(this.value, 'livraison');
+    }
+});
+
+// Clic sur la carte pour placer les marqueurs
+let nextMarkerType = 'enlevement';
+
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
+    
+    if (nextMarkerType === 'enlevement') {
+        document.getElementById('lat_enlevement').value = lat;
+        document.getElementById('lng_enlevement').value = lng;
+        document.getElementById('adresse_enlevement').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+        
+        if (markerEnlevement) {
+            map.removeLayer(markerEnlevement);
+        }
+        markerEnlevement = L.marker([lat, lng], {icon: iconEnlevement})
+            .addTo(map)
+            .bindPopup('<b>Enlèvement</b>')
+            .openPopup();
+        
+        nextMarkerType = 'livraison';
+        Utils.showToast('Cliquez sur la carte pour placer le point de livraison', 'info');
+    } else {
+        document.getElementById('lat_livraison').value = lat;
+        document.getElementById('lng_livraison').value = lng;
+        document.getElementById('adresse_livraison').value = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+        
+        if (markerLivraison) {
+            map.removeLayer(markerLivraison);
+        }
+        markerLivraison = L.marker([lat, lng], {icon: iconLivraison})
+            .addTo(map)
+            .bindPopup('<b>Livraison</b>')
+            .openPopup();
+        
+        nextMarkerType = 'enlevement';
+        
+        // Tracer la route
+        if (markerEnlevement && markerLivraison) {
+            if (routeLine) {
+                map.removeLayer(routeLine);
+            }
+            
+            const latEnl = parseFloat(document.getElementById('lat_enlevement').value);
+            const lngEnl = parseFloat(document.getElementById('lng_enlevement').value);
+            const latLiv = parseFloat(document.getElementById('lat_livraison').value);
+            const lngLiv = parseFloat(document.getElementById('lng_livraison').value);
+            
+            routeLine = L.polyline([[latEnl, lngEnl], [latLiv, lngLiv]], {
+                color: '#0066ff',
+                weight: 3,
+                opacity: 0.7,
+                dashArray: '10, 10'
+            }).addTo(map);
+            
+            const distance = map.distance([latEnl, lngEnl], [latLiv, lngLiv]) / 1000;
+            Utils.showToast(`Distance: ${distance.toFixed(1)} km`, 'success');
+        }
+    }
 });
 
 // Définir la date minimale à aujourd'hui
 document.getElementById('date_enlevement_prevue').min = new Date().toISOString().slice(0, 16);
+
+// Message d'aide au chargement
+Utils.showToast('Entrez les adresses ou cliquez sur la carte pour placer les marqueurs', 'info');
 </script>
 {% endblock %}

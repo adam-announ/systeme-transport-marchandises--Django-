@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', function() {
     chargerVehicules();
     chargerNotifications();
     verifierMissionActive();
+    mettreAJourStatut(); // Charger immédiatement
     
     // Mise à jour automatique toutes les 30 secondes
     setInterval(function() {
@@ -426,11 +427,11 @@ function envoyerIncident() {
 }
 
 function mettreAJourStatut() {
-    // Mise à jour périodique du statut
     fetch('/transporteur/api/statut/')
         .then(response => response.json())
         .then(data => {
-            if (data.km_parcourus) {
+            console.log('Statut:', data);
+            if (data.km_parcourus !== undefined) {
                 document.getElementById('km-parcourus').textContent = data.km_parcourus;
             }
         })

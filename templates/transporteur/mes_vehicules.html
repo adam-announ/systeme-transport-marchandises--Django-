@@ -20,9 +20,12 @@
         <div class="card">
             <div class="card-body">
                 <h5><i class="fas fa-truck"></i> {{ vehicule.immatriculation }}</h5>
+                <p><strong>Marque:</strong> {{ vehicule.marque }} {{ vehicule.modele }}</p>
+                <p><strong>Année:</strong> {{ vehicule.annee }}</p>
                 <p><strong>Type:</strong> {{ vehicule.get_type_vehicule_display }}</p>
                 <p><strong>Capacité poids:</strong> {{ vehicule.capacite_poids }} kg</p>
                 <p><strong>Capacité volume:</strong> {{ vehicule.capacite_volume }} m³</p>
+                <p><strong>État:</strong> <span class="badge bg-info">{{ vehicule.get_etat_display }}</span></p>
                 <p>
                     <strong>Statut:</strong>
                     {% if vehicule.disponible %}
@@ -31,6 +34,14 @@
                     <span class="badge bg-warning">En mission</span>
                     {% endif %}
                 </p>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'transporteur:modifier_vehicule' vehicule.id %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                    <a href="{% url 'transporteur:supprimer_vehicule' vehicule.id %}" class="btn btn-sm btn-danger">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </a>
+                </div>
             </div>
         </div>
     </div>

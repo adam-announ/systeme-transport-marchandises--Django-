@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}Supprimer Véhicule - Transporteur{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-trash"></i> Supprimer le véhicule</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Êtes-vous sûr de vouloir supprimer ce véhicule ?
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Détails du véhicule :</h6>
+                    <ul class="list-unstyled">
+                        <li><strong>Immatriculation :</strong> {{ vehicule.immatriculation }}</li>
+                        <li><strong>Marque :</strong> {{ vehicule.marque }}</li>
+                        <li><strong>Modèle :</strong> {{ vehicule.modele }}</li>
+                        <li><strong>Type :</strong> {{ vehicule.get_type_vehicule_display }}</li>
+                    </ul>
+                </div>
+                
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'transporteur:mes_vehicules' %}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

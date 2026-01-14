@@ -1,15 +1,13 @@
-"""
-Vues pour l'interface client
-"""
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from core.models import Commande, User, Notification
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 import uuid
 
 @login_required
@@ -151,14 +149,21 @@ def api_suivi_commande(request, commande_id):
     
     try:
         commande = Commande.objects.get(id=commande_id, client=request.user)
+        
+        # Récupérer la dernière position du transporteur
+        position_transporteur = None
+        if commande.transporteur:
+            if commande.transporteur.latitude and commande.transporteur.longitude:
+                position_transporteur = {
+                    'lat': commande.transporteur.latitude,
+                    'lng': commande.transporteur.longitude
+                }
+        
         data = {
             'id': str(commande.id),
             'numero': commande.numero,
-            'statut': commande.statut,
-            'position_transporteur': {
-                'lat': commande.adresse_enlevement.latitude,
-                'lng': commande.adresse_enlevement.longitude,
-            } if commande.transporteur else None,
+            'statut': commande.get_statut_display(),
+            'position_transporteur': position_transporteur,
             'progression': {
                 'en_attente': commande.statut in ['en_attente', 'confirmee', 'en_cours', 'livree'],
                 'confirmee': commande.statut in ['confirmee', 'en_cours', 'livree'],
@@ -169,3 +174,104 @@ def api_suivi_commande(request, commande_id):
         return Response(data)
     except Commande.DoesNotExist:
         return Response({'error': 'Commande non trouvée'}, status=404)
+
+@login_required
+def telecharger_pdf(request, commande_id):
+    """Télécharger le PDF de la commande"""
+    commande = get_object_or_404(Commande, id=commande_id, client=request.user)
+    
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="commande_{commande.numero}.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=A4)
+    p.setTitle(f'Commande {commande.numero}')
+    
+    y = 800
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(50, y, f"Commande {commande.numero}")
+    
+    y -= 40
+    p.setFont("Helvetica", 12)
+    p.drawString(50, y, f"Date: {commande.date_creation.strftime('%d/%m/%Y %H:%M')}")
+    y -= 20
+    p.drawString(50, y, f"Statut: {commande.get_statut_display()}")
+    y -= 20
+    p.drawString(50, y, f"Client: {commande.client.username}")
+    
+    if commande.transporteur:
+        y -= 20
+        p.drawString(50, y, f"Transporteur: {commande.transporteur.username}")
+    
+    y -= 40
+    p.setFont("Helvetica-Bold", 14)
+    p.drawString(50, y, "Détails")
+    y -= 25
+    p.setFont("Helvetica", 12)
+    p.drawString(50, y, f"Poids: {commande.poids} kg")
+    y -= 20
+    p.drawString(50, y, f"Volume: {commande.volume} m³")
+    y -= 20
+    p.drawString(50, y, f"Description: {commande.description_marchandise}")
+    
+    p.showPage()
+    p.save()
+    return response
+
+@login_required
+def telecharger_bon_livraison(request, commande_id):
+    """Télécharger le bon de livraison"""
+    commande = get_object_or_404(Commande, id=commande_id, client=request.user)
+    
+    if not hasattr(commande, 'bonlivraison'):
+        messages.error(request, 'Aucun bon de livraison disponible')
+        return redirect('client:commande_detail', commande_id=commande.id)
+    
+    bon = commande.bonlivraison
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="bon_livraison_{bon.numero_bon}.pdf"'
+    
+    p = canvas.Canvas(response, pagesize=A4)
+    p.setTitle(f'Bon de livraison {bon.numero_bon}')
+    
+    y = 800
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(50, y, f"Bon de livraison {bon.numero_bon}")
+    
+    y -= 40
+    p.setFont("Helvetica", 12)
+    p.drawString(50, y, f"Date: {bon.date_livraison.strftime('%d/%m/%Y %H:%M')}")
+    y -= 20
+    p.drawString(50, y, f"Destinataire: {bon.nom_destinataire}")
+    y -= 20
+    p.drawString(50, y, f"Commande: {commande.numero}")
+    
+    if bon.commentaires:
+        y -= 30
+        p.drawString(50, y, f"Commentaires: {bon.commentaires}")
+    
+    p.showPage()
+    p.save()
+    return response
+
+@login_required
+def envoyer_message(request, commande_id):
+    """Envoyer un message au transporteur"""
+    commande = get_object_or_404(Commande, id=commande_id, client=request.user)
+    
+    if not commande.transporteur:
+        return JsonResponse({'success': False, 'error': 'Aucun transporteur assigné'})
+    
+    if request.method == 'POST':
+        message = request.POST.get('message', '')
+        
+        if message:
+            Notification.objects.create(
+                utilisateur=commande.transporteur,
+                titre=f'Message de {request.user.username}',
+                message=f'Commande {commande.numero}: {message}',
+                type_notification='info',
+                commande=commande
+            )
+            return JsonResponse({'success': True})
+    
+    return JsonResponse({'success': False})

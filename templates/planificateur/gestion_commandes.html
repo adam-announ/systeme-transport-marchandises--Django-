@@ -117,7 +117,7 @@
                         </td>
                         <td>
                             <div class="btn-group" role="group">
-                                <button class="btn btn-sm btn-outline-primary" onclick="optimiserItineraire('{{ commande.id }}', this)" title="Optimiser itinéraire">
+                                <button class="btn btn-sm btn-outline-primary" onclick="PlanificateurUtils.optimiserItineraire('{{ commande.id }}', this)" title="Optimiser itinéraire">
                                     <i class="fas fa-route"></i>
                                 </button>
                                 {% if not commande.transporteur %}
@@ -369,7 +369,12 @@ function calculerDistance(commandeId) {
 function optimiserToutesCommandes() {
     Utils.confirm('Optimiser toutes les commandes en attente ?', function() {
         Utils.showToast('Optimisation en cours...', 'info');
-        // Ici, vous pourriez lancer l'optimisation de toutes les commandes
+        const commandes = document.querySelectorAll('.commande-checkbox');
+        commandes.forEach(cb => {
+            if (cb.closest('tr').querySelector('.badge').textContent.includes('attente')) {
+                PlanificateurUtils.optimiserItineraire(cb.value);
+            }
+        });
     });
 }
 
@@ -379,8 +384,10 @@ function planifierTournee() {
         return;
     }
     
-    Utils.showToast('Planification de tournée en cours...', 'info');
-    // Ici, vous pourriez lancer la planification d'une tournée
+    Utils.showToast(`Planification de tournée pour ${selectedCommandes.length} commande(s)...`, 'info');
+    selectedCommandes.forEach(id => {
+        PlanificateurUtils.optimiserItineraire(id);
+    });
 }
 
 // Mise à jour de la sélection lors du changement des checkboxes
